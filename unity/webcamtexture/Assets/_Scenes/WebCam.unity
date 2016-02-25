@@ -142,7 +142,7 @@ Camera:
     width: 1
     height: 1
   near clip plane: 0.3
-  far clip plane: 10.1
+  far clip plane: 100
   field of view: 51
   orthographic: 0
   orthographic size: 5
@@ -258,7 +258,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f163fb5e6f1b340feb366deb5a0e11c5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  upDelta: 0.3
+  ButtonDelta: 0.1
+  RotateDelta: 3
 --- !u!1 &1306837218
 GameObject:
   m_ObjectHideFlags: 0
@@ -332,6 +333,7 @@ GameObject:
   - 64: {fileID: 1632798202}
   - 23: {fileID: 1632798201}
   - 114: {fileID: 1632798200}
+  - 114: {fileID: 1632798205}
   m_Layer: 0
   m_Name: WebCamScreen
   m_TagString: Untagged
@@ -412,3 +414,16 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 2
+--- !u!114 &1632798205
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 1632798199}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f163fb5e6f1b340feb366deb5a0e11c5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ButtonDelta: 0.03
+  RotateDelta: 0.7
