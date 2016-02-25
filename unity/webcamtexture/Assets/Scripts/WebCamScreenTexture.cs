@@ -17,6 +17,14 @@ public class WebCamScreenTexture : MonoBehaviour
 	// Use this for initialization
 	void Start ()
 	{
+		if (PlayerPrefs.HasKey ("CameraName")) {
+			cameraName = PlayerPrefs.GetString ("CameraName");
+			Debug.Log ("CameraName from preferences: " + cameraName);
+		}
+		PlayerPrefs.SetString ("CameraName", cameraName);
+		Debug.Log ("Save CameraName to preferences: " + cameraName);
+		PlayerPrefs.Save ();
+
 		WebCamTexture.devices.ToList ().ForEach (v => print (v.name));
 
 		webcamTexture = FindWebCameraByName (cameraName);
@@ -30,13 +38,14 @@ public class WebCamScreenTexture : MonoBehaviour
 		}
 
 		material.mainTexture = webcamTexture;
-		webcamTexture.Play();
+		webcamTexture.Play ();
 	}
 
-	private WebCamTexture FindWebCameraByName(string cameraName) {
+	private WebCamTexture FindWebCameraByName (string cameraName)
+	{
 		return WebCamTexture.devices
 			.Where (v => v.name == cameraName)
-			.Select(v => new WebCamTexture (v.name, Width, Height, FPS))
+			.Select (v => new WebCamTexture (v.name, Width, Height, FPS))
 			.FirstOrDefault ();
 	}
 }

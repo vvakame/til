@@ -64,7 +64,9 @@ public class PadShakeController : MonoBehaviour
 
 	private void OnGUI ()
 	{
-		GUI.Label (
-			new Rect (0f, 0f, Screen.width, Screen.height), string.Format ("post   = x:{0}, y:{1}, z:{2}\nangles = x:{3}, y:{4}, z:{5}\nv: {6}\nh: {7}", transform.position.x, transform.position.y, transform.position.z, transform.eulerAngles.x, transform.eulerAngles.y, transform.eulerAngles.z, Input.GetAxis ("Horizontal"), Input.GetAxis ("Vertical")));
+		if (Debug.isDebugBuild) {
+			GUI.Label (
+				new Rect (0f, 0f, Screen.width, Screen.height), string.Format ("post   = x:{0}, y:{1}, z:{2}\nangles = x:{3}, y:{4}, z:{5}\nv: {6}\nh: {7}", transform.position.x, transform.position.y, transform.position.z, transform.eulerAngles.x, transform.eulerAngles.y, transform.eulerAngles.z, Input.GetAxis ("Horizontal"), Input.GetAxis ("Vertical")));
+		}
 	}
 }
