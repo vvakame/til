@@ -29,3 +29,15 @@ sysinfo.txt
 *.apk
 *.unitypackage
 
+# LeapMotion SDK ( Unity Core Assets v4.0.0 https://developer.leapmotion.com/unity )
+Assets/LeapC/
+Assets/LeapMotion/
+Assets/LeapC.meta
+Assets/LeapMotion.meta
+Assets/Plugins.meta
+Assets/Plugins/donotdelete.txt
+Assets/Plugins/donotdelete.txt.meta
+Assets/Plugins/x86.meta
+Assets/Plugins/x86_64.meta
+Assets/Plugins/**/LeapC.dll
+Assets/Plugins/**/LeapC.dll.meta
