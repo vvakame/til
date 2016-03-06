@@ -76,6 +76,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   coinPrefab: {fileID: 0}
+  startSpawn: 100
 --- !u!135 &13520172
 SphereCollider:
   m_ObjectHideFlags: 1
@@ -99,6 +100,10 @@ Prefab:
       propertyPath: m_Materials.Array.data[0]
       value: 
       objectReference: {fileID: 2100000, guid: 6d762873fcfd648fd8dbff66b2be8ab8, type: 2}
+    - target: {fileID: 0}
+      propertyPath: startSpawn
+      value: 100
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 0}
   m_RootGameObject: {fileID: 192560}

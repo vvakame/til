@@ -19,7 +19,7 @@ public class PusherController : MonoBehaviour
 	void Update ()
 	{
 		// http://yaseino.hatenablog.com/entry/2016/02/23/234652 を参考に
-		Vector3 offset = new Vector3 (0, 0, Mathf.Cos (Time.time * 6 / cycleSec) * (maxDelta / 2) - (maxDelta / 2));
+		Vector3 offset = new Vector3 (0, 0, -1 * (Mathf.Cos (Time.time * 6 / cycleSec) * (maxDelta / 2) - (maxDelta / 2)));
 		GetComponent<Rigidbody> ().MovePosition (defaultPos + offset);
 	}
 }

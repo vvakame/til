@@ -7,13 +7,11 @@ public class CoinRemoverController : MonoBehaviour
 	public int scoreScale;
 	public Text scoreText;
 
-	private int count;
-
 	void OnTriggerEnter (Collider other)
 	{
 		if (other.CompareTag ("Coin")) {
 			Destroy (other.gameObject);
-			count += scoreScale;
+			Score.AddScore (scoreScale);
 			SetCountText ();
 		}
 	}
@@ -24,6 +22,6 @@ public class CoinRemoverController : MonoBehaviour
 			return;
 		}
 
-		scoreText.text = "Score: " + count.ToString ();
+		scoreText.text = "Score: " + Score.GetScore ();
 	}
 }
