@@ -26,8 +26,8 @@ Transform:
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 192560}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.08744025, y: -0.20698863, z: 0.5114293}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalPosition: {x: 0, y: 0.15, z: -0.2}
+  m_LocalScale: {x: 0.05, y: 0.05, z: 0.05}
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 0
@@ -75,8 +75,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d23183ff5314840fbb975d3c15ccb86a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  coinPrefab: {fileID: 0}
-  startSpawn: 100
+  coinPrefab: {fileID: 151320, guid: 1d8212b00eaf54352aa12437acf616da, type: 2}
+  startSpawn: 150
+  startSpawnScale: 0.6
+  shootX: 0
+  shootY: 50
+  shootZ: 200
+  shootCourseRandomness: 20
 --- !u!135 &13520172
 SphereCollider:
   m_ObjectHideFlags: 1
@@ -85,7 +90,7 @@ SphereCollider:
   m_GameObject: {fileID: 192560}
   m_Material: {fileID: 0}
   m_IsTrigger: 0
-  m_Enabled: 1
+  m_Enabled: 0
   serializedVersion: 2
   m_Radius: 0.5
   m_Center: {x: 0, y: 0, z: 0}

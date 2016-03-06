@@ -532,6 +532,68 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 0
+--- !u!1001 &853525459
+Prefab:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 413278, guid: 42eec3d5a066a4dd4aa9eb2277c623b0, type: 2}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 413278, guid: 42eec3d5a066a4dd4aa9eb2277c623b0, type: 2}
+      propertyPath: m_LocalPosition.y
+      value: 0.3999939
+      objectReference: {fileID: 0}
+    - target: {fileID: 413278, guid: 42eec3d5a066a4dd4aa9eb2277c623b0, type: 2}
+      propertyPath: m_LocalPosition.z
+      value: 0.4
+      objectReference: {fileID: 0}
+    - target: {fileID: 413278, guid: 42eec3d5a066a4dd4aa9eb2277c623b0, type: 2}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 413278, guid: 42eec3d5a066a4dd4aa9eb2277c623b0, type: 2}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 413278, guid: 42eec3d5a066a4dd4aa9eb2277c623b0, type: 2}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 413278, guid: 42eec3d5a066a4dd4aa9eb2277c623b0, type: 2}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 413278, guid: 42eec3d5a066a4dd4aa9eb2277c623b0, type: 2}
+      propertyPath: m_RootOrder
+      value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 192560, guid: 42eec3d5a066a4dd4aa9eb2277c623b0, type: 2}
+      propertyPath: m_Name
+      value: CoinStartupSpawner
+      objectReference: {fileID: 0}
+    - target: {fileID: 11405856, guid: 42eec3d5a066a4dd4aa9eb2277c623b0, type: 2}
+      propertyPath: shootY
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 11405856, guid: 42eec3d5a066a4dd4aa9eb2277c623b0, type: 2}
+      propertyPath: shootZ
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 11405856, guid: 42eec3d5a066a4dd4aa9eb2277c623b0, type: 2}
+      propertyPath: shootCourseRandomness
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 11405856, guid: 42eec3d5a066a4dd4aa9eb2277c623b0, type: 2}
+      propertyPath: shootPiece
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+  m_ParentPrefab: {fileID: 100100000, guid: 42eec3d5a066a4dd4aa9eb2277c623b0, type: 2}
+  m_IsPrefabParent: 0
 --- !u!1 &878601560
 GameObject:
   m_ObjectHideFlags: 0
@@ -617,7 +679,7 @@ RectTransform:
   m_Children:
   - {fileID: 572668261}
   m_Father: {fileID: 0}
-  m_RootOrder: 6
+  m_RootOrder: 7
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
@@ -666,22 +728,10 @@ Prefab:
       propertyPath: m_Name
       value: CoinScoreReceiver
       objectReference: {fileID: 0}
-    - target: {fileID: 479128, guid: c2bce3432021f4cb3b0bb5c0afee0836, type: 2}
-      propertyPath: m_LocalScale.x
-      value: 0.1
-      objectReference: {fileID: 0}
-    - target: {fileID: 11408650, guid: c2bce3432021f4cb3b0bb5c0afee0836, type: 2}
-      propertyPath: ScoreScale
-      value: 1
-      objectReference: {fileID: 0}
     - target: {fileID: 11408650, guid: c2bce3432021f4cb3b0bb5c0afee0836, type: 2}
       propertyPath: scoreText
       value: 
       objectReference: {fileID: 572668262}
-    - target: {fileID: 11408650, guid: c2bce3432021f4cb3b0bb5c0afee0836, type: 2}
-      propertyPath: scoreScale
-      value: 1
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: c2bce3432021f4cb3b0bb5c0afee0836, type: 2}
   m_IsPrefabParent: 0
@@ -696,6 +746,7 @@ GameObject:
   - 33: {fileID: 1073548365}
   - 65: {fileID: 1073548364}
   - 23: {fileID: 1073548363}
+  - 54: {fileID: 1073548366}
   m_Layer: 0
   m_Name: BackBoard
   m_TagString: Untagged
@@ -711,7 +762,7 @@ Transform:
   m_GameObject: {fileID: 1073548361}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: -0.5, y: 0, z: 0.5}
-  m_LocalScale: {x: 1, y: 2, z: 0.1}
+  m_LocalScale: {x: 1, y: 2, z: 0.15}
   m_Children: []
   m_Father: {fileID: 130514277}
   m_RootOrder: 2
@@ -760,6 +811,21 @@ MeshFilter:
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 1073548361}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!54 &1073548366
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 1073548361}
+  serializedVersion: 2
+  m_Mass: 1
+  m_Drag: 0
+  m_AngularDrag: 0.05
+  m_UseGravity: 0
+  m_IsKinematic: 1
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 0
 --- !u!1001 &1267602877
 Prefab:
   m_ObjectHideFlags: 0
@@ -815,11 +881,11 @@ Prefab:
       objectReference: {fileID: 0}
     - target: {fileID: 413278, guid: 42eec3d5a066a4dd4aa9eb2277c623b0, type: 2}
       propertyPath: m_LocalPosition.y
-      value: 0.25
+      value: 0.15
       objectReference: {fileID: 0}
     - target: {fileID: 413278, guid: 42eec3d5a066a4dd4aa9eb2277c623b0, type: 2}
       propertyPath: m_LocalPosition.z
-      value: 0.4
+      value: -0.2
       objectReference: {fileID: 0}
     - target: {fileID: 413278, guid: 42eec3d5a066a4dd4aa9eb2277c623b0, type: 2}
       propertyPath: m_LocalRotation.x
@@ -841,33 +907,13 @@ Prefab:
       propertyPath: m_RootOrder
       value: 5
       objectReference: {fileID: 0}
-    - target: {fileID: 413278, guid: 42eec3d5a066a4dd4aa9eb2277c623b0, type: 2}
-      propertyPath: m_LocalScale.x
-      value: 0.05
-      objectReference: {fileID: 0}
-    - target: {fileID: 413278, guid: 42eec3d5a066a4dd4aa9eb2277c623b0, type: 2}
-      propertyPath: m_LocalScale.y
-      value: 0.05
-      objectReference: {fileID: 0}
-    - target: {fileID: 413278, guid: 42eec3d5a066a4dd4aa9eb2277c623b0, type: 2}
-      propertyPath: m_LocalScale.z
-      value: 0.05
-      objectReference: {fileID: 0}
     - target: {fileID: 11405856, guid: 42eec3d5a066a4dd4aa9eb2277c623b0, type: 2}
-      propertyPath: coinPrefab
-      value: 
-      objectReference: {fileID: 151320, guid: 1d8212b00eaf54352aa12437acf616da, type: 2}
-    - target: {fileID: 13520172, guid: 42eec3d5a066a4dd4aa9eb2277c623b0, type: 2}
-      propertyPath: m_Enabled
+      propertyPath: startSpawn
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 11405856, guid: 42eec3d5a066a4dd4aa9eb2277c623b0, type: 2}
-      propertyPath: startSpawn
-      value: 150
-      objectReference: {fileID: 0}
-    - target: {fileID: 11405856, guid: 42eec3d5a066a4dd4aa9eb2277c623b0, type: 2}
-      propertyPath: startSpawnScale
-      value: 0.6
+      propertyPath: shootPiece
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: 42eec3d5a066a4dd4aa9eb2277c623b0, type: 2}
