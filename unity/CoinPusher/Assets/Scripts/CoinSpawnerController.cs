@@ -29,7 +29,7 @@ public class CoinSpawnerController : MonoBehaviour
 				var coin = Instantiate (coinPrefab, transform.position, transform.rotation) as GameObject;
 				var coinRigid = coin.GetComponent<Rigidbody> ();
 				var shootForce = new Vector3 (shootX, shootY, shootZ);
-				coinRigid.AddForce (shootForce);
+				coinRigid.AddRelativeForce (shootForce);
 				coin.transform.rotation = Random.rotation;
 			}
 			Score.Unlock ();
