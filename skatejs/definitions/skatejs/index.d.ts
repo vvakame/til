@@ -13,6 +13,8 @@ export class Component extends HTMLElement {
 
 type PropAttrs = { [key: string]: PropAttr }
 interface ComponentProp<T extends PropAttrs> {
+    extends?: string;
+    type?: Types;
     props?: T;
     attached?: (elem: any) => void;
     detached?: (elem: any) => void;
@@ -51,3 +53,9 @@ export let prop: {
 };
 
 export let h: any; // TODO
+
+declare enum Types {
+    ATTR,
+    CLASS,
+}
+export let types: typeof Types;
