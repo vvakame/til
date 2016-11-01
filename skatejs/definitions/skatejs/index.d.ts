@@ -13,7 +13,7 @@ export class Component extends HTMLElement {
 
 type PropAttrs = { [key: string]: PropAttr }
 interface ComponentProp<T extends PropAttrs> {
-    props: T;
+    props?: T;
     attached?: (elem: any) => void;
     detached?: (elem: any) => void;
     render?: (elem: any) => void;
