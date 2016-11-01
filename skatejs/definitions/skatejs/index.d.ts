@@ -1,9 +1,7 @@
-interface Define {
-    <T extends Component>(name: string, definition: T): T;
-    <T extends PropAttrs>(name: string, definition: ComponentProp<T>): Component & T;
-}
-
-export let define: Define;
+export let define: {
+    <T extends typeof Component>(name: string, definition: T): T;
+    <T extends PropAttrs<Component & T>>(name: string, definition: ComponentProp<any>): {new (): Component & T};
+};
 export let vdom: any;
 export class Component extends HTMLElement {
     connectedCallback: any;
@@ -11,27 +9,27 @@ export class Component extends HTMLElement {
     attributeChangedCallback: any;
 }
 
-type PropAttrs = { [key: string]: PropAttr }
-interface ComponentProp<T extends PropAttrs> {
+type PropAttrs<El> = { [key: string]: PropAttr<El, any> }
+interface ComponentProp<T extends PropAttrs<T & Component>> {
     extends?: string;
     type?: Types;
     props?: T;
-    attached?: (elem: any) => void;
-    detached?: (elem: any) => void;
-    render?: (elem: any) => void;
+    attached?: (elem: T & Component) => void;
+    detached?: (elem: T & Component) => void;
+    render?: (elem: T & Component) => void;
 }
 
-interface PropAttr { // use generics
+interface PropAttr<El, Prop> { // use generics
     attribute?: boolean | string;
-    coerce?: (value: any) => any;
-    default?: any | ((elem: any, data: { name: any; }) => any);
-    deserialize?: (value: any) => any;
-    get?: (elem: any, data: { name: any; internalValue: any; }) => any;
-    initial?: any | ((elem: any, data: { name: any; }) => any);
-    serialize?: (value: any) => any;
-    set?: (elem: any, data: { name: any; newValue: any; oldValue: any; }) => void;
-    created?: (elem: any) => void;
-    updated?: (elem: any, prevProps: any) => boolean;
+    coerce?: (value: any) => Prop;
+    default?: ((elem: El, data: { name: string; }) => Prop) | Prop;
+    deserialize?: (value: any) => Prop;
+    get?: (elem: El, data: { name: string; internalValue: Prop; }) => Prop;
+    initial?: Prop | ((elem: El, data: { name: string; }) => Prop);
+    serialize?: (value: Prop) => any;
+    set?: (elem: El, data: { name: string; newValue: Prop; oldValue: Prop; }) => void;
+    created?: (elem: El) => void;
+    updated?: (elem: El, prevProps: PropAttrs<El>) => boolean;
 }
 
 export interface OnCreated {
@@ -47,9 +45,10 @@ export interface OnDetached {
 }
 
 export let prop: {
-    string(attr?: PropAttr): PropAttr;
-    array(attr?: PropAttr): PropAttr;
-    number(attr?: PropAttr): PropAttr;
+    string<El>(attr?: PropAttr<El, string>): PropAttr<El, string>;
+    array<El, T>(attr?: PropAttr<El, T[]>): PropAttr<El, T[]>;
+    number<El>(attr?: PropAttr<El, number>): PropAttr<El, number>;
+    boolean<El>(attr?: PropAttr<El, number>): PropAttr<El, number>;
 };
 
 export let h: any; // TODO
@@ -59,3 +58,8 @@ declare enum Types {
     CLASS,
 }
 export let types: typeof Types;
+
+export let symbols: {
+    name: Symbol;
+    shadowRoot: Symbol;
+}

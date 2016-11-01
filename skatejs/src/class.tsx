@@ -2,7 +2,16 @@ import * as skate from "skatejs";
 
 const React = { createElement: skate.h };
 
-skate.define("x-component2", class extends skate.Component {
+export default skate.define("x-component2", class Component2 extends skate.Component {
+    // ここから Reactの型との整合性を無理やりとるための記述
+    setState: any;
+    forceUpdate: any;
+    props: any;
+    state: any;
+    context: any;
+    refs: any;
+    // ここまで
+
     myProp1: number;
     myProp2 = 0;
 
@@ -27,11 +36,11 @@ skate.define("x-component2", class extends skate.Component {
         );
     }
 
-    static get props() {
+    static get props(): { [key: string]: skate.ComponentProp<any>; } {
         return {
-            myProp1: skate.prop.number({
+            myProp1: skate.prop.number<Component2>({
                 attribute: true,
-                default: (elem: any, data: any) => {
+                default(elem, data) {
                     return 7;
                 },
             }),
