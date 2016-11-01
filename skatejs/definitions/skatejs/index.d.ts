@@ -33,15 +33,15 @@ interface PropAttr { // use generics
 }
 
 export interface OnCreated {
-    created(elem: any): void;
+    created(elem: this): void;
 }
 
 export interface OnAttached {
-    attached(elem: any): void;
+    attached(elem: this): void;
 }
 
 export interface OnDetached {
-    detached(elem: any): void;
+    detached(elem: this): void;
 }
 
 export let prop: {

@@ -3,6 +3,7 @@ import * as skate from "skatejs";
 import { define, vdom } from "skatejs";
 
 import "./react-like";
+import "./class";
 
 const sym = Symbol();
 
