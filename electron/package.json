@@ -4,11 +4,13 @@
   "version": "1.0.0",
   "main": "main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "package:darwin": "electron-packager . --platform=darwin"
   },
   "author": "vvakame",
   "license": "ISC",
   "devDependencies": {
-    "electron": "^1.4.1"
+    "electron": "^1.4.1",
+    "electron-packager": "^8.2.0"
   }
 }
