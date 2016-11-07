@@ -3,15 +3,6 @@ import * as skate from "skatejs";
 const skatex = { createElement: skate.h };
 
 export default skate.define("x-component2", class Component2 extends skate.Component {
-    // ここから Reactの型との整合性を無理やりとるための記述
-    setState: any;
-    forceUpdate: any;
-    props: any;
-    state: any;
-    context: any;
-    refs: any;
-    // ここまで
-
     myProp1: number;
     myProp2 = 0;
 
@@ -25,7 +16,7 @@ export default skate.define("x-component2", class Component2 extends skate.Compo
         this.myProp2 += 1;
     }
 
-    render() {
+    render(elem: this): JSX.Element {
         return (
             <div>
                 <form>
@@ -49,6 +40,6 @@ export default skate.define("x-component2", class Component2 extends skate.Compo
     }
 
     static render(elem: any) {
-        return elem.render();
+        return elem.render(elem);
     }
 });

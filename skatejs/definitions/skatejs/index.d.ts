@@ -1,3 +1,5 @@
+export {} from "./jsx";
+
 export let define: {
     <T extends typeof Component>(name: string, definition: T): T;
     <T extends PropAttrs<Component & T>>(name: string, definition: ComponentProp<any>): {new (): Component & T};
@@ -10,7 +12,7 @@ export class Component extends HTMLElement {
 }
 
 type PropAttrs<El> = { [key: string]: PropAttr<El, any> }
-interface ComponentProp<T extends PropAttrs<T & Component>> {
+export interface ComponentProp<T extends PropAttrs<T & Component>> {
     extends?: string;
     type?: Types;
     props?: T;
@@ -19,7 +21,7 @@ interface ComponentProp<T extends PropAttrs<T & Component>> {
     render?: (elem: T & Component) => void;
 }
 
-interface PropAttr<El, Prop> { // use generics
+export interface PropAttr<El, Prop> { // use generics
     attribute?: boolean | string;
     coerce?: (value: any) => Prop;
     default?: ((elem: El, data: { name: string; }) => Prop) | Prop;
