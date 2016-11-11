@@ -1,8 +1,8 @@
-import { define, h } from "skatejs";
+import * as skate from "skatejs";
 
-const React = { createElement: h };
+const skatex = { createElement: skate.h };
 
-export default define("my-component", {
+export default skate.define("my-component", {
     render() {
         return <p>Hello!</p>;
     }

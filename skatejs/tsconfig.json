@@ -13,7 +13,8 @@
         "types": [
             "react"
         ],
-        "forceConsistentCasingInFileNames": true
+        "forceConsistentCasingInFileNames": true,
+        "reactNamespace": "skatex"
     },
     "include": [
         "./src/**/*.ts",

@@ -1,6 +1,6 @@
 import * as skate from "skatejs";
 
-const React = { createElement: skate.h };
+const skatex = { createElement: skate.h };
 
 export default skate.define("x-component2", class Component2 extends skate.Component {
     // ここから Reactの型との整合性を無理やりとるための記述

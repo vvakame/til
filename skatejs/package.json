@@ -11,11 +11,11 @@
   "license": "MIT",
   "dependencies": {
     "skatejs": "^4.0.3",
-    "skatejs-web-components": "^2.0.1"
+    "skatejs-web-components": "^3.0.0"
   },
   "devDependencies": {
     "@types/react": "^0.14.44",
-    "typescript": "^2.0.6",
+    "typescript": "^2.1.1",
     "typescript-formatter": "^4.0.0",
     "webpack": "^1.13.3"
   }

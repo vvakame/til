@@ -1,7 +1,7 @@
 import "skatejs-web-components";
 import * as skate from "skatejs";
 
-const React = { createElement: skate.h };
+const skatex = { createElement: skate.h };
 
 import "./es5";
 import ClassLile from "./class";
