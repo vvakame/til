@@ -1,0 +1,20 @@
+{
+  "name": "skatejs-til",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc -p ./ && tsfmt -r",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "vvakame",
+  "license": "MIT",
+  "dependencies": {
+    "skatejs": "^4.0.3",
+    "skatejs-web-components": "^3.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^2.2.0-dev.20161112",
+    "typescript-formatter": "^4.0.0"
+  }
+}
