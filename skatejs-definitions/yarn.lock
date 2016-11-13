@@ -144,8 +144,8 @@ typescript-formatter@^4.0.0:
     glob-expand "^0.2.1"
 
 typescript@^2.2.0-dev.20161112:
-  version "2.2.0-dev.20161112"
-  resolved "https://registry.yarnpkg.com/typescript/-/typescript-2.2.0-dev.20161112.tgz#94e32074737839e967f85640bf1661f031cf51d9"
+  version "2.2.0-dev.20161113"
+  resolved "https://registry.yarnpkg.com/typescript/-/typescript-2.2.0-dev.20161113.tgz#d0b7249e1231cc6217fcd7e519532e59b83f9970"
 
 window-or-global@1.0.1:
   version "1.0.1"

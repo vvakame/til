@@ -332,7 +332,6 @@ const {define, Component} = skate;
 }
 
 {
-    const skatex = { createElement: skate.h }; // for --reactNamespace skatex
     define('my-component', {
         render() {
             return <p>Hello!</p>;
@@ -522,8 +521,6 @@ const {define, Component} = skate;
 }
 
 {
-    const skatex = { createElement: skate.h }; // for --reactNamespace skatex
-
     skate.define('x-form', {
         render() {
             return (
@@ -546,8 +543,6 @@ const {define, Component} = skate;
 }
 
 {
-    const skatex = { createElement: skate.h }; // for --reactNamespace skatex
-
     const onclick = function onclick(e: any) {
         if (e.target.getAttribute('type') === 'submit') {
             // do something submitty

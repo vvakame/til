@@ -19,7 +19,7 @@
             "skatejs"
         ],
         "forceConsistentCasingInFileNames": true,
-        "reactNamespace": "skatex"
+        "jsxFactory": "skate.h"
     },
     "include": [
         "./src/**/*.tsx"
