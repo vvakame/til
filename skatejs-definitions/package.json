@@ -10,8 +10,8 @@
   "author": "vvakame",
   "license": "MIT",
   "dependencies": {
-    "skatejs": "^4.0.3",
-    "skatejs-web-components": "^3.0.0"
+    "skatejs": "^4.0.7",
+    "skatejs-web-components": "^4.0.1"
   },
   "devDependencies": {
     "typescript": "^2.2.0-dev.20161112",
