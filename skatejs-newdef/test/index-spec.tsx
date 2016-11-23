@@ -1,3 +1,5 @@
+// const React = { createElement: skate.h };
+
 {
     customElements.define('x-hello', class extends skate.Component {
         name: string;
@@ -73,7 +75,8 @@
 { // https://github.com/skatejs/skatejs#static-observedattributes
     customElements.define('my-component', class extends skate.Component {
         static get observedAttributes() {
-            return super.observedAttributes.concat('my-attribute');
+            // return super.observedAttributes.concat('my-attribute');
+            return skate.Component.observedAttributes.concat('my-attribute');
         }
     });
 }

@@ -27,7 +27,7 @@ declare global {
 
     interface Element {
         attachShadow(shadowRootInitDict: ShadowRootInit): ShadowRoot;
-        readonly assignedSlot: HTMLSlotElement;
+        readonly assignedSlot: HTMLSlotElement | null;
         slot: string;
         readonly shadowRoot: ShadowRoot | null;
     }
@@ -40,7 +40,7 @@ declare global {
     type ShadowRootMode = "open" | "closed";
 
     interface Text {
-        readonly assignedSlot?: HTMLSlotElement;
+        readonly assignedSlot: HTMLSlotElement | null;
     }
 
     interface HTMLSlotElement extends HTMLElement {
@@ -53,7 +53,7 @@ declare global {
     }
 
     interface EventInit {
-        scoped: boolean; // default false
+        scoped?: boolean; // default false
     }
 
     interface Event {

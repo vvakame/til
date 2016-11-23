@@ -14,7 +14,7 @@
     "skatejs-web-components": "^5.0.0"
   },
   "devDependencies": {
-    "typescript": "^2.2.0-dev.20161122",
+    "typescript": "next",
     "typescript-formatter": "^4.0.0",
     "webpack": "^1.13.3"
   }
