@@ -238,7 +238,7 @@ declare global {
     // https://www.typescriptlang.org/docs/handbook/jsx.html
     namespace JSX {
         interface ElementClass {
-            render(elem: this): JSX.Element; // TODO temp
+            renderCallback?(): JSX.Element; // TODO temp
         }
 
         interface ElementAttributesProperty {
@@ -363,7 +363,7 @@ declare global {
             video: HTMLProps<HTMLVideoElement>;
             wbr: HTMLProps<HTMLElement>;
 
-            slot: HTMLProps<HTMLElement>; // ??
+            slot: HTMLProps<HTMLSlotElement> & { name?: string };
         }
     }
 }

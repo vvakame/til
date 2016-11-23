@@ -6,3 +6,7 @@ src/**/*.js
 src/**/*.js.map
 src/**/*.jsx
 src/**/*.jsx.map
+test/**/*.js
+test/**/*.js.map
+test/**/*.jsx
+test/**/*.jsx.map

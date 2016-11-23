@@ -1,8 +1,7 @@
 {
     "compilerOptions": {
-        "noEmit": true,
         "module": "commonjs",
-        "target": "es6",
+        "target": "es2015",
         "lib": [
             "es2016",
             "dom"
@@ -16,12 +15,15 @@
             "./definitions/"
         ],
         "types": [
-            "skatejs"
+            "skatejs",
+            "whatwg-shadowdom",
+            "whatwg-customelements"
         ],
         "forceConsistentCasingInFileNames": true,
         "jsxFactory": "skate.h"
     },
     "include": [
-        "./src/**/*.tsx"
+        "./src/**/*.tsx",
+        "./test/**/*.tsx"
     ]
 }
