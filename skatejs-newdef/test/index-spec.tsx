@@ -1,5 +1,3 @@
-// const React = { createElement: skate.h };
-
 {
     customElements.define('x-hello', class extends skate.Component {
         name: string;

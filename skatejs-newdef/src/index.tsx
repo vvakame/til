@@ -1,7 +1,6 @@
 import "skatejs-web-components";
 import * as skate from "skatejs";
 
-// const React = { createElement: skate.h };
 
 class CountUpComponent extends skate.Component implements skate.OnRenderCallback {
     static get props(): { [key: string]: skate.PropAttr<any>; } {
