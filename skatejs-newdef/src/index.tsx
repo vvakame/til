@@ -1,6 +1,12 @@
+import "tslib";
 import "skatejs-web-components";
 import * as skate from "skatejs";
 
+(window as any).__extends = function(d: any, b: any) {
+    Object.setPrototypeOf(d, b);
+    var __: any = function() { this.constructor = d; }
+    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+};
 
 class CountUpComponent extends skate.Component implements skate.OnRenderCallback {
     static get props(): { [key: string]: skate.PropAttr<any>; } {

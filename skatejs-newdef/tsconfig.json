@@ -20,7 +20,8 @@
             "whatwg-customelements"
         ],
         "forceConsistentCasingInFileNames": true,
-        "jsxFactory": "skate.h"
+        "jsxFactory": "skate.h",
+        "noEmitHelpers": true
     },
     "include": [
         "./src/**/*.tsx",

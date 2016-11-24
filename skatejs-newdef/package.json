@@ -11,7 +11,8 @@
   "license": "MIT",
   "dependencies": {
     "skatejs": "^4.1.0",
-    "skatejs-web-components": "^5.0.0"
+    "skatejs-web-components": "^5.0.0",
+    "tslib": "^1.1.0"
   },
   "devDependencies": {
     "typescript": "next",

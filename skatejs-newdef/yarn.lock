@@ -1315,6 +1315,10 @@ tough-cookie@~2.3.0:
   dependencies:
     punycode "^1.4.1"
 
+tslib@^1.1.0:
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/tslib/-/tslib-1.1.0.tgz#df06b30e178cc8e93d631899153a88f0d369b052"
+
 tty-browserify@0.0.0:
   version "0.0.0"
   resolved "https://registry.yarnpkg.com/tty-browserify/-/tty-browserify-0.0.0.tgz#a157ba402da24e9bf957f9aa69d524eed42901a6"
