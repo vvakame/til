@@ -21,7 +21,8 @@
         ],
         "forceConsistentCasingInFileNames": true,
         "jsxFactory": "skate.h",
-        "noEmitHelpers": true
+        "noEmitHelpers": true,
+        "importHelpers": false
     },
     "include": [
         "./src/**/*.tsx",
