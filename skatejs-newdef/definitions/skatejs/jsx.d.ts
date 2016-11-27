@@ -1,7 +1,6 @@
 export { }
 
-type OptionalizedType<T> = {[P in keyof T]?: T[P]};
-type HTMLProps<T extends Element> = OptionalizedType<T> & HyperscriptEventHandler<T>;
+type HTMLProps<T extends Element> = Partial<T> & HyperscriptEventHandler<T>;
 
 interface HyperscriptEventHandler<T> {
     onAbort?: typeof HTMLElement.prototype.onabort;
