@@ -145,10 +145,10 @@
 }
 { // https://github.com/skatejs/skatejs#get
     customElements.define('my-component', class A extends skate.Component {
-        static get props(): { [name: string]: skate.PropAttr<any>; } {
+        static get props(): { [name: string]: skate.PropAttr<any, any>; } {
             return {
                 myProp: {
-                    get(elem: A, data) {
+                    get(elem: A, data: any) {
                         return `prefix_${data.internalValue}`;
                     }
                 }
@@ -168,7 +168,7 @@
     });
 
     customElements.define('my-component', class extends skate.Component {
-        static get props(): { [name: string]: skate.PropAttr<string>; } {
+        static get props(): { [name: string]: skate.PropAttr<any, string>; } {
             return {
                 myProp: {
                     initial(elem, data) {
@@ -181,10 +181,10 @@
 }
 { // https://github.com/skatejs/skatejs#serialize
     customElements.define('my-component', class extends skate.Component {
-        static get props(): { [name: string]: skate.PropAttr<string[]>; } {
+        static get props(): { [name: string]: skate.PropAttr<any, string[]>; } {
             return {
                 myProp: {
-                    serialize(value) {
+                    serialize(value: string[]) {
                         return value.join(',');
                     }
                 }
@@ -193,10 +193,10 @@
     });
 
     customElements.define('my-component', class extends skate.Component {
-        static get props(): { [name: string]: skate.PropAttr<any>; } {
+        static get props(): { [name: string]: skate.PropAttr<any, any>; } {
             return {
                 myProp: {
-                    set(elem, data) {
+                    set(elem: any, data: any) {
                         // do something
                     }
                 }

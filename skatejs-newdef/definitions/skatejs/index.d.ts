@@ -2,6 +2,10 @@ export { } from "./jsx";
 
 export as namespace skate;
 
+export interface HasProps<El extends Component> {
+    props: { [key: string]: skate.PropAttr<El, any>; };
+}
+
 export interface OnUpdatedCallback {
     updatedCallback(previousProps: any): boolean | undefined | void;
 }
@@ -15,7 +19,7 @@ export interface OnRenderedCallback {
 }
 
 export class Component extends HTMLElement {
-    static readonly props: { [name: string]: PropAttr<any> };
+    // static readonly props: { [name: string]: PropAttr<Component, any> };
     static readonly observedAttributes: string[];
 
     // Custom Elements v1
@@ -27,17 +31,15 @@ export class Component extends HTMLElement {
     updated(prev: any): boolean;
 }
 
-export interface PropAttr<T> {
+export interface PropAttr<El, T> {
     attribute?: boolean | string;
-    coerce?: (value: any) => T | null | undefined | void;
-    default?: ((elem: any, data: { name: string; }) => T) | T;
-    deserialize?: (value: any) => T;
-    get?: (elem: any, data: { name: string; internalValue: T; }) => T;
-    initial?: T | ((elem: any, data: { name: string; }) => T);
-    serialize?: (value: T) => any;
-    set?: (elem: any, data: { name: string; newValue: T; oldValue: T; }) => void;
-    created?: (elem: any) => void;
-    updated?: (elem: any, prevProps: any) => boolean;
+    coerce?: (value: T | null) => T | null | undefined | void;
+    default?: ((elem: El, data: { name: string; }) => T) | T;
+    deserialize?: (value: string | null) => T | null;
+    get?: <R>(elem: El, data: { name: string; internalValue: T; }) => R;
+    initial?: T | ((elem: El, data: { name: string; }) => T);
+    serialize?: (value: T | null) => string | null;
+    set?: (elem: El, data: { name: string; newValue: T; oldValue: T; }) => void;
 }
 
 export var define: {
@@ -82,12 +84,12 @@ export function ready(elem: Component, done: (c: Component) => void): void;
 // export var symbols: any;
 
 export var prop: {
-    create<T>(attr: PropAttr<T>): PropAttr<T> & ((attr: PropAttr<T>) => PropAttr<T>);
+    create<T>(attr: PropAttr<any, T>): PropAttr<any, T> & ((attr: PropAttr<any, T>) => PropAttr<any, T>);
 
-    number(attr?: PropAttr<number>): PropAttr<number>;
-    boolean(attr?: PropAttr<boolean>): PropAttr<boolean>;
-    string(attr?: PropAttr<string>): PropAttr<string>;
-    array(attr?: PropAttr<any[]>): PropAttr<any[]>;
+    number(attr?: PropAttr<any, number>): PropAttr<any, number>;
+    boolean(attr?: PropAttr<any, boolean>): PropAttr<any, boolean>;
+    string(attr?: PropAttr<any, string>): PropAttr<any, string>;
+    array(attr?: PropAttr<any, any[]>): PropAttr<any, any[]>;
 };
 
 export function props(elem: Component, props?: any): void;

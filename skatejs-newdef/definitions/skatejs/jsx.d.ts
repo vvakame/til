@@ -1,238 +1,77 @@
 export { }
 
-interface HTMLProps<T> extends HTMLAttributes<T>, ClassAttributes<T> {
+type OptionalizedType<T> = {[P in keyof T]?: T[P]};
+type HTMLProps<T extends Element> = OptionalizedType<T> & HyperscriptEventHandler<T>;
+
+interface HyperscriptEventHandler<T> {
+    onAbort?: typeof HTMLElement.prototype.onabort;
+    onActivate?: typeof HTMLElement.prototype.onactivate;
+    onBeforeactivate?: typeof HTMLElement.prototype.onbeforeactivate;
+    onBeforecopy?: typeof HTMLElement.prototype.onbeforecopy;
+    onBeforecut?: typeof HTMLElement.prototype.onbeforecut;
+    onBeforedeactivate?: typeof HTMLElement.prototype.onbeforedeactivate;
+    onBeforepaste?: typeof HTMLElement.prototype.onbeforepaste;
+    onBlur?: typeof HTMLElement.prototype.onblur;
+    onCanplay?: typeof HTMLElement.prototype.oncanplay;
+    onCanplaythrough?: typeof HTMLElement.prototype.oncanplaythrough;
+    onChange?: typeof HTMLElement.prototype.onchange;
+    onClick?: typeof HTMLElement.prototype.onclick;
+    onContextmenu?: typeof HTMLElement.prototype.oncontextmenu;
+    onCopy?: typeof HTMLElement.prototype.oncopy;
+    onCuechange?: typeof HTMLElement.prototype.oncuechange;
+    onCut?: typeof HTMLElement.prototype.oncut;
+    onDblclick?: typeof HTMLElement.prototype.ondblclick;
+    onDeactivate?: typeof HTMLElement.prototype.ondeactivate;
+    onDrag?: typeof HTMLElement.prototype.ondrag;
+    onDragend?: typeof HTMLElement.prototype.ondragend;
+    onDragenter?: typeof HTMLElement.prototype.ondragenter;
+    onDragleave?: typeof HTMLElement.prototype.ondragleave;
+    onDragover?: typeof HTMLElement.prototype.ondragover;
+    onDragstart?: typeof HTMLElement.prototype.ondragstart;
+    onDrop?: typeof HTMLElement.prototype.ondrop;
+    onDurationchange?: typeof HTMLElement.prototype.ondurationchange;
+    onEmptied?: typeof HTMLElement.prototype.onemptied;
+    onEnded?: typeof HTMLElement.prototype.onended;
+    onError?: typeof HTMLElement.prototype.onerror;
+    onFocus?: typeof HTMLElement.prototype.onfocus;
+    onInput?: typeof HTMLElement.prototype.oninput;
+    onInvalid?: typeof HTMLElement.prototype.oninvalid;
+    onKeydown?: typeof HTMLElement.prototype.onkeydown;
+    onKeypress?: typeof HTMLElement.prototype.onkeypress;
+    onKeyup?: typeof HTMLElement.prototype.onkeyup;
+    onLoad?: typeof HTMLElement.prototype.onload;
+    onLoadeddata?: typeof HTMLElement.prototype.onloadeddata;
+    onLoadedmetadata?: typeof HTMLElement.prototype.onloadedmetadata;
+    onLoadstart?: typeof HTMLElement.prototype.onloadstart;
+    onMousedown?: typeof HTMLElement.prototype.onmousedown;
+    onMouseenter?: typeof HTMLElement.prototype.onmouseenter;
+    onMouseleave?: typeof HTMLElement.prototype.onmouseleave;
+    onMousemove?: typeof HTMLElement.prototype.onmousemove;
+    onMouseout?: typeof HTMLElement.prototype.onmouseout;
+    onMouseover?: typeof HTMLElement.prototype.onmouseover;
+    onMouseup?: typeof HTMLElement.prototype.onmouseup;
+    onMousewheel?: typeof HTMLElement.prototype.onmousewheel;
+    onMscontentzoom?: typeof HTMLElement.prototype.onmscontentzoom;
+    onMsmanipulationstatechanged?: typeof HTMLElement.prototype.onmsmanipulationstatechanged;
+    onPaste?: typeof HTMLElement.prototype.onpaste;
+    onPause?: typeof HTMLElement.prototype.onpause;
+    onPlay?: typeof HTMLElement.prototype.onplay;
+    onPlaying?: typeof HTMLElement.prototype.onplaying;
+    onProgress?: typeof HTMLElement.prototype.onprogress;
+    onRatechange?: typeof HTMLElement.prototype.onratechange;
+    onReset?: typeof HTMLElement.prototype.onreset;
+    onScroll?: typeof HTMLElement.prototype.onscroll;
+    onSeeked?: typeof HTMLElement.prototype.onseeked;
+    onSeeking?: typeof HTMLElement.prototype.onseeking;
+    onSelect?: typeof HTMLElement.prototype.onselect;
+    onSelectstart?: typeof HTMLElement.prototype.onselectstart;
+    onStalled?: typeof HTMLElement.prototype.onstalled;
+    onSubmit?: typeof HTMLElement.prototype.onsubmit;
+    onSuspend?: typeof HTMLElement.prototype.onsuspend;
+    onTimeupdate?: typeof HTMLElement.prototype.ontimeupdate;
+    onVolumechange?: typeof HTMLElement.prototype.onvolumechange;
+    onWaiting?: typeof HTMLElement.prototype.onwaiting;
 }
-
-interface Attributes {
-}
-
-interface ClassAttributes<T> extends Attributes {
-}
-
-interface HTMLAttributes<T> extends DOMAttributes<T> {
-}
-
-interface DOMAttributes<T> {
-    // Clipboard Events
-    onCopy?: ClipboardEventHandler<T>;
-    onCut?: ClipboardEventHandler<T>;
-    onPaste?: ClipboardEventHandler<T>;
-
-    // Composition Events
-    onCompositionEnd?: CompositionEventHandler<T>;
-    onCompositionStart?: CompositionEventHandler<T>;
-    onCompositionUpdate?: CompositionEventHandler<T>;
-
-    // Focus Events
-    onFocus?: FocusEventHandler<T>;
-    onBlur?: FocusEventHandler<T>;
-
-    // Form Events
-    onChange?: FormEventHandler<T>;
-    onInput?: FormEventHandler<T>;
-    onSubmit?: FormEventHandler<T>;
-
-    // Image Events
-    onLoad?: ReactEventHandler<T>;
-    onError?: ReactEventHandler<T>; // also a Media Event
-
-    // Keyboard Events
-    onKeyDown?: KeyboardEventHandler<T>;
-    onKeyPress?: KeyboardEventHandler<T>;
-    onKeyUp?: KeyboardEventHandler<T>;
-
-    // Media Events
-    onAbort?: ReactEventHandler<T>;
-    onCanPlay?: ReactEventHandler<T>;
-    onCanPlayThrough?: ReactEventHandler<T>;
-    onDurationChange?: ReactEventHandler<T>;
-    onEmptied?: ReactEventHandler<T>;
-    onEncrypted?: ReactEventHandler<T>;
-    onEnded?: ReactEventHandler<T>;
-    onLoadedData?: ReactEventHandler<T>;
-    onLoadedMetadata?: ReactEventHandler<T>;
-    onLoadStart?: ReactEventHandler<T>;
-    onPause?: ReactEventHandler<T>;
-    onPlay?: ReactEventHandler<T>;
-    onPlaying?: ReactEventHandler<T>;
-    onProgress?: ReactEventHandler<T>;
-    onRateChange?: ReactEventHandler<T>;
-    onSeeked?: ReactEventHandler<T>;
-    onSeeking?: ReactEventHandler<T>;
-    onStalled?: ReactEventHandler<T>;
-    onSuspend?: ReactEventHandler<T>;
-    onTimeUpdate?: ReactEventHandler<T>;
-    onVolumeChange?: ReactEventHandler<T>;
-    onWaiting?: ReactEventHandler<T>;
-
-    // MouseEvents
-    onClick?: MouseEventHandler<T>;
-    onContextMenu?: MouseEventHandler<T>;
-    onDoubleClick?: MouseEventHandler<T>;
-    onDrag?: DragEventHandler<T>;
-    onDragEnd?: DragEventHandler<T>;
-    onDragEnter?: DragEventHandler<T>;
-    onDragExit?: DragEventHandler<T>;
-    onDragLeave?: DragEventHandler<T>;
-    onDragOver?: DragEventHandler<T>;
-    onDragStart?: DragEventHandler<T>;
-    onDrop?: DragEventHandler<T>;
-    onMouseDown?: MouseEventHandler<T>;
-    onMouseEnter?: MouseEventHandler<T>;
-    onMouseLeave?: MouseEventHandler<T>;
-    onMouseMove?: MouseEventHandler<T>;
-    onMouseOut?: MouseEventHandler<T>;
-    onMouseOver?: MouseEventHandler<T>;
-    onMouseUp?: MouseEventHandler<T>;
-
-    // Selection Events
-    onSelect?: ReactEventHandler<T>;
-
-    // Touch Events
-    onTouchCancel?: TouchEventHandler<T>;
-    onTouchEnd?: TouchEventHandler<T>;
-    onTouchMove?: TouchEventHandler<T>;
-    onTouchStart?: TouchEventHandler<T>;
-
-    // UI Events
-    onScroll?: UIEventHandler<T>;
-
-    // Wheel Events
-    onWheel?: WheelEventHandler<T>;
-
-    // Animation Events
-    onAnimationStart?: AnimationEventHandler;
-    onAnimationEnd?: AnimationEventHandler;
-    onAnimationIteration?: AnimationEventHandler;
-
-    // Transition Events
-    onTransitionEnd?: TransitionEventHandler;
-}
-
-interface SyntheticEvent<T> {
-    bubbles: boolean;
-    currentTarget: EventTarget & T;
-    cancelable: boolean;
-    defaultPrevented: boolean;
-    eventPhase: number;
-    isTrusted: boolean;
-    nativeEvent: Event;
-    preventDefault(): void;
-    isDefaultPrevented(): boolean;
-    stopPropagation(): void;
-    isPropagationStopped(): boolean;
-    persist(): void;
-    target: EventTarget;
-    timeStamp: Date;
-    type: string;
-}
-
-interface ClipboardEvent<T> extends SyntheticEvent<T> {
-    clipboardData: DataTransfer;
-}
-
-interface CompositionEvent<T> extends SyntheticEvent<T> {
-    data: string;
-}
-
-interface DragEvent<T> extends MouseEvent<T> {
-    dataTransfer: DataTransfer;
-}
-
-interface FocusEvent<T> extends SyntheticEvent<T> {
-    relatedTarget: EventTarget;
-}
-
-interface FormEvent<T> extends SyntheticEvent<T> {
-}
-
-interface KeyboardEvent<T> extends SyntheticEvent<T> {
-    altKey: boolean;
-    charCode: number;
-    ctrlKey: boolean;
-    getModifierState(key: string): boolean;
-    key: string;
-    keyCode: number;
-    locale: string;
-    location: number;
-    metaKey: boolean;
-    repeat: boolean;
-    shiftKey: boolean;
-    which: number;
-}
-
-interface MouseEvent<T> extends SyntheticEvent<T> {
-    altKey: boolean;
-    button: number;
-    buttons: number;
-    clientX: number;
-    clientY: number;
-    ctrlKey: boolean;
-    getModifierState(key: string): boolean;
-    metaKey: boolean;
-    pageX: number;
-    pageY: number;
-    relatedTarget: EventTarget;
-    screenX: number;
-    screenY: number;
-    shiftKey: boolean;
-}
-
-interface TouchEvent<T> extends SyntheticEvent<T> {
-    altKey: boolean;
-    changedTouches: TouchList;
-    ctrlKey: boolean;
-    getModifierState(key: string): boolean;
-    metaKey: boolean;
-    shiftKey: boolean;
-    targetTouches: TouchList;
-    touches: TouchList;
-}
-
-interface UIEvent<T> extends SyntheticEvent<T> {
-    detail: number;
-    // view: AbstractView;
-}
-
-interface WheelEvent<T> extends MouseEvent<T> {
-    deltaMode: number;
-    deltaX: number;
-    deltaY: number;
-    deltaZ: number;
-}
-
-interface AnimationEvent extends SyntheticEvent<{}> {
-    animationName: string;
-    pseudoElement: string;
-    elapsedTime: number;
-}
-
-interface TransitionEvent extends SyntheticEvent<{}> {
-    propertyName: string;
-    pseudoElement: string;
-    elapsedTime: number;
-}
-
-interface EventHandler<E extends SyntheticEvent<any>> {
-    (event: E): void;
-}
-
-// TODO naming
-type ReactEventHandler<T> = EventHandler<SyntheticEvent<T>>;
-
-type ClipboardEventHandler<T> = EventHandler<ClipboardEvent<T>>;
-type CompositionEventHandler<T> = EventHandler<CompositionEvent<T>>;
-type DragEventHandler<T> = EventHandler<DragEvent<T>>;
-type FocusEventHandler<T> = EventHandler<FocusEvent<T>>;
-type FormEventHandler<T> = EventHandler<FormEvent<T>>;
-type KeyboardEventHandler<T> = EventHandler<KeyboardEvent<T>>;
-type MouseEventHandler<T> = EventHandler<MouseEvent<T>>;
-type TouchEventHandler<T> = EventHandler<TouchEvent<T>>;
-type UIEventHandler<T> = EventHandler<UIEvent<T>>;
-type WheelEventHandler<T> = EventHandler<WheelEvent<T>>;
-type AnimationEventHandler = EventHandler<AnimationEvent>;
-type TransitionEventHandler = EventHandler<TransitionEvent>;
-
 
 declare global {
     // https://www.typescriptlang.org/docs/handbook/jsx.html

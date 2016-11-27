@@ -8,8 +8,10 @@ import * as skate from "skatejs";
     d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 };
 
+import "./prop-examples";
+
 class CountUpComponent extends skate.Component implements skate.OnRenderCallback {
-    static get props(): { [key: string]: skate.PropAttr<any>; } {
+    static get props(): { [key: string]: skate.PropAttr<CountUpComponent, any>; } {
         return {
             count: skate.prop.number({
                 attribute: true,
