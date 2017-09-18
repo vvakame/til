@@ -1,0 +1,9 @@
+runtime: go
+api_version: go1.8
+
+inbound_services:
+- warmup
+
+handlers:
+- url: /.*
+  script: _go_app

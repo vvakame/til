@@ -1,0 +1,12 @@
+.idea/
+
+bin/
+pkg/
+
+vendor/src
+
+vv-firebase-playground-firebase-adminsdk-*.json
+src/firebase-service-account.json
+
+src/public/
+src/app/model_*.go

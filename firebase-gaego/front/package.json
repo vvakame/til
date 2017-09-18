@@ -1,0 +1,14 @@
+{
+  "name": "firebase-gaego",
+  "version": "0.0.0",
+  "license": "MIT",
+  "scripts": {
+    "swagger-ui": "mkdir dist && cp -r node_modules/swagger-ui/dist/ ./dist/swagger-ui/ && cp ./swagger-ui-index.html ./dist/swagger-ui/index.html"
+  },
+  "private": true,
+  "dependencies": {
+    "swagger-ui": "^2.2.10"
+  },
+  "devDependencies": {
+  }
+}
