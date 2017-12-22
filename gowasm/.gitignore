@@ -1,0 +1,6 @@
+.idea/
+
+go_js_wasm_exec
+wasm_exec.*
+
+*.wasm
