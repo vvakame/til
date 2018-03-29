@@ -7,6 +7,8 @@
 [What's new in TypeScriptも更新](https://github.com/Microsoft/TypeScript/wiki/What's-new-in-TypeScript#typescript-28)されているようです。
 [破壊的変更](https://github.com/Microsoft/TypeScript/wiki/Breaking-Changes#typescript-28)もあるよ！
 
+今回から[この辺](https://github.com/vvakame/til/tree/master/typescript/v2.8.1)に僕が試した時のコードを投げておくことにしました。
+
 ## 変更点まとめ
 
 * Conditional types（条件付きの型） [Conditional types](https://github.com/Microsoft/TypeScript/pull/21316)
