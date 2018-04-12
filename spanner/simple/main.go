@@ -15,6 +15,20 @@ import (
 	adminpb "google.golang.org/genproto/googleapis/spanner/admin/database/v1"
 )
 
+type RefreshToken struct {
+	RefreshTokenID string
+	Token          string
+	ClientId       string
+	Scopes         []string
+	Nonce          string
+}
+
+type AccessToken struct {
+	RefreshTokenID string
+	AccessTokenID  string
+	Token          string
+}
+
 func main() {
 	ctx := context.Background()
 
@@ -138,30 +152,38 @@ func createSchema(ctx context.Context, adminClient *database.DatabaseAdminClient
 }
 
 func insertRefreshToken(ctx context.Context, client *spanner.Client, refreshToken string) error {
-	refreshTokenColumns := []string{"RefreshTokenId", "Token", "ClientId", "Scopes", "Nonce"}
-	m := []*spanner.Mutation{
-		spanner.Insert("RefreshTokens", refreshTokenColumns, []interface{}{
-			refreshToken,
-			"Foobar",
-			"Client1",
-			[]string{"foobarscope"},
-			"nonce1",
-		}),
+	m, err := spanner.InsertStruct("RefreshTokens", &RefreshToken{
+		RefreshTokenID: refreshToken,
+		Token:          "Foobar",
+		ClientId:       "Client1",
+		Scopes: []string{
+			"foobarscope",
+		},
+		Nonce: "nonce1",
+	})
+	if err != nil {
+		return err
 	}
-	_, err := client.Apply(ctx, m)
+	ms := []*spanner.Mutation{
+		m,
+	}
+	_, err = client.Apply(ctx, ms)
 	return err
 }
 
 func insertAccessToken(ctx context.Context, client *spanner.Client, refreshToken string, accessToken string) error {
-	accessTokenColumns := []string{"RefreshTokenId", "AccessTokenId", "Token"}
-	m := []*spanner.Mutation{
-		spanner.Insert("AccessTokens", accessTokenColumns, []interface{}{
-			refreshToken,
-			accessToken,
-			accessToken,
-		}),
+	m, err := spanner.InsertStruct("AccessTokens", &AccessToken{
+		RefreshTokenID: refreshToken,
+		AccessTokenID:  accessToken,
+		Token:          accessToken,
+	})
+	if err != nil {
+		return err
 	}
-	_, err := client.Apply(ctx, m)
+	ms := []*spanner.Mutation{
+		m,
+	}
+	_, err = client.Apply(ctx, ms)
 	return err
 }
 
@@ -190,8 +212,9 @@ func checkAccessToken(ctx context.Context, client *spanner.Client, accessToken s
 		if err != nil {
 			return false, err
 		}
-		var fetchedAccessToken string
-		if err := row.Columns(&fetchedAccessToken); err != nil {
+
+		fetchedAccessToken := &AccessToken{}
+		if err := row.ToStruct(fetchedAccessToken); err != nil {
 			return false, err
 		}
 		log.Println("fetched access token", fetchedAccessToken)
