@@ -29,17 +29,42 @@ app.get(
     graphiqlExpress({
         endpointURL: "/graphql",
         query: gql`
-      query UpcomingEvents {
-        events {
-          id
-          name
-          courses {
-            id
-            name
+        query UpcomingEvents {
+            events {
+              name
+              circles {
+                name
+                products {
+                  name
+                  images {
+                    url
+                  }
+                  contents {
+                    fileName
+                  }
+                }
+              }
+            }
+            searchCircle(eventID: "tbf04", first: 3, after: "") {
+              pageInfo {
+                startCursor
+                endCursor
+                hasNextPage
+                hasPreviousPage
+              }
+              edges {
+                cursor
+                node {
+                  id
+                  name
+                  products {
+                    name
+                  }
+                }
+              }
+            }
           }
-        }
-      }
-      `
+        `
     })
 );
 

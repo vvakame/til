@@ -6,7 +6,8 @@
   "scripts": {
     "build": "tsc",
     "start": "node ./src/index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "sw2dts": "curl https://techbookfest.org/api/swagger.json | sw2dts -swo src/model.ts"
   },
   "author": "",
   "license": "ISC",
@@ -22,6 +23,8 @@
   "devDependencies": {
     "@types/graphql": "^0.13.1",
     "@types/node-fetch": "^1.6.9",
+    "sw2dts": "^2.5.0",
+    "ts-graphql-plugin": "^1.1.2",
     "typescript": "^2.8.3",
     "typescript-formatter": "^7.2.0"
   }
