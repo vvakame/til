@@ -1,5 +1,6 @@
 import express from "express";
 import bodyParser from "body-parser";
+import cookieParser from "cookie-parser";
 
 import { graphqlExpress, graphiqlExpress } from "apollo-server-express";
 import { ApolloEngine } from "apollo-engine";
@@ -7,18 +8,24 @@ import { ApolloEngine } from "apollo-engine";
 import { schema } from "./schema";
 
 const app = express();
+app.use(cookieParser());
 
 app.post(
     "/graphql",
     bodyParser.json(),
-    graphqlExpress({
-        schema,
-        tracing: true,
-        cacheControl: true,
-        context: {
-            secrets: {
+    graphqlExpress(req => {
+        return {
+            schema,
+            tracing: true,
+            cacheControl: true,
+            context: {
+                secrets: {
+                },
             },
-        },
+            rootValue: {
+                authCookie: req!.cookies["user"],
+            },
+        };
     }),
 );
 
@@ -74,13 +81,19 @@ const PORT = process.env.PORT || 3000;
 
 const engine = new ApolloEngine({
     apiKey: process.env.ENGINE_API_KEY,
+    logging: {
+        level: "DEBUG",
+    },
+    sessionAuth: {
+        cookie: "user",
+    },
     stores: [
         {
             name: "publicResponseCache",
             inMemory: {
-                cacheSize: 10485760
-            }
-        }
+                cacheSize: 10485760,
+            },
+        },
     ],
     queryCache: {
         publicFullQueryStore: "publicResponseCache"
