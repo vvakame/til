@@ -1,6 +1,6 @@
 import { makeExecutableSchema } from "graphql-tools";
 
-import fetch from "node-fetch";
+import { fetch } from "./fetch";
 
 import { Event, EventListResp, CircleExhibitInfo, ProductInfoListResp, ProductInfo, ProductContentListResp, CircleListResp, ProductContent } from "./model";
 

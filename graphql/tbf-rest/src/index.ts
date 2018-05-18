@@ -82,7 +82,7 @@ const PORT = process.env.PORT || 3000;
 const engine = new ApolloEngine({
     apiKey: process.env.ENGINE_API_KEY,
     logging: {
-        level: "DEBUG",
+        level: "WARN",
     },
     sessionAuth: {
         cookie: "user",
