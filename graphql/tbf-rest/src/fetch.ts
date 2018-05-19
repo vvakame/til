@@ -11,17 +11,23 @@ set = set.bind(redisCli);
 let get = promisify(redisCli.get);
 get = get.bind(redisCli);
 
+const logging = false;
+
 export async function fetch(url: string | nodeFetch.Request, init?: nodeFetch.RequestInit): Promise<nodeFetch.Response> {
     const cacheKey = "graphql-" + url as string;
 
     const cached = await get(cacheKey); // TODO
     if (cached) {
-        console.log(`from cache: ${cacheKey}`);
+        if (logging) {
+            console.log(`from cache: ${cacheKey}`);
+        }
         const obj = JSON.parse(cached);
         return new nodeFetch.Response(obj.body, obj.response);
     }
 
-    console.log(`from network: ${cacheKey}`);
+    if (logging) {
+        console.log(`from network: ${cacheKey}`);
+    }
 
     const resp = await nodeFetch.default(url, init);
     const bkResp = resp.clone();

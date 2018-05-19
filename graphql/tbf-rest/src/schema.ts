@@ -1,8 +1,22 @@
 import { makeExecutableSchema } from "graphql-tools";
 
-import { fetch } from "./fetch";
+import {
+    Event,
+    CircleExhibitInfo,
+    ProductInfo,
+} from "./model";
 
-import { Event, EventListResp, CircleExhibitInfo, ProductInfoListResp, ProductInfo, ProductContentListResp, CircleListResp, ProductContent } from "./model";
+import {
+    Connection,
+    createEventLoader,
+    createEventQueryLoader,
+    createCircleLoader,
+    createCircleQueryLoader,
+    createProductInfoLoader,
+    createProductInfoQueryLoader,
+    createProductContentLoader,
+    createProductContentQueryLoader,
+} from "./dataLoader";
 
 const gql = String.raw;
 
@@ -84,6 +98,7 @@ const typeDefs = gql`
   type ProductInfo @cacheControl(maxAge: 60) {
     id: ID
     name: String
+    description: String
     firstAppearanceEventName: String
     firstAtTechBookFest: Boolean
     price: Int
@@ -109,67 +124,32 @@ const typeDefs = gql`
   }
 `;
 
-const apiBaseUrl = "https://techbookfest.org";
+const eventLoader = createEventLoader();
+const eventQueryLoader = createEventQueryLoader(eventLoader);
 
-interface Connection<T1 extends Node, T2 extends Edge<T1> = Edge<T1>> {
-    pageInfo: PageInfo;
-    edges: T2[];
-}
+const circleLoader = createCircleLoader();
+const circleQueryLoader = createCircleQueryLoader(circleLoader);
 
-interface PageInfo {
-    startCursor?: string;
-    endCursor?: string;
-    hasNextPage: boolean;
-    hasPreviousPage: boolean;
-}
+const productLoader = createProductInfoLoader();
+const productQueryLoader = createProductInfoQueryLoader(productLoader);
 
-interface Edge<T extends Node> {
-    cursor?: string;
-    node: T;
-}
-
-interface Node {
-    id?: number | string; // NOTE 本当は ? ナシだけどコンパイル通すのめんどくさいので
-}
+const productContentLoader = createProductContentLoader();
+const productContentQueryLoader = createProductContentQueryLoader(productContentLoader);
 
 const resolvers = {
     Query: {
-        events: async (_root: any, _args: any, _context: any) => {
-            let list: Event[] = [];
-            let cursor: string | undefined;
-            while (true) {
-                const resp = await fetch(`${apiBaseUrl}/api/event&cursor=${cursor || ""}`);
-                const json: EventListResp = await resp.json();
-                list = [...list, ...(json.list || [])];
-                if (json.cursor) {
-                    cursor = json.cursor;
-                } else {
-                    break;
-                }
-            }
-            return list;
+        events: (_root: any, _args: any, _context: any) => {
+            return eventQueryLoader.load({ all: true });
         },
-        event: async (_root: any, args: any) => {
-            const resp = await fetch(`${apiBaseUrl}/api/event/${args.id}`);
-            const json: Event = await resp.json();
-            return json;
+        event: (_root: any, args: any) => {
+            return eventLoader.load(args.id);
         },
-        searchCircle: async (_root: any, args: any): Promise<Connection<CircleExhibitInfo> & { nodes: CircleExhibitInfo[]; }> => {
-            const resp = await fetch(`${apiBaseUrl}/api/circle?eventID=${args.eventID}&cursor=${args.after || ""}&limit=${args.first || 100}`);
-            const json: CircleListResp = await resp.json();
-            const result: Connection<CircleExhibitInfo> & { nodes: CircleExhibitInfo[]; } = {
-                pageInfo: {
-                    endCursor: json.cursor,
-                    hasNextPage: !!json.cursor,
-                    hasPreviousPage: !!args.after,
-                },
-                nodes: (json.list || []),
-                edges: (json.list || []).map(node => ({ node })),
-            };
-            if (result.edges.length !== 0) {
-                result.edges[result.edges.length - 1].cursor = json.cursor;
-            }
-            return result;
+        searchCircle: (_root: any, args: any): Promise<Connection<CircleExhibitInfo> & { nodes: CircleExhibitInfo[]; }> => {
+            return circleQueryLoader.load({
+                eventID: args.eventID,
+                cursor: args.after,
+                limit: args.first,
+            })
         },
     },
     // Mutation: {
@@ -183,53 +163,29 @@ const resolvers = {
             return event.eventExhibitCourses;
         },
         circles: async (event: Event) => {
-            let list: CircleExhibitInfo[] = [];
-            let cursor: string | undefined;
-            while (true) {
-                const resp = await fetch(`${apiBaseUrl}/api/circle?eventID=${event.id}&cursor=${cursor || ""}`);
-                const json: CircleListResp = await resp.json();
-                list = [...list, ...(json.list || [])];
-                if (json.cursor) {
-                    cursor = json.cursor;
-                } else {
-                    break;
-                }
-            }
-            return list;
+            const resp = await circleQueryLoader.load({
+                all: true,
+                eventID: event.id,
+            });
+            return resp.nodes;
         },
     },
     CircleExhibitInfo: {
         products: async (circle: CircleExhibitInfo) => {
-            let list: ProductInfo[] = [];
-            let cursor: string | undefined;
-            while (true) {
-                const resp = await fetch(`${apiBaseUrl}/api/product?circleExhibitInfoID=${circle.id}&cursor=${cursor || ""}`);
-                const json: ProductInfoListResp = await resp.json();
-                list = [...list, ...(json.list || [])];
-                if (json.cursor) {
-                    cursor = json.cursor;
-                } else {
-                    break;
-                }
-            }
-            return list;
+            const resp = await productQueryLoader.load({
+                all: true,
+                circleExhibitInfoID: circle.id!,
+            });
+            return resp.nodes;
         }
     },
     ProductInfo: {
         contents: async (productInfo: ProductInfo) => {
-            let list: ProductContent[] = [];
-            let cursor: string | undefined;
-            while (true) {
-                const resp = await fetch(`${apiBaseUrl}/api/productcontent?productInfoID=${productInfo.id}&cursor=${cursor || ""}`);
-                const json: ProductContentListResp = await resp.json();
-                list = [...list, ...(json.list || [])];
-                if (json.cursor) {
-                    cursor = json.cursor;
-                } else {
-                    break;
-                }
-            }
-            return list;
+            const resp = await productContentQueryLoader.load({
+                all: true,
+                productInfoID: productInfo.id,
+            });
+            return resp.nodes;
         },
     },
 };
