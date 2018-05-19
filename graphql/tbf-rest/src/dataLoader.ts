@@ -31,11 +31,24 @@ function createCacheMap<K, V>(): DataLoader.CacheMap<K, V> {
     return new Map();
 }
 
+const emitLog = false;
+let cnt = 0;
+
+function log(message?: any, ...optionalParams: any[]) {
+    cnt++;
+
+    if (emitLog) {
+        console.log(cnt, message, ...optionalParams);
+    }
+}
+
 export function createEventLoader() {
     type Key = string;
 
     return new DataLoader<string, Event>(
         async keys => {
+            log("event", keys.length);
+
             // TODO RedisとのBatchGet, BatchSet
             // TODO REST APIにBatchGet用のエンドポイントを生やす
             return Promise.all(keys.map(async id => {
@@ -61,6 +74,8 @@ export function createEventQueryLoader(baseLoader: ReturnType<typeof createEvent
 
     return new DataLoader<Key, Event[]>(
         async keys => {
+            log("events", keys.length);
+
             // TODO RedisとのBatchGet, BatchSet
             // TODO REST APIにBatchGet用のエンドポイントを生やす
             return Promise.all(keys.map(async key => {
@@ -115,6 +130,8 @@ export function createCircleLoader() {
 
     return new DataLoader<string, Entity>(
         async ids => {
+            log("circle", ids.length);
+
             // TODO RedisとのBatchGet, BatchSet
             // TODO REST APIにBatchGet用のエンドポイントを生やす
             return Promise.all(ids.map(async id => {
@@ -145,6 +162,8 @@ export function createCircleQueryLoader(baseLoader: ReturnType<typeof createCirc
 
     return new DataLoader<Key, PagedResp>(
         async keys => {
+            log("circles", keys.length);
+
             // TODO RedisとのBatchGet, BatchSet
             // TODO REST APIにBatchGet用のエンドポイントを生やす
             return Promise.all(keys.map(async key => {
@@ -209,6 +228,8 @@ export function createProductInfoLoader() {
 
     return new DataLoader<string, ProductInfo>(
         async ids => {
+            log("productInfo", ids.length);
+
             // TODO RedisとのBatchGet, BatchSet
             // TODO REST APIにBatchGet用のエンドポイントを生やす
             return Promise.all(ids.map(async id => {
@@ -239,6 +260,8 @@ export function createProductInfoQueryLoader(baseLoader: ReturnType<typeof creat
 
     return new DataLoader<Key, PagedResp>(
         async keys => {
+            log("productInfos", keys.length);
+
             // TODO RedisとのBatchGet, BatchSet
             // TODO REST APIにBatchGet用のエンドポイントを生やす
             return Promise.all(keys.map(async key => {
@@ -305,6 +328,8 @@ export function createProductContentLoader() {
 
     return new DataLoader<string, Entity>(
         async ids => {
+            log("productContent", ids.length);
+
             // TODO RedisとのBatchGet, BatchSet
             // TODO REST APIにBatchGet用のエンドポイントを生やす
             return Promise.all(ids.map(async id => {
@@ -335,6 +360,8 @@ export function createProductContentQueryLoader(baseLoader: ReturnType<typeof cr
 
     return new DataLoader<Key, PagedResp>(
         async keys => {
+            log("productContents", keys.length);
+
             // TODO RedisとのBatchGet, BatchSet
             // TODO REST APIにBatchGet用のエンドポイントを生やす
             return Promise.all(keys.map(async key => {
