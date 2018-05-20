@@ -1,8 +1,8 @@
 import DataLoader from "dataloader";
 
-import { fetch } from "./fetch";
+import fetch from "node-fetch";
 
-import { Event, ProductInfo, ProductInfoListResp, EventListResp, CircleExhibitInfo, CircleListResp, ProductContent, ProductContentListResp } from "./model";
+import { Event, ProductInfo, ProductInfoListResp, EventListResp, CircleExhibitInfo, CircleListResp, ProductContent, ProductContentListResp, ProductInfoBatchListReq, ProductInfoBatchListResp } from "./model";
 
 const apiBaseUrl = "https://techbookfest.org"; // TODO 二重定義してる箇所がある
 
@@ -31,7 +31,7 @@ function createCacheMap<K, V>(): DataLoader.CacheMap<K, V> {
     return new Map();
 }
 
-const emitLog = false;
+const emitLog = true;
 let cnt = 0;
 
 function log(message?: any, ...optionalParams: any[]) {
@@ -199,7 +199,7 @@ export function createCircleQueryLoader(baseLoader: ReturnType<typeof createCirc
     );
 
     async function fetchEntity({ eventID, cursor, limit }: Key) {
-        const resp = await fetch(`${apiBaseUrl}/api/circle?eventID=${eventID}&cursor=${cursor || ""}&limit=${limit || 10}`);
+        const resp = await fetch(`${apiBaseUrl}/api/circle?eventID=${eventID}&cursor=${cursor || ""}&limit=${limit || 100}`);
         const json: ListResp = await resp.json();
         return json;
     }
@@ -262,31 +262,24 @@ export function createProductInfoQueryLoader(baseLoader: ReturnType<typeof creat
         async keys => {
             log("productInfos", keys.length);
 
-            // TODO RedisとのBatchGet, BatchSet
-            // TODO REST APIにBatchGet用のエンドポイントを生やす
-            return Promise.all(keys.map(async key => {
-                if (key.all) {
-                    let list: Entity[] = [];
-                    let cursor = "";
-                    while (true) {
-                        const json = await fetchEntity({
-                            ...key,
-                            ...{ cursor },
-                        });
-                        list = [...list, ...(json.list || [])];
-                        if (json.cursor) {
-                            cursor = json.cursor;
-                        } else {
-                            break;
-                        }
-                    }
-                    return makePagedResp(key, { list });
-                }
+            const req: ProductInfoBatchListReq = {
+                requestList: keys
+                    .map(key => ({ circleExhibitInfoID: key.circleExhibitInfoID! })),
+                visibility: "site",
+            };
+            const resp = await fetch(`${apiBaseUrl}/api/product/batch-list`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(req),
+            });
+            const json: ProductInfoBatchListResp = await resp.json();
 
-                const json = await fetchEntity(key);
-                makeEntityCache(json.list);
-                return makePagedResp(key, json);
-            }));
+            return (json.list || []).map((list, idx): PagedResp => {
+                makeEntityCache(list);
+                return makePagedResp(keys[idx], { list });
+            });
         },
         {
             maxBatchSize: 100,
@@ -297,11 +290,6 @@ export function createProductInfoQueryLoader(baseLoader: ReturnType<typeof creat
 
     );
 
-    async function fetchEntity({ circleExhibitInfoID, cursor, limit }: Key) {
-        const resp = await fetch(`${apiBaseUrl}/api/product?circleExhibitInfoID=${circleExhibitInfoID || ""}&cursor=${cursor || ""}&limit=${limit || 30}`);
-        const json: ProductInfoListResp = await resp.json();
-        return json;
-    }
     function makeEntityCache(entities?: Entity[]) {
         (entities || []).map(entity => baseLoader.prime(entity.id!, entity));
     }

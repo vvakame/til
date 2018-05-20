@@ -493,6 +493,17 @@ export interface ProductInfo {
     type?: "commerce" | "fanzine";
     updatedAt?: string; // date-time
 }
+export interface ProductInfoBatchListReq {
+    requestList?: ProductInfoBatchPartialReq[];
+    visibility?: "site" | "own" | "staff";
+}
+export interface ProductInfoBatchListResp {
+    list?: ProductInfo[][];
+}
+export interface ProductInfoBatchPartialReq {
+    circleExhibitInfoID?: string; // int64
+    eventID?: string;
+}
 export interface ProductInfoListResp {
     cursor?: string;
     list?: ProductInfo[];
