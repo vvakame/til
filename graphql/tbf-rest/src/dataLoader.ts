@@ -86,7 +86,6 @@ class CustomLoader<Key, Entity> implements DataLoader<Key, Entity> {
         const result: Entity[] = [];
 
         const entities = await this.redisBatchGet(...keys);
-        log(`${this.cacheKeyPrefix} on cache`, this.cacheKeyPrefix, entities);
 
         const missing = entities
             .map((entity, idx) => {
@@ -100,9 +99,11 @@ class CustomLoader<Key, Entity> implements DataLoader<Key, Entity> {
                 };
             })
             .filter(entityInfo => !entityInfo.entity);
-        log(`${this.cacheKeyPrefix} missing on cache`, missing);
+        log(`${this.cacheKeyPrefix} on cache`, this.cacheKeyPrefix, entities.length - missing.length);
 
         if (missing.length !== 0) {
+            log(`${this.cacheKeyPrefix} missing on cache`, missing.length);
+
             const foundEntities = await this.fetch(missing);
             foundEntities.forEach(({ idx, entity }) => {
                 result[idx] = entity;
