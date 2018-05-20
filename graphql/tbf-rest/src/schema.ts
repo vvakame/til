@@ -138,8 +138,9 @@ const productContentQueryLoader = createProductContentQueryLoader(productContent
 
 const resolvers = {
     Query: {
-        events: (_root: any, _args: any, _context: any) => {
-            return eventQueryLoader.load({ all: true });
+        events: async (_root: any, _args: any, _context: any) => {
+            const resp = await eventQueryLoader.load({ all: true });
+            return resp.list || [];
         },
         event: (_root: any, args: any) => {
             return eventLoader.load(args.id);
