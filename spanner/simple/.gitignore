@@ -1,0 +1,7 @@
+.idea/
+
+.envrc
+
+spanner-sa.json
+
+vendor/
