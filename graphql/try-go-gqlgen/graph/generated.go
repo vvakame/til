@@ -11,6 +11,7 @@ import (
 	introspection "github.com/vektah/gqlgen/neelance/introspection"
 	query "github.com/vektah/gqlgen/neelance/query"
 	schema "github.com/vektah/gqlgen/neelance/schema"
+	models "github.com/vvakame/til/graphql/try-go-gqlgen/models"
 )
 
 func MakeExecutableSchema(resolvers Resolvers) graphql.ExecutableSchema {
@@ -18,10 +19,10 @@ func MakeExecutableSchema(resolvers Resolvers) graphql.ExecutableSchema {
 }
 
 type Resolvers interface {
-	Mutation_createTodo(ctx context.Context, text string) (Todo, error)
-	Query_todos(ctx context.Context) ([]Todo, error)
+	Mutation_createTodo(ctx context.Context, text string) (models.Todo, error)
+	Query_todos(ctx context.Context) ([]models.Todo, error)
 
-	Todo_user(ctx context.Context, obj *Todo) (UserImpl, error)
+	Todo_user(ctx context.Context, obj *models.Todo) (models.UserImpl, error)
 }
 
 type executableSchema struct {
@@ -130,7 +131,7 @@ func (ec *executionContext) _Mutation_createTodo(ctx context.Context, field grap
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(Todo)
+	res := resTmp.(models.Todo)
 	return ec._Todo(ctx, field.Selections, &res)
 }
 
@@ -190,7 +191,7 @@ func (ec *executionContext) _Query_todos(ctx context.Context, field graphql.Coll
 		if resTmp == nil {
 			return graphql.Null
 		}
-		res := resTmp.([]Todo)
+		res := resTmp.([]models.Todo)
 		arr1 := graphql.Array{}
 		for idx1 := range res {
 			arr1 = append(arr1, func() graphql.Marshaler {
@@ -246,7 +247,7 @@ func (ec *executionContext) _Query___type(ctx context.Context, field graphql.Col
 var todoImplementors = []string{"Todo"}
 
 // nolint: gocyclo, errcheck, gas, goconst
-func (ec *executionContext) _Todo(ctx context.Context, sel []query.Selection, obj *Todo) graphql.Marshaler {
+func (ec *executionContext) _Todo(ctx context.Context, sel []query.Selection, obj *models.Todo) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.Doc, sel, todoImplementors, ec.Variables)
 
 	out := graphql.NewOrderedMap(len(fields))
@@ -272,7 +273,7 @@ func (ec *executionContext) _Todo(ctx context.Context, sel []query.Selection, ob
 	return out
 }
 
-func (ec *executionContext) _Todo_id(ctx context.Context, field graphql.CollectedField, obj *Todo) graphql.Marshaler {
+func (ec *executionContext) _Todo_id(ctx context.Context, field graphql.CollectedField, obj *models.Todo) graphql.Marshaler {
 	rctx := graphql.GetResolverContext(ctx)
 	rctx.Object = "Todo"
 	rctx.Args = nil
@@ -283,7 +284,7 @@ func (ec *executionContext) _Todo_id(ctx context.Context, field graphql.Collecte
 	return graphql.MarshalID(res)
 }
 
-func (ec *executionContext) _Todo_text(ctx context.Context, field graphql.CollectedField, obj *Todo) graphql.Marshaler {
+func (ec *executionContext) _Todo_text(ctx context.Context, field graphql.CollectedField, obj *models.Todo) graphql.Marshaler {
 	rctx := graphql.GetResolverContext(ctx)
 	rctx.Object = "Todo"
 	rctx.Args = nil
@@ -294,7 +295,7 @@ func (ec *executionContext) _Todo_text(ctx context.Context, field graphql.Collec
 	return graphql.MarshalString(res)
 }
 
-func (ec *executionContext) _Todo_done(ctx context.Context, field graphql.CollectedField, obj *Todo) graphql.Marshaler {
+func (ec *executionContext) _Todo_done(ctx context.Context, field graphql.CollectedField, obj *models.Todo) graphql.Marshaler {
 	rctx := graphql.GetResolverContext(ctx)
 	rctx.Object = "Todo"
 	rctx.Args = nil
@@ -305,7 +306,7 @@ func (ec *executionContext) _Todo_done(ctx context.Context, field graphql.Collec
 	return graphql.MarshalBoolean(res)
 }
 
-func (ec *executionContext) _Todo_user(ctx context.Context, field graphql.CollectedField, obj *Todo) graphql.Marshaler {
+func (ec *executionContext) _Todo_user(ctx context.Context, field graphql.CollectedField, obj *models.Todo) graphql.Marshaler {
 	ctx = graphql.WithResolverContext(ctx, &graphql.ResolverContext{
 		Object: "Todo",
 		Args:   nil,
@@ -330,7 +331,7 @@ func (ec *executionContext) _Todo_user(ctx context.Context, field graphql.Collec
 		if resTmp == nil {
 			return graphql.Null
 		}
-		res := resTmp.(UserImpl)
+		res := resTmp.(models.UserImpl)
 		return ec._User(ctx, field.Selections, &res)
 	})
 }
@@ -338,7 +339,7 @@ func (ec *executionContext) _Todo_user(ctx context.Context, field graphql.Collec
 var userImplementors = []string{"User"}
 
 // nolint: gocyclo, errcheck, gas, goconst
-func (ec *executionContext) _User(ctx context.Context, sel []query.Selection, obj *UserImpl) graphql.Marshaler {
+func (ec *executionContext) _User(ctx context.Context, sel []query.Selection, obj *models.UserImpl) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.Doc, sel, userImplementors, ec.Variables)
 
 	out := graphql.NewOrderedMap(len(fields))
@@ -360,7 +361,7 @@ func (ec *executionContext) _User(ctx context.Context, sel []query.Selection, ob
 	return out
 }
 
-func (ec *executionContext) _User_id(ctx context.Context, field graphql.CollectedField, obj *UserImpl) graphql.Marshaler {
+func (ec *executionContext) _User_id(ctx context.Context, field graphql.CollectedField, obj *models.UserImpl) graphql.Marshaler {
 	rctx := graphql.GetResolverContext(ctx)
 	rctx.Object = "User"
 	rctx.Args = nil
@@ -371,7 +372,7 @@ func (ec *executionContext) _User_id(ctx context.Context, field graphql.Collecte
 	return graphql.MarshalID(res)
 }
 
-func (ec *executionContext) _User_name(ctx context.Context, field graphql.CollectedField, obj *UserImpl) graphql.Marshaler {
+func (ec *executionContext) _User_name(ctx context.Context, field graphql.CollectedField, obj *models.UserImpl) graphql.Marshaler {
 	rctx := graphql.GetResolverContext(ctx)
 	rctx.Object = "User"
 	rctx.Args = nil

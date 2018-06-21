@@ -1,4 +1,4 @@
 {
-  "Todo": "github.com/vvakame/til/graphql/try-go-gqlgen/graph.Todo",
-  "User": "github.com/vvakame/til/graphql/try-go-gqlgen/graph.UserImpl"
+  "Todo": "github.com/vvakame/til/graphql/try-go-gqlgen/models.Todo",
+  "User": "github.com/vvakame/til/graphql/try-go-gqlgen/models.UserImpl"
 }
