@@ -1,0 +1,21 @@
+# Todoは残りのお仕事を保持します。
+# 仕事は0が美しい。
+type Todo {
+  id: ID!
+  text: String!
+  done: Boolean!
+  user: User!
+}
+
+type User {
+    id: ID!
+    name: String!
+}
+
+type Query {
+  todos: [Todo!]!
+}
+
+type Mutation {
+  createTodo(text: String!): Todo!
+}
