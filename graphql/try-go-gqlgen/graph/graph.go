@@ -6,17 +6,18 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
+
 	"github.com/vvakame/til/graphql/try-go-gqlgen/models"
 )
 
 type MyApp struct {
 	todos   []models.Todo
-	userMap map[string]models.UserImpl
+	UserMap map[string]models.UserImpl
 }
 
 func NewMyApp() *MyApp {
 	return &MyApp{
-		userMap: make(map[string]models.UserImpl),
+		UserMap: make(map[string]models.UserImpl),
 	}
 }
 
@@ -34,12 +35,15 @@ func (a *MyApp) Mutation_createTodo(ctx context.Context, text string) (models.To
 		ID:     fmt.Sprintf("T%d", rand.Int()),
 		UserID: user.ID,
 	}
-	a.userMap[user.ID] = user
+	a.UserMap[user.ID] = user
 	a.todos = append(a.todos, todo)
 	return todo, nil
 }
 
 func (a *MyApp) Todo_user(ctx context.Context, obj *models.Todo) (models.UserImpl, error) {
-	user := a.userMap[obj.UserID]
-	return user, nil
+	user, err := ctx.Value(models.UserLoaderKey).(*models.UserImplLoader).Load(obj.UserID)
+	if err != nil {
+		return models.UserImpl{}, err
+	}
+	return *user, nil
 }
