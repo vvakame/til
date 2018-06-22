@@ -14,6 +14,7 @@ type User {
 
 type Query {
   todos: [Todo!]!
+  searchTodo(id: String): [Todo!]!
 }
 
 type Mutation {

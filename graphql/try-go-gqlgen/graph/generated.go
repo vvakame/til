@@ -21,6 +21,7 @@ func MakeExecutableSchema(resolvers Resolvers) graphql.ExecutableSchema {
 type Resolvers interface {
 	Mutation_createTodo(ctx context.Context, text string) (models.Todo, error)
 	Query_todos(ctx context.Context) ([]models.Todo, error)
+	Query_searchTodo(ctx context.Context, id *string) ([]models.Todo, error)
 
 	Todo_user(ctx context.Context, obj *models.Todo) (models.UserImpl, error)
 }
@@ -154,6 +155,8 @@ func (ec *executionContext) _Query(ctx context.Context, sel []query.Selection) g
 			out.Values[i] = graphql.MarshalString("Query")
 		case "todos":
 			out.Values[i] = ec._Query_todos(ctx, field)
+		case "searchTodo":
+			out.Values[i] = ec._Query_searchTodo(ctx, field)
 		case "__schema":
 			out.Values[i] = ec._Query___schema(ctx, field)
 		case "__type":
@@ -183,6 +186,61 @@ func (ec *executionContext) _Query_todos(ctx context.Context, field graphql.Coll
 
 		resTmp, err := ec.ResolverMiddleware(ctx, func(ctx context.Context) (interface{}, error) {
 			return ec.resolvers.Query_todos(ctx)
+		})
+		if err != nil {
+			ec.Error(ctx, err)
+			return graphql.Null
+		}
+		if resTmp == nil {
+			return graphql.Null
+		}
+		res := resTmp.([]models.Todo)
+		arr1 := graphql.Array{}
+		for idx1 := range res {
+			arr1 = append(arr1, func() graphql.Marshaler {
+				rctx := graphql.GetResolverContext(ctx)
+				rctx.PushIndex(idx1)
+				defer rctx.Pop()
+				return ec._Todo(ctx, field.Selections, &res[idx1])
+			}())
+		}
+		return arr1
+	})
+}
+
+func (ec *executionContext) _Query_searchTodo(ctx context.Context, field graphql.CollectedField) graphql.Marshaler {
+	args := map[string]interface{}{}
+	var arg0 *string
+	if tmp, ok := field.Args["id"]; ok {
+		var err error
+		var ptr1 string
+		if tmp != nil {
+			ptr1, err = graphql.UnmarshalString(tmp)
+			arg0 = &ptr1
+		}
+
+		if err != nil {
+			ec.Error(ctx, err)
+			return graphql.Null
+		}
+	}
+	args["id"] = arg0
+	ctx = graphql.WithResolverContext(ctx, &graphql.ResolverContext{
+		Object: "Query",
+		Args:   args,
+		Field:  field,
+	})
+	return graphql.Defer(func() (ret graphql.Marshaler) {
+		defer func() {
+			if r := recover(); r != nil {
+				userErr := ec.Recover(ctx, r)
+				ec.Error(ctx, userErr)
+				ret = graphql.Null
+			}
+		}()
+
+		resTmp, err := ec.ResolverMiddleware(ctx, func(ctx context.Context) (interface{}, error) {
+			return ec.resolvers.Query_searchTodo(ctx, args["id"].(*string))
 		})
 		if err != nil {
 			ec.Error(ctx, err)
@@ -1137,6 +1195,7 @@ type User {
 
 type Query {
   todos: [Todo!]!
+  searchTodo(id: String): [Todo!]!
 }
 
 type Mutation {

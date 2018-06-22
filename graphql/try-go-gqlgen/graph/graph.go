@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math/rand"
 
+	"github.com/pkg/errors"
 	"github.com/vvakame/til/graphql/try-go-gqlgen/models"
 )
 
@@ -23,6 +24,20 @@ func NewMyApp() *MyApp {
 
 func (a *MyApp) Query_todos(ctx context.Context) ([]models.Todo, error) {
 	return a.todos, nil
+}
+
+func (a *MyApp) Query_searchTodo(ctx context.Context, id *string) ([]models.Todo, error) {
+	if id != nil {
+		for _, todo := range a.todos {
+			if todo.ID == *id {
+				return []models.Todo{todo}, nil
+			}
+		}
+
+		return nil, errors.Errorf("id: %s is not exists", *id)
+	}
+
+	return nil, errors.New("query parameter is not specified")
 }
 
 func (a *MyApp) Mutation_createTodo(ctx context.Context, text string) (models.Todo, error) {
