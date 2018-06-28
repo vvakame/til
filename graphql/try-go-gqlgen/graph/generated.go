@@ -5,6 +5,7 @@ package graph
 import (
 	"bytes"
 	context "context"
+	fmt "fmt"
 	strconv "strconv"
 
 	graphql "github.com/vektah/gqlgen/graphql"
@@ -20,6 +21,7 @@ func MakeExecutableSchema(resolvers Resolvers) graphql.ExecutableSchema {
 
 type Resolvers interface {
 	Mutation_createTodo(ctx context.Context, text string) (models.Todo, error)
+	Query_node(ctx context.Context, id string) (Node, error)
 	Query_todos(ctx context.Context) ([]models.Todo, error)
 	Query_searchTodo(ctx context.Context, id *string) ([]models.Todo, error)
 
@@ -153,6 +155,8 @@ func (ec *executionContext) _Query(ctx context.Context, sel []query.Selection) g
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Query")
+		case "node":
+			out.Values[i] = ec._Query_node(ctx, field)
 		case "todos":
 			out.Values[i] = ec._Query_todos(ctx, field)
 		case "searchTodo":
@@ -167,6 +171,47 @@ func (ec *executionContext) _Query(ctx context.Context, sel []query.Selection) g
 	}
 
 	return out
+}
+
+func (ec *executionContext) _Query_node(ctx context.Context, field graphql.CollectedField) graphql.Marshaler {
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := field.Args["id"]; ok {
+		var err error
+		arg0, err = graphql.UnmarshalID(tmp)
+		if err != nil {
+			ec.Error(ctx, err)
+			return graphql.Null
+		}
+	}
+	args["id"] = arg0
+	ctx = graphql.WithResolverContext(ctx, &graphql.ResolverContext{
+		Object: "Query",
+		Args:   args,
+		Field:  field,
+	})
+	return graphql.Defer(func() (ret graphql.Marshaler) {
+		defer func() {
+			if r := recover(); r != nil {
+				userErr := ec.Recover(ctx, r)
+				ec.Error(ctx, userErr)
+				ret = graphql.Null
+			}
+		}()
+
+		resTmp, err := ec.ResolverMiddleware(ctx, func(ctx context.Context) (interface{}, error) {
+			return ec.resolvers.Query_node(ctx, args["id"].(string))
+		})
+		if err != nil {
+			ec.Error(ctx, err)
+			return graphql.Null
+		}
+		if resTmp == nil {
+			return graphql.Null
+		}
+		res := resTmp.(Node)
+		return ec._Node(ctx, field.Selections, &res)
+	})
 }
 
 func (ec *executionContext) _Query_todos(ctx context.Context, field graphql.CollectedField) graphql.Marshaler {
@@ -302,7 +347,7 @@ func (ec *executionContext) _Query___type(ctx context.Context, field graphql.Col
 	return ec.___Type(ctx, field.Selections, res)
 }
 
-var todoImplementors = []string{"Todo"}
+var todoImplementors = []string{"Todo", "Node"}
 
 // nolint: gocyclo, errcheck, gas, goconst
 func (ec *executionContext) _Todo(ctx context.Context, sel []query.Selection, obj *models.Todo) graphql.Marshaler {
@@ -394,7 +439,7 @@ func (ec *executionContext) _Todo_user(ctx context.Context, field graphql.Collec
 	})
 }
 
-var userImplementors = []string{"User"}
+var userImplementors = []string{"User", "Node"}
 
 // nolint: gocyclo, errcheck, gas, goconst
 func (ec *executionContext) _User(ctx context.Context, sel []query.Selection, obj *models.UserImpl) graphql.Marshaler {
@@ -1167,6 +1212,23 @@ func (ec *executionContext) ___Type_ofType(ctx context.Context, field graphql.Co
 	return ec.___Type(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Node(ctx context.Context, sel []query.Selection, obj *Node) graphql.Marshaler {
+	switch obj := (*obj).(type) {
+	case nil:
+		return graphql.Null
+	case models.Todo:
+		return ec._Todo(ctx, sel, &obj)
+	case *models.Todo:
+		return ec._Todo(ctx, sel, obj)
+	case models.UserImpl:
+		return ec._User(ctx, sel, &obj)
+	case *models.UserImpl:
+		return ec._User(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
 func (ec *executionContext) introspectSchema() *introspection.Schema {
 	return introspection.WrapSchema(parsedSchema)
 }
@@ -1181,24 +1243,31 @@ func (ec *executionContext) introspectType(name string) *introspection.Type {
 
 var parsedSchema = schema.MustParse(`# Todoは残りのお仕事を保持します。
 # 仕事は0が美しい。
-type Todo {
-  id: ID!
-  text: String!
-  done: Boolean!
-  user: User!
-}
-
-type User {
-    id: ID!
-    name: String!
-}
 
 type Query {
+  node(id: ID!): Node
+
   todos: [Todo!]!
   searchTodo(id: String): [Todo!]!
 }
 
 type Mutation {
   createTodo(text: String!): Todo!
+}
+
+interface Node {
+    id: ID!
+}
+
+type Todo implements Node {
+  id: ID!
+  text: String!
+  done: Boolean!
+  user: User!
+}
+
+type User implements Node {
+    id: ID!
+    name: String!
 }
 `)

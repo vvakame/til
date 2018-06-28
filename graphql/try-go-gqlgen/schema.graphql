@@ -1,22 +1,29 @@
 # Todoは残りのお仕事を保持します。
 # 仕事は0が美しい。
-type Todo {
-  id: ID!
-  text: String!
-  done: Boolean!
-  user: User!
-}
-
-type User {
-    id: ID!
-    name: String!
-}
 
 type Query {
+  node(id: ID!): Node
+
   todos: [Todo!]!
   searchTodo(id: String): [Todo!]!
 }
 
 type Mutation {
   createTodo(text: String!): Todo!
+}
+
+interface Node {
+    id: ID!
+}
+
+type Todo implements Node {
+  id: ID!
+  text: String!
+  done: Boolean!
+  user: User!
+}
+
+type User implements Node {
+    id: ID!
+    name: String!
 }

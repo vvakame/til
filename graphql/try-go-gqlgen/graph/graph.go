@@ -22,6 +22,26 @@ func NewMyApp() *MyApp {
 	}
 }
 
+func (a *MyApp) Query_node(ctx context.Context, id string) (Node, error) {
+	switch id[0:1] {
+	case "U":
+		user, ok := a.UserMap[id]
+		if !ok {
+			return nil, nil
+		}
+		return user, nil
+	case "T":
+		for _, todo := range a.todos {
+			if id == todo.ID {
+				return todo, nil
+			}
+		}
+		return nil, nil
+	}
+
+	return nil, errors.Errorf("unknown ID format: %s", id)
+}
+
 func (a *MyApp) Query_todos(ctx context.Context) ([]models.Todo, error) {
 	return a.todos, nil
 }
