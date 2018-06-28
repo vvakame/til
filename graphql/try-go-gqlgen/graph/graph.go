@@ -42,6 +42,18 @@ func (a *MyApp) Query_node(ctx context.Context, id string) (Node, error) {
 	return nil, errors.Errorf("unknown ID format: %s", id)
 }
 
+func (a *MyApp) Query_nodes(ctx context.Context, ids []string) ([]Node, error) {
+	respList := make([]Node, 0, len(ids))
+	for _, id := range ids {
+		node, err := a.Query_node(ctx, id)
+		if err != nil {
+			return nil, err
+		}
+		respList = append(respList, node)
+	}
+	return respList, nil
+}
+
 func (a *MyApp) Query_todos(ctx context.Context) ([]models.Todo, error) {
 	return a.todos, nil
 }

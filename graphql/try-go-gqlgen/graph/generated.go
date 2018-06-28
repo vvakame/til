@@ -22,6 +22,7 @@ func MakeExecutableSchema(resolvers Resolvers) graphql.ExecutableSchema {
 type Resolvers interface {
 	Mutation_createTodo(ctx context.Context, text string) (models.Todo, error)
 	Query_node(ctx context.Context, id string) (Node, error)
+	Query_nodes(ctx context.Context, ids []string) ([]Node, error)
 	Query_todos(ctx context.Context) ([]models.Todo, error)
 	Query_searchTodo(ctx context.Context, id *string) ([]models.Todo, error)
 
@@ -157,6 +158,8 @@ func (ec *executionContext) _Query(ctx context.Context, sel []query.Selection) g
 			out.Values[i] = graphql.MarshalString("Query")
 		case "node":
 			out.Values[i] = ec._Query_node(ctx, field)
+		case "nodes":
+			out.Values[i] = ec._Query_nodes(ctx, field)
 		case "todos":
 			out.Values[i] = ec._Query_todos(ctx, field)
 		case "searchTodo":
@@ -211,6 +214,65 @@ func (ec *executionContext) _Query_node(ctx context.Context, field graphql.Colle
 		}
 		res := resTmp.(Node)
 		return ec._Node(ctx, field.Selections, &res)
+	})
+}
+
+func (ec *executionContext) _Query_nodes(ctx context.Context, field graphql.CollectedField) graphql.Marshaler {
+	args := map[string]interface{}{}
+	var arg0 []string
+	if tmp, ok := field.Args["ids"]; ok {
+		var err error
+		var rawIf1 []interface{}
+		if tmp != nil {
+			if tmp1, ok := tmp.([]interface{}); ok {
+				rawIf1 = tmp1
+			}
+		}
+		arg0 = make([]string, len(rawIf1))
+		for idx1 := range rawIf1 {
+			arg0[idx1], err = graphql.UnmarshalID(rawIf1[idx1])
+		}
+		if err != nil {
+			ec.Error(ctx, err)
+			return graphql.Null
+		}
+	}
+	args["ids"] = arg0
+	ctx = graphql.WithResolverContext(ctx, &graphql.ResolverContext{
+		Object: "Query",
+		Args:   args,
+		Field:  field,
+	})
+	return graphql.Defer(func() (ret graphql.Marshaler) {
+		defer func() {
+			if r := recover(); r != nil {
+				userErr := ec.Recover(ctx, r)
+				ec.Error(ctx, userErr)
+				ret = graphql.Null
+			}
+		}()
+
+		resTmp, err := ec.ResolverMiddleware(ctx, func(ctx context.Context) (interface{}, error) {
+			return ec.resolvers.Query_nodes(ctx, args["ids"].([]string))
+		})
+		if err != nil {
+			ec.Error(ctx, err)
+			return graphql.Null
+		}
+		if resTmp == nil {
+			return graphql.Null
+		}
+		res := resTmp.([]Node)
+		arr1 := graphql.Array{}
+		for idx1 := range res {
+			arr1 = append(arr1, func() graphql.Marshaler {
+				rctx := graphql.GetResolverContext(ctx)
+				rctx.PushIndex(idx1)
+				defer rctx.Pop()
+				return ec._Node(ctx, field.Selections, &res[idx1])
+			}())
+		}
+		return arr1
 	})
 }
 
@@ -1246,6 +1308,7 @@ var parsedSchema = schema.MustParse(`# Todoは残りのお仕事を保持しま�
 
 type Query {
   node(id: ID!): Node
+  nodes(ids: [ID!]!): [Node]!
 
   todos: [Todo!]!
   searchTodo(id: String): [Todo!]!

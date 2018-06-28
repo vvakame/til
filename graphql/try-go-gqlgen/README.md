@@ -47,4 +47,21 @@ query getNode {
     }
   }
 }
+
+query getNodes {
+  nodes(ids: ["U5577006791947779410", "T6129484611666145821"]) {
+    id
+    ... on User {
+      name
+    }
+    ... on Todo {
+      text
+      done
+      user {
+        id
+        name
+      }
+    }
+  }
+}
 ```
