@@ -1,40 +1,49 @@
 package main
 
 import (
-	"context"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
-	"runtime/debug"
 
-	"github.com/pkg/errors"
-	"github.com/vektah/gqlgen/graphql"
-	"github.com/vektah/gqlgen/handler"
-	"github.com/vvakame/til/graphql/try-go-gqlgen/graph"
+	"github.com/99designs/gqlgen/handler"
+	trygogqlgen "github.com/vvakame/til/graphql/try-go-gqlgen"
 	"github.com/vvakame/til/graphql/try-go-gqlgen/models"
+	"fmt"
+	"runtime/debug"
+	"context"
+	"github.com/pkg/errors"
+	"github.com/99designs/gqlgen/graphql"
+	"github.com/vektah/gqlparser/gqlerror"
 )
 
-func main() {
-	app := graph.NewMyApp()
-	http.Handle("/", handler.Playground("Todo", "/query"))
+const defaultPort = "8080"
 
+func main() {
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = defaultPort
+	}
+
+	resolver := trygogqlgen.NewResolver()
+	http.Handle("/", handler.Playground("GraphQL playground", "/query"))
 	http.Handle("/query",
 		models.DataloaderMiddleware(
-			app.UserMap,
+			resolver.UserMap,
 			handler.GraphQL(
-				graph.MakeExecutableSchema(app),
-				handler.ErrorPresenter(func(ctx context.Context, err error) error {
+				trygogqlgen.NewExecutableSchema(trygogqlgen.Config{
+					Resolvers: resolver,
+				}),
+				handler.ErrorPresenter(func(ctx context.Context, err error) *gqlerror.Error {
 					err = errors.Cause(err)
 
 					rc := graphql.GetResolverContext(ctx)
 
-					return &MyError{
-						graphql.ResolverError{
-							Message: err.Error(),
-							Path:    rc.Path,
+					return &gqlerror.Error{
+						Message: err.Error(),
+						Path:    rc.Path,
+						Extensions: map[string]interface{}{
+							"hello": "myError!",
 						},
-						"foobar!",
 					}
 				}),
 				handler.RecoverFunc(func(ctx context.Context, err interface{}) error {
@@ -59,15 +68,6 @@ func main() {
 		),
 	)
 
-	fmt.Println("Listening on :8080")
-	log.Fatal(http.ListenAndServe(":8080", nil))
-}
-
-type MyError struct {
-	graphql.ResolverError
-	FooBar string `json:"foobar"`
-}
-
-func (e *MyError) Error() string {
-	return e.ResolverError.Error()
+	log.Printf("connect to http://localhost:%s/ for GraphQL playground", port)
+	log.Fatal(http.ListenAndServe(":"+port, nil))
 }

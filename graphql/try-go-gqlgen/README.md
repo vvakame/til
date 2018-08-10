@@ -2,25 +2,15 @@
 
 ```
 $ vgo generate ./...
-$ vgo run main.go
+$ vgo run ./server/server.go
 ```
 
 ```
-mutation createTodo {
-  createTodo(text: "test") {
-    user {
-      id
-    }
+query QueryTodos {
+  todos {
+    id
     text
     done
-  }
-}
-
-query getTodos {
-  hoge: todos {
-    id
-    text
-    piyo: done
     user {
       id
       name
@@ -28,39 +18,14 @@ query getTodos {
   }
 }
 
-query getNode {
-  user: node(id: "U5577006791947779410") {
+mutation CreateTodo {
+  createTodo(input: {text: "do performance", userId: "User:123"}) {
     id
-    ... on User {
+    text
+    done
+    user {
+      id
       name
-    }
-  }
-  todo: node(id: "T6129484611666145821") {
-    id
-    ... on Todo {
-      text
-      done
-      user {
-        id
-        name
-      }
-    }
-  }
-}
-
-query getNodes {
-  nodes(ids: ["U5577006791947779410", "T6129484611666145821"]) {
-    id
-    ... on User {
-      name
-    }
-    ... on Todo {
-      text
-      done
-      user {
-        id
-        name
-      }
     }
   }
 }
