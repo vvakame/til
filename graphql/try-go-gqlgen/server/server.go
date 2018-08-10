@@ -5,15 +5,16 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/99designs/gqlgen/handler"
-	trygogqlgen "github.com/vvakame/til/graphql/try-go-gqlgen"
-	"github.com/vvakame/til/graphql/try-go-gqlgen/models"
+	"context"
 	"fmt"
 	"runtime/debug"
-	"context"
-	"github.com/pkg/errors"
+
 	"github.com/99designs/gqlgen/graphql"
+	"github.com/99designs/gqlgen/handler"
+	"github.com/pkg/errors"
 	"github.com/vektah/gqlparser/gqlerror"
+	trygogqlgen "github.com/vvakame/til/graphql/try-go-gqlgen"
+	"github.com/vvakame/til/graphql/try-go-gqlgen/models"
 )
 
 const defaultPort = "8080"
@@ -56,12 +57,19 @@ func main() {
 				}),
 				handler.ResolverMiddleware(func(ctx context.Context, next graphql.Resolver) (interface{}, error) {
 					// Resolverが1回仕事することになるたびに呼ばれるようだ
+					rc := graphql.GetResolverContext(ctx)
+					fmt.Println("ResolverMiddleware before", rc.Path)
 					res, err := next(ctx)
+					fmt.Println("ResolverMiddleware after", rc.Path)
+					// pp.Println(rc)
 					return res, err
 				}),
 				handler.RequestMiddleware(func(ctx context.Context, next func(ctx context.Context) []byte) []byte {
 					// 結果のJSONの "data" のvalue部分のbyte列が帰ってくるようだ
+					fmt.Println("RequestMiddleware before")
 					b := next(ctx)
+					fmt.Println("RequestMiddleware after")
+					fmt.Println(string(b))
 					return b
 				}),
 			),

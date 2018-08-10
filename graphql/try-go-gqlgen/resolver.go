@@ -4,8 +4,9 @@ package try_go_gqlgen
 
 import (
 	"context"
-	"github.com/vvakame/til/graphql/try-go-gqlgen/models"
 	"fmt"
+
+	"github.com/vvakame/til/graphql/try-go-gqlgen/models"
 )
 
 func NewResolver() *Resolver {
