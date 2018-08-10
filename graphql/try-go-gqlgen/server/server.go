@@ -35,6 +35,7 @@ func main() {
 					Resolvers: resolver,
 				}),
 				handler.ErrorPresenter(func(ctx context.Context, err error) *gqlerror.Error {
+					// NOTE これ実装する前に error に graphql.ExtendedError させとくだけで対応できないか検討すること 
 					err = errors.Cause(err)
 
 					rc := graphql.GetResolverContext(ctx)
