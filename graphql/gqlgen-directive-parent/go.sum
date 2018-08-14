@@ -1,0 +1,7 @@
+github.com/99designs/gqlgen v0.0.0-20180814003116-5a0b56aa613b h1:KGSrAAtqhdXNbV4Q6Bmhi0+tpkBolwjzeA5BqPdgtoU=
+github.com/99designs/gqlgen v0.0.0-20180814003116-5a0b56aa613b/go.mod h1:KSQDfLlTTGmzlRgLGm6HeKKKo598l5E2svEM6Nz2Jnw=
+github.com/agnivade/levenshtein v0.0.0-20180724063918-3d21ba515fe2 h1:bVI7LoThoMAuAakU61uMPcsszygQL6PY1zm1yKmvGT4=
+github.com/agnivade/levenshtein v0.0.0-20180724063918-3d21ba515fe2/go.mod h1:CURSv5d9Uaml+FovSIICkLbAUZ9S4RqaHDIsdSBg7lM=
+github.com/gorilla/websocket v1.2.0/go.mod h1:E7qHFY5m1UJ88s3WnNqhKjPHQ0heANvMoAMk2YaljkQ=
+github.com/vektah/gqlparser v0.0.0-20180814042155-04021c23cb38 h1:KQNsJZF9eYn/tL5z9xVSY62pXy09rJF6e+thCnDViPQ=
+github.com/vektah/gqlparser v0.0.0-20180814042155-04021c23cb38/go.mod h1:K4QdSSpS2XiHHwzb18kWh3iBljB8rLC8okGXsnQy3Nc=
