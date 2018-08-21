@@ -1,5 +1,4 @@
 import fetch from "node-fetch";
-import { create } from "domain";
 
 const endpoint = "https://api.github.com/graphql";
 const authToken = process.env["GITHUB_TOKEN"];
@@ -8,8 +7,8 @@ const author = "vvakame";
 const ignoreOrgs = [
     "TechBooster",
 ];
-const start = new Date("2018-07-28T09:00:00Z");
-const end = new Date("2018-08-04T09:00:00Z");
+const start = new Date("2018-08-11T09:00:00Z");
+const end = new Date("2018-08-18T09:00:00Z");
 
 // https://developer.github.com/v4/explorer/
 const query = `

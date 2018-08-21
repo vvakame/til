@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "build": "tsfmt -r && tsc",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
@@ -11,6 +12,7 @@
   "devDependencies": {
     "@types/node-fetch": "^2.1.2",
     "node-fetch": "^2.2.0",
-    "typescript": "^3.0.1"
+    "typescript": "^3.0.1",
+    "typescript-formatter": "^7.2.2"
   }
 }
