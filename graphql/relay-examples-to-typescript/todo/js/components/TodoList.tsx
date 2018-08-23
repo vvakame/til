@@ -28,7 +28,7 @@ type Props = {
 };
 
 class TodoList extends React.Component<Props> {
-  _handleMarkAllChange = (e) => {
+  _handleMarkAllChange = (e: any) => {
     const complete = e.target.checked;
     MarkAllTodosMutation.commit(
       this.props.relay.environment,
@@ -38,10 +38,10 @@ class TodoList extends React.Component<Props> {
     );
   };
   renderTodos() {
-    return this.props.viewer.todos.edges.map(edge =>
+    return this.props.viewer.todos!.edges!.map(edge =>
       <Todo
-        key={edge.node.id}
-        todo={edge.node}
+        key={edge!.node!.id}
+        todo={edge!.node!}
         viewer={this.props.viewer}
       />
     );

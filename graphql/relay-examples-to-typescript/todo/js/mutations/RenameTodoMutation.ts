@@ -14,6 +14,10 @@ import {
   commitMutation,
   graphql,
 } from 'react-relay';
+import { Environment } from 'relay-runtime';
+
+import { Todo_todo } from '../__generated__/Todo_todo.graphql';
+import { RenameTodoMutationResponse } from '../__generated__/RenameTodoMutation.graphql';
 
 const mutation = graphql`
   mutation RenameTodoMutation($input: RenameTodoInput!) {
@@ -26,7 +30,7 @@ const mutation = graphql`
   }
 `;
 
-function getOptimisticResponse(text, todo) {
+function getOptimisticResponse(text: string, todo: Todo_todo): RenameTodoMutationResponse {
   return {
     renameTodo: {
       todo: {
@@ -38,9 +42,9 @@ function getOptimisticResponse(text, todo) {
 }
 
 function commit(
-  environment,
-  text,
-  todo
+  environment: Environment,
+  text: string,
+  todo: Todo_todo,
 ) {
   return commitMutation(
     environment,

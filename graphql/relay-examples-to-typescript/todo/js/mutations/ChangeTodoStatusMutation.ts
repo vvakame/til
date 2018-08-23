@@ -14,6 +14,13 @@ import {
   commitMutation,
   graphql,
 } from 'react-relay';
+import { Environment } from 'relay-runtime';
+
+import { DataConstructor } from './typesUtils';
+
+import { Todo_todo } from '../__generated__/Todo_todo.graphql';
+import { Todo_viewer } from '../__generated__/Todo_viewer.graphql';
+import { ChangeTodoStatusMutationResponse } from '../__generated__/ChangeTodoStatusMutation.graphql';
 
 const mutation = graphql`
   mutation ChangeTodoStatusMutation($input: ChangeTodoStatusInput!) {
@@ -30,29 +37,32 @@ const mutation = graphql`
   }
 `;
 
-function getOptimisticResponse(complete, todo, user) {
-  const viewerPayload: any = {id: user.id};
+function getOptimisticResponse(complete: boolean, todo: Todo_todo, user: Todo_viewer): ChangeTodoStatusMutationResponse {
+
+  type Resp = ChangeTodoStatusMutationResponse;
+  // Developer's duty to return a valid response
+  const resp: DataConstructor<Resp> = {};
+  resp.changeTodoStatus = {};
+  resp.changeTodoStatus.viewer = {id: user.id};
+
   if (user.completedCount != null) {
-    viewerPayload.completedCount = complete ?
+    resp.changeTodoStatus.viewer.completedCount = complete ?
       user.completedCount + 1 :
       user.completedCount - 1;
   }
-  return {
-    changeTodoStatus: {
-      todo: {
-        complete: complete,
-        id: todo.id,
-      },
-      viewer: viewerPayload,
-    },
+  resp.changeTodoStatus.todo = {
+    complete: complete,
+    id: todo.id,
   };
+
+  return resp as Resp;
 }
 
 function commit(
-  environment,
-  complete,
-  todo,
-  user,
+  environment: Environment,
+  complete: boolean,
+  todo: Todo_todo,
+  user: Todo_viewer,
 ) {
   return commitMutation(
     environment,

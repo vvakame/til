@@ -2,9 +2,8 @@
   "private": true,
   "scripts": {
     "start": "babel-node ./server.js",
-    "build": "npm run relay:ts && tsc --noEmit",
-    "relay:js": "relay-compiler --src ./js/ --schema ./data/schema.graphql",
-    "relay:ts": "relay-compiler --src ./js/ --schema ./data/schema.graphql --language typescript --artifactDirectory ./js/__generated__",
+    "build": "npm run relay && tsc --noEmit",
+    "relay": "relay-compiler --src ./js/ --schema ./data/schema.graphql --language typescript --artifactDirectory ./js/__generated__",
     "update-schema": "babel-node ./scripts/updateSchema.js"
   },
   "dependencies": {
@@ -32,6 +31,10 @@
     "whatwg-fetch": "2.0.4"
   },
   "devDependencies": {
+    "@types/classnames": "^2.2.6",
+    "@types/prop-types": "^15.5.5",
+    "@types/react": "^16.4.11",
+    "@types/react-dom": "^16.0.7",
     "@types/react-relay": "^1.3.8",
     "babel-cli": "^6.26.0",
     "relay-compiler": "^1.7.0-rc.1",

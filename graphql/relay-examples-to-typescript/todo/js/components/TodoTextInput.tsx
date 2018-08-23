@@ -11,14 +11,22 @@
  */
 
 import * as React from 'react';
-import ReactDOM from 'react-dom';
+import * as ReactDOM from 'react-dom';
 
 import * as PropTypes from 'prop-types';
 
 const ENTER_KEY_CODE = 13;
 const ESC_KEY_CODE = 27;
 
-type Props = any;
+type Props = {
+  className?: string;
+  commitOnBlur: boolean;
+  initialValue?: string;
+  onCancel?: Function;
+  onDelete?: Function;
+  onSave: Function;
+  placeholder?: string;
+};
 
 export default class TodoTextInput extends React.Component<Props> {
   static defaultProps = {
@@ -38,7 +46,7 @@ export default class TodoTextInput extends React.Component<Props> {
     text: this.props.initialValue || '',
   };
   componentDidMount() {
-    ReactDOM.findDOMNode(this).focus();
+    (ReactDOM.findDOMNode(this)! as any).focus();
   }
   _commitChanges = () => {
     const newText = this.state.text.trim();
@@ -56,10 +64,10 @@ export default class TodoTextInput extends React.Component<Props> {
       this._commitChanges();
     }
   };
-  _handleChange = (e) => {
+  _handleChange = (e: any) => {
     this.setState({text: e.target.value});
   };
-  _handleKeyDown = (e) => {
+  _handleKeyDown = (e: any) => {
     if (this.props.onCancel && e.keyCode === ESC_KEY_CODE) {
       this.props.onCancel();
     } else if (e.keyCode === ENTER_KEY_CODE) {

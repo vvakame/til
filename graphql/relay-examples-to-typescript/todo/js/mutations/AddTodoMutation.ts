@@ -14,7 +14,13 @@ import {
   commitMutation,
   graphql,
 } from 'react-relay';
-import {ConnectionHandler} from 'relay-runtime';
+import {
+  ConnectionHandler,
+  RecordSourceSelectorProxy,
+  Environment,
+} from 'relay-runtime';
+
+import { TodoApp_viewer } from '../__generated__/TodoApp_viewer.graphql';
 
 const mutation = graphql`
   mutation AddTodoMutation($input: AddTodoInput!) {
@@ -36,7 +42,7 @@ const mutation = graphql`
   }
 `;
 
-function sharedUpdater(store, user, newEdge) {
+function sharedUpdater(store: RecordSourceSelectorProxy, user: TodoApp_viewer, newEdge: any) {
   const userProxy = store.get(user.id);
   const conn = ConnectionHandler.getConnection(
     userProxy,
@@ -48,9 +54,9 @@ function sharedUpdater(store, user, newEdge) {
 let tempID = 0;
 
 function commit(
-  environment,
-  text,
-  user
+  environment: Environment,
+  text: string,
+  user: TodoApp_viewer,
 ) {
   return commitMutation(
     environment,
@@ -63,7 +69,7 @@ function commit(
         },
       },
       updater: (store) => {
-        const payload = store.getRootField('addTodo');
+        const payload = store.getRootField('addTodo')!;
         const newEdge = payload.getLinkedRecord('todoEdge');
         sharedUpdater(store, user, newEdge);
       },
@@ -78,7 +84,7 @@ function commit(
         );
         newEdge.setLinkedRecord(node, 'node');
         sharedUpdater(store, user, newEdge);
-        const userProxy = store.get(user.id);
+        const userProxy = store.get(user.id)!;
         userProxy.setValue(
           userProxy.getValue('totalCount') + 1,
           'totalCount',

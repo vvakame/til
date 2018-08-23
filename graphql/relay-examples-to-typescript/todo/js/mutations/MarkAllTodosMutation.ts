@@ -14,6 +14,12 @@ import {
   commitMutation,
   graphql,
 } from 'react-relay';
+import { Environment } from 'relay-runtime';
+
+import { DataConstructor } from './typesUtils';
+
+import { TodoList_viewer } from '../__generated__/TodoList_viewer.graphql';
+import { MarkAllTodosMutationResponse } from "../__generated__/MarkAllTodosMutation.graphql";
 
 const mutation = graphql`
   mutation MarkAllTodosMutation($input: MarkAllTodosInput!) {
@@ -30,31 +36,37 @@ const mutation = graphql`
   }
 `;
 
-function getOptimisticResponse(complete, todos, user) {
-  const payload: any = {viewer: {id: user.id}};
+function getOptimisticResponse(complete: boolean, todos: TodoList_viewer["todos"], user: TodoList_viewer): MarkAllTodosMutationResponse {
+
+  type Resp = MarkAllTodosMutationResponse;
+
+  // Developer's duty to return a valid response
+  const resp: DataConstructor<Resp> = {};
+  resp.markAllTodos = {};
+  resp.markAllTodos.viewer = { id: user.id };
+
   if (todos && todos.edges) {
-    payload.changedTodos = todos.edges
-      .filter(edge => edge.node.complete !== complete)
+    resp.markAllTodos.changedTodos = todos.edges
+      .filter(edge => edge!.node!.complete !== complete)
       .map(edge => ({
         complete: complete,
-        id: edge.node.id,
+        id: edge!.node!.id,
       }));
   }
   if (user.totalCount != null) {
-    payload.viewer.completedCount = complete ?
+    resp.markAllTodos.viewer.completedCount = complete ?
       user.totalCount :
       0;
   }
-  return {
-    markAllTodos: payload,
-  };
+
+  return resp as Resp;
 }
 
 function commit(
-  environment,
-  complete,
-  todos,
-  user,
+  environment: Environment,
+  complete: boolean,
+  todos: TodoList_viewer["todos"],
+  user: TodoList_viewer,
 ) {
   return commitMutation(
     environment,

@@ -36,7 +36,7 @@ class Todo extends React.Component<Props> {
   state = {
     isEditing: false,
   };
-  _handleCompleteChange = (e) => {
+  _handleCompleteChange = (e: any) => {
     const complete = e.target.checked;
     ChangeTodoStatusMutation.commit(
       this.props.relay.environment,
@@ -58,7 +58,7 @@ class Todo extends React.Component<Props> {
     this._setEditMode(false);
     this._removeTodo();
   };
-  _handleTextInputSave = (text) => {
+  _handleTextInputSave = (text: string) => {
     this._setEditMode(false);
     RenameTodoMutation.commit(
       this.props.relay.environment,
@@ -73,7 +73,7 @@ class Todo extends React.Component<Props> {
       this.props.viewer,
     );
   }
-  _setEditMode = (shouldEdit) => {
+  _setEditMode = (shouldEdit: boolean) => {
     this.setState({isEditing: shouldEdit});
   };
   renderTextInput() {
@@ -81,7 +81,7 @@ class Todo extends React.Component<Props> {
       <TodoTextInput
         className="edit"
         commitOnBlur={true}
-        initialValue={this.props.todo.text}
+        initialValue={this.props.todo.text || ""}
         onCancel={this._handleTextInputCancel}
         onDelete={this._handleTextInputDelete}
         onSave={this._handleTextInputSave}
@@ -97,7 +97,7 @@ class Todo extends React.Component<Props> {
         })}>
         <div className="view">
           <input
-            checked={this.props.todo.complete}
+            checked={!!this.props.todo.complete}
             className="toggle"
             onChange={this._handleCompleteChange}
             type="checkbox"

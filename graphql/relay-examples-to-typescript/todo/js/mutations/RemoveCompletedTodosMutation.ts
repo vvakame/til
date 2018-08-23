@@ -14,7 +14,13 @@ import {
   commitMutation,
   graphql,
 } from 'react-relay';
-import {ConnectionHandler} from 'relay-runtime';
+import {
+  ConnectionHandler,
+  RecordSourceSelectorProxy,
+  Environment,
+} from 'relay-runtime';
+
+import { TodoListFooter_viewer } from '../__generated__/TodoListFooter_viewer.graphql';
 
 const mutation = graphql`
   mutation RemoveCompletedTodosMutation($input: RemoveCompletedTodosInput!) {
@@ -28,7 +34,7 @@ const mutation = graphql`
   }
 `;
 
-function sharedUpdater(store, user, deletedIDs) {
+function sharedUpdater(store: RecordSourceSelectorProxy, user: TodoListFooter_viewer, deletedIDs: string[]) {
   const userProxy = store.get(user.id);
   const conn = ConnectionHandler.getConnection(
     userProxy,
@@ -40,9 +46,9 @@ function sharedUpdater(store, user, deletedIDs) {
 }
 
 function commit(
-  environment,
-  todos,
-  user,
+  environment: Environment,
+  todos: TodoListFooter_viewer["todos"],
+  user: TodoListFooter_viewer,
 ) {
   return commitMutation(
     environment,
@@ -52,14 +58,14 @@ function commit(
         input: {},
       },
       updater: (store) => {
-        const payload = store.getRootField('removeCompletedTodos');
+        const payload = store.getRootField('removeCompletedTodos')!;
         sharedUpdater(store, user, payload.getValue('deletedTodoIds'));
       },
       optimisticUpdater: (store) => {
         if (todos && todos.edges) {
           const deletedIDs = todos.edges
-            .filter(edge => edge.node.complete)
-            .map(edge => edge.node.id);
+            .filter(edge => edge!.node!.complete)
+            .map(edge => edge!.node!.id);
           sharedUpdater(store, user, deletedIDs);
         }
       },

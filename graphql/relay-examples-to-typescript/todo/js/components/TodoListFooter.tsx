@@ -28,7 +28,7 @@ type Props = {
 
 class TodoListFooter extends React.Component<Props> {
   _handleRemoveCompletedTodosClick = () => {
-    const edges = this.props.viewer.todos.edges.filter(edge => edge.node.complete === true);
+    const edges = this.props.viewer.todos!.edges!.filter(edge => edge!.node!.complete === true);
     RemoveCompletedTodosMutation.commit(
       this.props.relay.environment,
       {
@@ -39,13 +39,13 @@ class TodoListFooter extends React.Component<Props> {
   };
   render() {
     const numCompletedTodos = this.props.viewer.completedCount;
-    const numRemainingTodos = this.props.viewer.totalCount - numCompletedTodos;
+    const numRemainingTodos = this.props.viewer.totalCount! - numCompletedTodos!;
     return (
       <footer className="footer">
         <span className="todo-count">
           <strong>{numRemainingTodos}</strong> item{numRemainingTodos === 1 ? '' : 's'} left
         </span>
-        {numCompletedTodos > 0 &&
+        {numCompletedTodos! > 0 &&
           <button
             className="clear-completed"
             onClick={this._handleRemoveCompletedTodosClick}>

@@ -13,7 +13,7 @@
 import 'todomvc-common';
 
 import * as React from 'react';
-import ReactDOM from 'react-dom';
+import * as ReactDOM from 'react-dom';
 
 import {
   QueryRenderer,
@@ -29,8 +29,8 @@ import {
 import TodoApp from './components/TodoApp';
 
 function fetchQuery(
-  operation,
-  variables,
+  operation: { text: string; },
+  variables: { [name: string]: any; },
 ) {
   return fetch('/graphql', {
     method: 'POST',
@@ -62,7 +62,7 @@ ReactDOM.render(
       }
     `}
     variables={{}}
-    render={({error, props}) => {
+    render={({ props }) => {
       if (props) {
         return <TodoApp viewer={props.viewer} />;
       } else {
