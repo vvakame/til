@@ -17,9 +17,15 @@ import * as React from 'react';
 import {
   createFragmentContainer,
   graphql,
+  RelayProp,
 } from 'react-relay';
 
-type Props = any;
+import { TodoList_viewer } from '../__generated__/TodoList_viewer.graphql';
+
+type Props = {
+  relay: RelayProp;
+  viewer: TodoList_viewer;
+};
 
 class TodoList extends React.Component<Props> {
   _handleMarkAllChange = (e) => {

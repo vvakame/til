@@ -4,7 +4,7 @@
     "start": "babel-node ./server.js",
     "build": "npm run relay:ts && tsc --noEmit",
     "relay:js": "relay-compiler --src ./js/ --schema ./data/schema.graphql",
-    "relay:ts": "relay-compiler --src ./js/ --schema ./data/schema.graphql --language typescript",
+    "relay:ts": "relay-compiler --src ./js/ --schema ./data/schema.graphql --language typescript --artifactDirectory ./js/__generated__",
     "update-schema": "babel-node ./scripts/updateSchema.js"
   },
   "dependencies": {

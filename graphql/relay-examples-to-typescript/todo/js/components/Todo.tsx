@@ -19,10 +19,18 @@ import * as React from 'react';
 import {
   createFragmentContainer,
   graphql,
+  RelayProp,
 } from 'react-relay';
 import classnames from 'classnames';
 
-type Props = any;
+import { Todo_todo } from '../__generated__/Todo_todo.graphql';
+import { Todo_viewer } from '../__generated__/Todo_viewer.graphql';
+
+type Props = {
+  relay: RelayProp;
+  todo: Todo_todo;
+  viewer: Todo_viewer;
+}
 
 class Todo extends React.Component<Props> {
   state = {

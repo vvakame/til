@@ -16,9 +16,15 @@ import * as React from 'react';
 import {
   graphql,
   createFragmentContainer,
+  RelayProp,
 } from 'react-relay';
 
-type Props = any;
+import { TodoListFooter_viewer } from '../__generated__/TodoListFooter_viewer.graphql'
+
+type Props = {
+  relay: RelayProp;
+  viewer: TodoListFooter_viewer
+};
 
 class TodoListFooter extends React.Component<Props> {
   _handleRemoveCompletedTodosClick = () => {

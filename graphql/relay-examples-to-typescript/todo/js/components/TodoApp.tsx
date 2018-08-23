@@ -19,9 +19,15 @@ import * as React from 'react';
 import {
   createFragmentContainer,
   graphql,
+  RelayProp,
 } from 'react-relay';
 
-type Props = any;
+import { TodoApp_viewer } from '../__generated__/TodoApp_viewer.graphql';
+
+type Props =  {
+  relay: RelayProp;
+  viewer: TodoApp_viewer;
+};
 
 class TodoApp extends React.Component<Props> {
   _handleTextInputSave = (text) => {
@@ -50,7 +56,6 @@ class TodoApp extends React.Component<Props> {
           <TodoList viewer={this.props.viewer} />
           {hasTodos &&
             <TodoListFooter
-              todos={this.props.viewer.todos}
               viewer={this.props.viewer}
             />
           }

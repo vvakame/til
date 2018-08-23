@@ -1,6 +1,6 @@
 {
   "plugins": [
-    "relay",
+    ["relay", { "artifactDirectory": "./js/__generated__" }],
     "transform-runtime"
   ],
   "presets": [
