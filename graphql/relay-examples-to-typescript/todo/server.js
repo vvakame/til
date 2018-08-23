@@ -35,7 +35,7 @@ const compiler = webpack({
   module: {
     rules: [
       {
-        test: /\.tsx$/,
+        test: /\.tsx?$/,
         exclude: /\/node_modules\//,
         use: [
           {loader: 'babel-loader'},
