@@ -12,13 +12,15 @@
 
 import RemoveCompletedTodosMutation from '../mutations/RemoveCompletedTodosMutation';
 
-import React from 'react';
+import * as React from 'react';
 import {
   graphql,
   createFragmentContainer,
 } from 'react-relay';
 
-class TodoListFooter extends React.Component {
+type Props = any;
+
+class TodoListFooter extends React.Component<Props> {
   _handleRemoveCompletedTodosClick = () => {
     const edges = this.props.viewer.todos.edges.filter(edge => edge.node.complete === true);
     RemoveCompletedTodosMutation.commit(

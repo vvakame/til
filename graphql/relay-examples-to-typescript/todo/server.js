@@ -19,21 +19,25 @@ import {schema} from './data/schema';
 
 const APP_PORT = 3000;
 
+// TODO fork-ts-checker-webpack-plugin?
+// https://github.com/relay-tools/relay-compiler-language-typescript/blob/master/example/server.js
+
 // Serve the Relay app
 const compiler = webpack({
   mode: 'development',
   entry: [
     'whatwg-fetch',
-    path.resolve(__dirname, 'js', 'app.js')
+    path.resolve(__dirname, 'js', 'app.tsx')
   ],
   module: {
     rules: [
       {
-        test: /\.js$/,
+        test: /\.tsx$/,
         exclude: /\/node_modules\//,
-        use: {
-          loader: 'babel-loader',
-        }
+        use: [
+          {loader: 'babel-loader'},
+          { loader: 'ts-loader', options: { transpileOnly: true } },
+        ],
       }
     ]
   },

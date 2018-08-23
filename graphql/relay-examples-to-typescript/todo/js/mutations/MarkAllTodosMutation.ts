@@ -16,9 +16,9 @@ import {
 } from 'react-relay';
 
 const mutation = graphql`
-  mutation ChangeTodoStatusMutation($input: ChangeTodoStatusInput!) {
-    changeTodoStatus(input: $input) {
-      todo {
+  mutation MarkAllTodosMutation($input: MarkAllTodosInput!) {
+    markAllTodos(input: $input) {
+      changedTodos {
         id
         complete
       }
@@ -30,28 +30,30 @@ const mutation = graphql`
   }
 `;
 
-function getOptimisticResponse(complete, todo, user) {
-  const viewerPayload = {id: user.id};
-  if (user.completedCount != null) {
-    viewerPayload.completedCount = complete ?
-      user.completedCount + 1 :
-      user.completedCount - 1;
+function getOptimisticResponse(complete, todos, user) {
+  const payload: any = {viewer: {id: user.id}};
+  if (todos && todos.edges) {
+    payload.changedTodos = todos.edges
+      .filter(edge => edge.node.complete !== complete)
+      .map(edge => ({
+        complete: complete,
+        id: edge.node.id,
+      }));
+  }
+  if (user.totalCount != null) {
+    payload.viewer.completedCount = complete ?
+      user.totalCount :
+      0;
   }
   return {
-    changeTodoStatus: {
-      todo: {
-        complete: complete,
-        id: todo.id,
-      },
-      viewer: viewerPayload,
-    },
+    markAllTodos: payload,
   };
 }
 
 function commit(
   environment,
   complete,
-  todo,
+  todos,
   user,
 ) {
   return commitMutation(
@@ -59,9 +61,9 @@ function commit(
     {
       mutation,
       variables: {
-        input: {complete, id: todo.id},
+        input: {complete},
       },
-      optimisticResponse: getOptimisticResponse(complete, todo, user),
+      optimisticResponse: getOptimisticResponse(complete, todos, user),
     }
   );
 }

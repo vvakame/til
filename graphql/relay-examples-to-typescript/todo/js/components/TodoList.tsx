@@ -13,13 +13,15 @@
 import MarkAllTodosMutation from '../mutations/MarkAllTodosMutation';
 import Todo from './Todo';
 
-import React from 'react';
+import * as React from 'react';
 import {
   createFragmentContainer,
   graphql,
 } from 'react-relay';
 
-class TodoList extends React.Component {
+type Props = any;
+
+class TodoList extends React.Component<Props> {
   _handleMarkAllChange = (e) => {
     const complete = e.target.checked;
     MarkAllTodosMutation.commit(

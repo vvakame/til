@@ -10,15 +10,17 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-import React from 'react';
+import * as React from 'react';
 import ReactDOM from 'react-dom';
 
-const PropTypes = require('prop-types');
+import * as PropTypes from 'prop-types';
 
 const ENTER_KEY_CODE = 13;
 const ESC_KEY_CODE = 27;
 
-export default class TodoTextInput extends React.Component {
+type Props = any;
+
+export default class TodoTextInput extends React.Component<Props> {
   static defaultProps = {
     commitOnBlur: false,
   };

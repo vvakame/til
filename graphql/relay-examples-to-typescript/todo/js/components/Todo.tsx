@@ -15,14 +15,16 @@ import RemoveTodoMutation from '../mutations/RemoveTodoMutation';
 import RenameTodoMutation from '../mutations/RenameTodoMutation';
 import TodoTextInput from './TodoTextInput';
 
-import React from 'react';
+import * as React from 'react';
 import {
   createFragmentContainer,
   graphql,
 } from 'react-relay';
 import classnames from 'classnames';
 
-class Todo extends React.Component {
+type Props = any;
+
+class Todo extends React.Component<Props> {
   state = {
     isEditing: false,
   };

@@ -15,13 +15,15 @@ import TodoList from './TodoList';
 import TodoListFooter from './TodoListFooter';
 import TodoTextInput from './TodoTextInput';
 
-import React from 'react';
+import * as React from 'react';
 import {
   createFragmentContainer,
   graphql,
 } from 'react-relay';
 
-class TodoApp extends React.Component {
+type Props = any;
+
+class TodoApp extends React.Component<Props> {
   _handleTextInputSave = (text) => {
     AddTodoMutation.commit(
       this.props.relay.environment,
