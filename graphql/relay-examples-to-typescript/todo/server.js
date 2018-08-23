@@ -29,6 +29,9 @@ const compiler = webpack({
     'whatwg-fetch',
     path.resolve(__dirname, 'js', 'app.tsx')
   ],
+  resolve: {
+    extensions: ['.ts', '.tsx', '.js'],
+  },  
   module: {
     rules: [
       {
