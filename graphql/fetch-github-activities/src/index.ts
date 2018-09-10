@@ -7,8 +7,8 @@ const author = "vvakame";
 const ignoreOrgs = [
     "TechBooster",
 ];
-const start = new Date("2018-08-11T09:00:00Z");
-const end = new Date("2018-08-18T09:00:00Z");
+const start = new Date("2018-09-01T09:00:00Z");
+const end = new Date("2018-09-08T09:00:00Z");
 
 // https://developer.github.com/v4/explorer/
 const query = `
@@ -63,6 +63,9 @@ async function exec() {
         },
         body: `{"query":${JSON.stringify(query)}}`,
     });
+    if (resp.status !== 200) {
+        throw new Error(`error, ${resp.status} ${await resp.text()}`);
+    }
     const data = await resp.json();
 
     const text = data.data.search.nodes
@@ -75,4 +78,4 @@ async function exec() {
     console.log(text);
 }
 
-exec();
+exec().catch(err => console.error(err));
