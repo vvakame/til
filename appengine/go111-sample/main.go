@@ -9,9 +9,11 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"sync"
 	"syscall"
 	"time"
 
+	"cloud.google.com/go/cloudtasks/apiv2beta3"
 	"contrib.go.opencensus.io/exporter/stackdriver"
 	"contrib.go.opencensus.io/exporter/stackdriver/propagation"
 	"github.com/favclip/ucon"
@@ -21,6 +23,7 @@ import (
 	"go.mercari.io/datastore/clouddatastore"
 	"go.opencensus.io/plugin/ochttp"
 	"go.opencensus.io/trace"
+	taskspb "google.golang.org/genproto/googleapis/cloud/tasks/v2beta3"
 )
 
 var dsClient datastore.Client
@@ -109,6 +112,8 @@ func handlerMain() {
 
 	ucon.HandleFunc("GET", "/fibonacci", fibonacciHandler)
 	ucon.HandleFunc("GET", "/datastore", datastoreHandler)
+	ucon.HandleFunc("GET", "/tasks", cloudTasksHandler)
+	ucon.HandleFunc("GET", "/task-receive", cloudTaskExecHandler)
 
 	ucon.HandleFunc("GET", "/", indexHandler)
 }
@@ -187,27 +192,76 @@ func datastoreHandler(w http.ResponseWriter, r *http.Request) error {
 
 	bm := boom.FromClient(ctx, dsClient)
 
-	{
+	var wg sync.WaitGroup
+	wg.Add(3)
+	go func() {
 		key, err := bm.Put(&Go111SampleKind{})
 		if err != nil {
-			return err
+			rlog.Fatal(err)
 		}
 		fmt.Fprintf(w, "%s\n", key.String())
-	}
-	{
+		wg.Done()
+	}()
+	go func() {
 		key, err := bm.Put(&Go111SampleKind{})
 		if err != nil {
-			return err
+			rlog.Fatal(err)
 		}
 		fmt.Fprintf(w, "%s\n", key.String())
-	}
-	{
+		wg.Done()
+	}()
+	go func() {
 		key, err := bm.Put(&Go111SampleKind{})
 		if err != nil {
-			return err
+			rlog.Fatal(err)
 		}
 		fmt.Fprintf(w, "%s\n", key.String())
+		wg.Done()
+	}()
+	wg.Wait()
+
+	return nil
+}
+
+func cloudTasksHandler(w http.ResponseWriter, r *http.Request) error {
+
+	ctx := r.Context()
+
+	taskClient, err := cloudtasks.NewClient(ctx)
+	if err != nil {
+		return err
 	}
+	task, err := taskClient.CreateTask(ctx, &taskspb.CreateTaskRequest{
+		// TODO
+		Parent: fmt.Sprintf("projects/%s/locations/%s/queues/go111-sample-queue", os.Getenv("GOOGLE_CLOUD_PROJECT"), "asia-northeast1"),
+		Task: &taskspb.Task{
+			PayloadType: &taskspb.Task_AppEngineHttpRequest{
+				AppEngineHttpRequest: &taskspb.AppEngineHttpRequest{
+					HttpMethod: taskspb.HttpMethod_GET,
+					AppEngineRouting: &taskspb.AppEngineRouting{
+						Service: os.Getenv("GAE_SERVICE"),
+					},
+					RelativeUri: "/task-receive",
+				},
+			},
+		},
+	})
+	if err != nil {
+		return err
+	}
+	log.Infof(ctx, "on taskClient.CreateTask: %+v", task)
+
+	fmt.Fprintf(w, "added!")
+
+	return nil
+}
+
+func cloudTaskExecHandler(w http.ResponseWriter, r *http.Request) error {
+
+	ctx := r.Context()
+
+	log.Infof(ctx, "task done!")
+	fmt.Fprintf(w, "done!")
 
 	return nil
 }
