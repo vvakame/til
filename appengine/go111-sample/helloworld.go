@@ -1,10 +1,14 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	rlog "log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/favclip/ucon"
 	"github.com/vvakame/til/appengine/go111-sample/log"
@@ -12,7 +16,13 @@ import (
 
 func main() {
 
-	realMain()
+	close, err := log.Init()
+	if err != nil {
+		rlog.Fatalf("Failed to create client: %v", err)
+	}
+	defer close()
+
+	handlerMain()
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -21,16 +31,33 @@ func main() {
 	}
 
 	rlog.Printf("Listening on port %s", port)
-	rlog.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", port), ucon.DefaultMux))
+
+	server := &http.Server{
+		Addr:    fmt.Sprintf(":%s", port),
+		Handler: ucon.DefaultMux,
+	}
+
+	go func() {
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			rlog.Fatal(err)
+		}
+	}()
+
+	rlog.Printf("running...")
+
+	// setup graceful shutdown...
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGTERM)
+	<-sigCh
+
+	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+	if err := server.Shutdown(ctx); err != nil {
+		rlog.Fatalf("graceful shutdown failure: %s", err)
+	}
+	rlog.Printf("graceful shutdown successfully")
 }
 
-func realMain() {
-	close, err := log.Init()
-	if err != nil {
-		rlog.Fatalf("Failed to create client: %v", err)
-	}
-	defer close()
-
+func handlerMain() {
 	ucon.Middleware(func(b *ucon.Bubble) error {
 		b.Context = log.WithContext(b.Context, b.R)
 		b.R = b.R.WithContext(b.Context)
