@@ -65,6 +65,19 @@ func handlerMain() {
 	})
 	ucon.Orthodox()
 
+	// https://cloud.google.com/appengine/docs/standard/go111/how-instances-are-managed#instance_scaling
+	// Automatic scaling の時は動かないはず
+	ucon.HandleFunc("*", "/_ah/start", func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		log.Infof(ctx, "on /_ah/start")
+		fmt.Fprint(w, "on start!")
+	})
+	ucon.HandleFunc("*", "/_ah/stop", func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		log.Infof(ctx, "on /_ah/stop")
+		fmt.Fprint(w, "on stop!")
+	})
+
 	ucon.HandleFunc("GET", "/", indexHandler)
 }
 

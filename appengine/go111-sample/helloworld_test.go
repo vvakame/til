@@ -14,7 +14,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	realMain()
+	handlerMain()
 
 	os.Exit(m.Run())
 }
