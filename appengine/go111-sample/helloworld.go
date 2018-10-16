@@ -1,41 +1,45 @@
-// Copyright 2018 Google Inc. All rights reserved.
-// Use of this source code is governed by the Apache 2.0
-// license that can be found in the LICENSE file.
-
-// [START gae_go111_app]
-
-// Sample helloworld is an App Engine app.
 package main
 
-// [START import]
 import (
 	"fmt"
-	"log"
+	rlog "log"
 	"net/http"
 	"os"
+
+	"github.com/favclip/ucon"
+	"github.com/vvakame/til/appengine/go111-sample/log"
 )
 
-// [END import]
-// [START main_func]
-
 func main() {
-	http.HandleFunc("/", indexHandler)
 
-	// [START setting_port]
+	realMain()
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
-		log.Printf("Defaulting to port %s", port)
+		rlog.Printf("Defaulting to port %s", port)
 	}
 
-	log.Printf("Listening on port %s", port)
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", port), nil))
-	// [END setting_port]
+	rlog.Printf("Listening on port %s", port)
+	rlog.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", port), ucon.DefaultMux))
 }
 
-// [END main_func]
+func realMain() {
+	close, err := log.Init()
+	if err != nil {
+		rlog.Fatalf("Failed to create client: %v", err)
+	}
+	defer close()
 
-// [START indexHandler]
+	ucon.Middleware(func(b *ucon.Bubble) error {
+		b.Context = log.WithContext(b.Context, b.R)
+		b.R = b.R.WithContext(b.Context)
+		return b.Next()
+	})
+	ucon.Orthodox()
+
+	ucon.HandleFunc("GET", "/", indexHandler)
+}
 
 // indexHandler responds to requests with our greeting.
 func indexHandler(w http.ResponseWriter, r *http.Request) {
@@ -43,8 +47,11 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
+
+	ctx := r.Context()
+
+	log.Debugf(ctx, "Hi, 1")
+	log.Infof(ctx, "Hi, 2")
+
 	fmt.Fprint(w, "Hello, World!")
 }
-
-// [END indexHandler]
-// [END gae_go111_app]

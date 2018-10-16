@@ -7,8 +7,17 @@ package main
 import (
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
+
+	"github.com/favclip/ucon"
 )
+
+func TestMain(m *testing.M) {
+	realMain()
+
+	os.Exit(m.Run())
+}
 
 func TestIndexHandler(t *testing.T) {
 	req, err := http.NewRequest("GET", "/", nil)
@@ -17,8 +26,7 @@ func TestIndexHandler(t *testing.T) {
 	}
 
 	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(indexHandler)
-	handler.ServeHTTP(rr, req)
+	ucon.DefaultMux.ServeHTTP(rr, req)
 
 	if status := rr.Code; status != http.StatusOK {
 		t.Errorf(
@@ -45,8 +53,7 @@ func TestIndexHandlerNotFound(t *testing.T) {
 	}
 
 	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(indexHandler)
-	handler.ServeHTTP(rr, req)
+	ucon.DefaultMux.ServeHTTP(rr, req)
 
 	if status := rr.Code; status != http.StatusNotFound {
 		t.Errorf(
