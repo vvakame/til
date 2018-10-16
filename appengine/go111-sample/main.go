@@ -16,15 +16,20 @@ import (
 	"contrib.go.opencensus.io/exporter/stackdriver/propagation"
 	"github.com/favclip/ucon"
 	"github.com/vvakame/til/appengine/go111-sample/log"
+	"go.mercari.io/datastore"
+	"go.mercari.io/datastore/boom"
+	"go.mercari.io/datastore/clouddatastore"
 	"go.opencensus.io/plugin/ochttp"
 	"go.opencensus.io/trace"
 )
+
+var dsClient datastore.Client
 
 func main() {
 
 	close, err := log.Init()
 	if err != nil {
-		rlog.Fatalf("Failed to create client: %v", err)
+		rlog.Fatalf("Failed to create logger: %v", err)
 	}
 	defer close()
 
@@ -32,10 +37,16 @@ func main() {
 		ProjectID: os.Getenv("GOOGLE_CLOUD_PROJECT"),
 	})
 	if err != nil {
-		rlog.Fatal(err)
+		rlog.Fatalf("Failed to create stackdriver exporter: %v", err)
 	}
 	trace.RegisterExporter(exporter)
 	defer exporter.Flush()
+
+	dsClient, err = clouddatastore.FromContext(context.Background())
+	if err != nil {
+		rlog.Fatalf("Failed to create cloud datastore client: %v", err)
+	}
+	defer dsClient.Close()
 
 	handlerMain()
 
@@ -97,6 +108,7 @@ func handlerMain() {
 	})
 
 	ucon.HandleFunc("GET", "/fibonacci", fibonacciHandler)
+	ucon.HandleFunc("GET", "/datastore", datastoreHandler)
 
 	ucon.HandleFunc("GET", "/", indexHandler)
 }
@@ -163,4 +175,39 @@ func fibonacci() func() int {
 		f, g = g, f+g
 		return f
 	}
+}
+
+type Go111SampleKind struct {
+	Kind string `datastore:"-" boom:"kind,go111-sample"`
+	ID   int64  `datastore:"-" boom:"id"`
+}
+
+func datastoreHandler(w http.ResponseWriter, r *http.Request) error {
+	ctx := r.Context()
+
+	bm := boom.FromClient(ctx, dsClient)
+
+	{
+		key, err := bm.Put(&Go111SampleKind{})
+		if err != nil {
+			return err
+		}
+		fmt.Fprintf(w, "%s\n", key.String())
+	}
+	{
+		key, err := bm.Put(&Go111SampleKind{})
+		if err != nil {
+			return err
+		}
+		fmt.Fprintf(w, "%s\n", key.String())
+	}
+	{
+		key, err := bm.Put(&Go111SampleKind{})
+		if err != nil {
+			return err
+		}
+		fmt.Fprintf(w, "%s\n", key.String())
+	}
+
+	return nil
 }
