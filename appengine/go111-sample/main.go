@@ -7,11 +7,8 @@ import (
 	rlog "log"
 	"net/http"
 	"os"
-	"os/signal"
 	"strconv"
 	"sync"
-	"syscall"
-	"time"
 
 	"cloud.google.com/go/cloudtasks/apiv2beta3"
 	"contrib.go.opencensus.io/exporter/stackdriver"
@@ -23,6 +20,7 @@ import (
 	"go.mercari.io/datastore/clouddatastore"
 	"go.opencensus.io/plugin/ochttp"
 	"go.opencensus.io/trace"
+	"google.golang.org/appengine"
 	taskspb "google.golang.org/genproto/googleapis/cloud/tasks/v2beta3"
 )
 
@@ -61,32 +59,12 @@ func main() {
 
 	rlog.Printf("Listening on port %s", port)
 
-	server := &http.Server{
-		Addr: fmt.Sprintf(":%s", port),
-		Handler: &ochttp.Handler{
-			Handler:     ucon.DefaultMux,
-			Propagation: &propagation.HTTPFormat{},
-		},
-	}
+	http.Handle("/", &ochttp.Handler{
+		Handler:     ucon.DefaultMux,
+		Propagation: &propagation.HTTPFormat{},
+	})
 
-	go func() {
-		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			rlog.Fatal(err)
-		}
-	}()
-
-	rlog.Printf("running...")
-
-	// setup graceful shutdown...
-	sigCh := make(chan os.Signal, 1)
-	signal.Notify(sigCh, syscall.SIGTERM)
-	<-sigCh
-
-	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
-	if err := server.Shutdown(ctx); err != nil {
-		rlog.Fatalf("graceful shutdown failure: %s", err)
-	}
-	rlog.Printf("graceful shutdown successfully")
+	appengine.Main()
 }
 
 func handlerMain() {
