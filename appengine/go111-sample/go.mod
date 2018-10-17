@@ -5,7 +5,6 @@ require (
 	contrib.go.opencensus.io/exporter/stackdriver v0.6.0
 	github.com/MakeNowJust/heredoc v0.0.0-20171113091838-e9091a26100e // indirect
 	github.com/aws/aws-sdk-go v1.15.55 // indirect
-	github.com/blendle/zapdriver v1.1.2
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/favclip/golidator v2.1.0+incompatible // indirect
 	github.com/favclip/testerator v0.0.0-20180606025010-04c1c0fc2a5a // indirect
@@ -19,7 +18,9 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/smartystreets/assertions v0.0.0-20180927180507-b2de0cb4f26d // indirect
 	github.com/smartystreets/goconvey v0.0.0-20180222194500-ef6db91d284a // indirect
+	github.com/stretchr/objx v0.1.1 // indirect
 	github.com/stretchr/testify v1.2.2 // indirect
+	github.com/tommy351/zap-stackdriver v0.1.3
 	go.mercari.io/datastore v1.2.0
 	go.opencensus.io v0.17.0
 	go.uber.org/atomic v1.3.2 // indirect

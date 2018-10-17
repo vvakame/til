@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"go.uber.org/zap/zapcore"
 	"log"
 	"net/http"
 	"os"
@@ -16,8 +17,8 @@ import (
 	"cloud.google.com/go/cloudtasks/apiv2beta3"
 	"contrib.go.opencensus.io/exporter/stackdriver"
 	"contrib.go.opencensus.io/exporter/stackdriver/propagation"
-	"github.com/blendle/zapdriver"
 	"github.com/favclip/ucon"
+	zapstackdriver "github.com/tommy351/zap-stackdriver"
 	"go.mercari.io/datastore"
 	"go.mercari.io/datastore/boom"
 	"go.mercari.io/datastore/clouddatastore"
@@ -35,8 +36,26 @@ func main() {
 	var err error
 
 	if os.Getenv("LOCAL_EXEC") == "" {
-		config := zapdriver.NewProductionConfig()
-		logger, err = config.Build()
+		config := &zap.Config{
+			Level:            zap.NewAtomicLevelAt(zapcore.InfoLevel),
+			Encoding:         "json",
+			EncoderConfig:    zapstackdriver.EncoderConfig,
+			OutputPaths:      []string{"stdout"},
+			ErrorOutputPaths: []string{"stderr"},
+		}
+		logger, err = config.Build(
+			zap.WrapCore(func(core zapcore.Core) zapcore.Core {
+				return &zapstackdriver.Core{
+					Core: core,
+				}
+			}),
+			zap.Fields(
+				zapstackdriver.LogServiceContext(&zapstackdriver.ServiceContext{
+					Service: "foo",
+					Version: "bar",
+				}),
+			),
+		)
 		if err != nil {
 			log.Fatalf("Failed to create zap logger: %v", err)
 		}
@@ -105,6 +124,14 @@ func handlerMain() {
 	// https://cloud.google.com/appengine/docs/standard/go111/how-instances-are-managed#instance_scaling
 	// Automatic scaling の時は動かないはず
 	ucon.HandleFunc("*", "/_ah/start", func(w http.ResponseWriter, r *http.Request) {
+		logger := logger.With(zapstackdriver.LogHTTPRequest(&zapstackdriver.HTTPRequest{
+			Method:    r.Method,
+			URL:       r.RequestURI,
+			UserAgent: r.UserAgent(),
+			Referrer:  r.Referer(),
+			RemoteIP:  r.RemoteAddr,
+		}))
+
 		logger.Info("on /_ah/start")
 		fmt.Fprint(w, "on start!")
 	})
@@ -133,6 +160,14 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	ctx, span := trace.StartSpan(ctx, "indexHandler")
 	defer span.End()
 
+	logger := logger.With(zapstackdriver.LogHTTPRequest(&zapstackdriver.HTTPRequest{
+		Method:    r.Method,
+		URL:       r.RequestURI,
+		UserAgent: r.UserAgent(),
+		Referrer:  r.Referer(),
+		RemoteIP:  r.RemoteAddr,
+	}))
+
 	logger.Debug("Hi, 1")
 	logger.Info("Hi, 2")
 
@@ -144,6 +179,14 @@ func fibonacciHandler(w http.ResponseWriter, r *http.Request) error {
 	ctx := r.Context()
 	ctx, span := trace.StartSpan(ctx, "fibonacciHandler")
 	defer span.End()
+
+	logger := logger.With(zapstackdriver.LogHTTPRequest(&zapstackdriver.HTTPRequest{
+		Method:    r.Method,
+		URL:       r.RequestURI,
+		UserAgent: r.UserAgent(),
+		Referrer:  r.Referer(),
+		RemoteIP:  r.RemoteAddr,
+	}))
 
 	f := fibonacci()
 
@@ -230,6 +273,14 @@ func cloudTasksHandler(w http.ResponseWriter, r *http.Request) error {
 
 	ctx := r.Context()
 
+	logger := logger.With(zapstackdriver.LogHTTPRequest(&zapstackdriver.HTTPRequest{
+		Method:    r.Method,
+		URL:       r.RequestURI,
+		UserAgent: r.UserAgent(),
+		Referrer:  r.Referer(),
+		RemoteIP:  r.RemoteAddr,
+	}))
+
 	taskClient, err := cloudtasks.NewClient(ctx)
 	if err != nil {
 		return err
@@ -260,6 +311,14 @@ func cloudTasksHandler(w http.ResponseWriter, r *http.Request) error {
 }
 
 func cloudTaskExecHandler(w http.ResponseWriter, r *http.Request) error {
+
+	logger := logger.With(zapstackdriver.LogHTTPRequest(&zapstackdriver.HTTPRequest{
+		Method:    r.Method,
+		URL:       r.RequestURI,
+		UserAgent: r.UserAgent(),
+		Referrer:  r.Referer(),
+		RemoteIP:  r.RemoteAddr,
+	}))
 
 	logger.Info("task done!")
 	fmt.Fprintf(w, "done!")
