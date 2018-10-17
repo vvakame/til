@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	rlog "log"
@@ -15,16 +14,13 @@ import (
 	"contrib.go.opencensus.io/exporter/stackdriver/propagation"
 	"github.com/favclip/ucon"
 	"github.com/vvakame/til/appengine/go111-sample/log"
-	"go.mercari.io/datastore"
+	"go.mercari.io/datastore/aedatastore"
 	"go.mercari.io/datastore/boom"
-	"go.mercari.io/datastore/clouddatastore"
 	"go.opencensus.io/plugin/ochttp"
 	"go.opencensus.io/trace"
 	"google.golang.org/appengine"
 	taskspb "google.golang.org/genproto/googleapis/cloud/tasks/v2beta3"
 )
-
-var dsClient datastore.Client
 
 func main() {
 
@@ -42,12 +38,6 @@ func main() {
 	}
 	trace.RegisterExporter(exporter)
 	defer exporter.Flush()
-
-	dsClient, err = clouddatastore.FromContext(context.Background())
-	if err != nil {
-		rlog.Fatalf("Failed to create cloud datastore client: %v", err)
-	}
-	defer dsClient.Close()
 
 	handlerMain()
 
@@ -70,6 +60,11 @@ func main() {
 func handlerMain() {
 	ucon.Middleware(func(b *ucon.Bubble) error {
 		b.Context = log.WithContext(b.Context, b.R)
+		b.R = b.R.WithContext(b.Context)
+		return b.Next()
+	})
+	ucon.Middleware(func(b *ucon.Bubble) error {
+		b.Context = appengine.NewContext(b.R)
 		b.R = b.R.WithContext(b.Context)
 		return b.Next()
 	})
@@ -168,7 +163,14 @@ type Go111SampleKind struct {
 func datastoreHandler(w http.ResponseWriter, r *http.Request) error {
 	ctx := r.Context()
 
+	dsClient, err := aedatastore.FromContext(ctx)
+	if err != nil {
+		return err
+	}
+
 	bm := boom.FromClient(ctx, dsClient)
+
+	log.Infof(ctx, "use AppEngine Datastore")
 
 	var wg sync.WaitGroup
 	wg.Add(3)
