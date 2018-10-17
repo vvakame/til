@@ -1,0 +1,4 @@
+runtime: go111
+service: go111-sample
+
+env_variables:
