@@ -4,8 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"go.uber.org/zap/zapcore"
-	"log"
+	rlog "log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -18,65 +17,37 @@ import (
 	"contrib.go.opencensus.io/exporter/stackdriver"
 	"contrib.go.opencensus.io/exporter/stackdriver/propagation"
 	"github.com/favclip/ucon"
-	zapstackdriver "github.com/tommy351/zap-stackdriver"
+	"github.com/vvakame/til/appengine/go111-sample/log"
 	"go.mercari.io/datastore"
 	"go.mercari.io/datastore/boom"
 	"go.mercari.io/datastore/clouddatastore"
 	"go.opencensus.io/plugin/ochttp"
 	"go.opencensus.io/trace"
-	"go.uber.org/zap"
 	taskspb "google.golang.org/genproto/googleapis/cloud/tasks/v2beta3"
 )
 
 var dsClient datastore.Client
-var logger *zap.Logger
 
 func main() {
 
-	var err error
-
-	if os.Getenv("LOCAL_EXEC") == "" {
-		config := &zap.Config{
-			Level:            zap.NewAtomicLevelAt(zapcore.InfoLevel),
-			Encoding:         "json",
-			EncoderConfig:    zapstackdriver.EncoderConfig,
-			OutputPaths:      []string{"stdout"},
-			ErrorOutputPaths: []string{"stderr"},
-		}
-		logger, err = config.Build(
-			zap.WrapCore(func(core zapcore.Core) zapcore.Core {
-				return &zapstackdriver.Core{
-					Core: core,
-				}
-			}),
-			zap.Fields(
-				zapstackdriver.LogServiceContext(&zapstackdriver.ServiceContext{
-					Service: "foo",
-					Version: "bar",
-				}),
-			),
-		)
-		if err != nil {
-			log.Fatalf("Failed to create zap logger: %v", err)
-		}
-
-	} else {
-		logger = zap.NewNop()
+	close, err := log.Init()
+	if err != nil {
+		rlog.Fatalf("Failed to create logger: %v", err)
 	}
-	defer logger.Sync()
+	defer close()
 
 	exporter, err := stackdriver.NewExporter(stackdriver.Options{
 		ProjectID: os.Getenv("GOOGLE_CLOUD_PROJECT"),
 	})
 	if err != nil {
-		log.Fatalf("Failed to create stackdriver exporter: %v", err)
+		rlog.Fatalf("Failed to create stackdriver exporter: %v", err)
 	}
 	trace.RegisterExporter(exporter)
 	defer exporter.Flush()
 
 	dsClient, err = clouddatastore.FromContext(context.Background())
 	if err != nil {
-		log.Fatalf("Failed to create cloud datastore client: %v", err)
+		rlog.Fatalf("Failed to create cloud datastore client: %v", err)
 	}
 	defer dsClient.Close()
 
@@ -85,10 +56,10 @@ func main() {
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
-		log.Printf("Defaulting to port %s", port)
+		rlog.Printf("Defaulting to port %s", port)
 	}
 
-	log.Printf("Listening on port %s", port)
+	rlog.Printf("Listening on port %s", port)
 
 	server := &http.Server{
 		Addr: fmt.Sprintf(":%s", port),
@@ -100,11 +71,11 @@ func main() {
 
 	go func() {
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatal(err)
+			rlog.Fatal(err)
 		}
 	}()
 
-	log.Printf("running...")
+	rlog.Printf("running...")
 
 	// setup graceful shutdown...
 	sigCh := make(chan os.Signal, 1)
@@ -113,30 +84,29 @@ func main() {
 
 	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
 	if err := server.Shutdown(ctx); err != nil {
-		log.Fatalf("graceful shutdown failure: %s", err)
+		rlog.Fatalf("graceful shutdown failure: %s", err)
 	}
-	log.Printf("graceful shutdown successfully")
+	rlog.Printf("graceful shutdown successfully")
 }
 
 func handlerMain() {
+	ucon.Middleware(func(b *ucon.Bubble) error {
+		b.Context = log.WithContext(b.Context, b.R)
+		b.R = b.R.WithContext(b.Context)
+		return b.Next()
+	})
 	ucon.Orthodox()
 
 	// https://cloud.google.com/appengine/docs/standard/go111/how-instances-are-managed#instance_scaling
 	// Automatic scaling の時は動かないはず
 	ucon.HandleFunc("*", "/_ah/start", func(w http.ResponseWriter, r *http.Request) {
-		logger := logger.With(zapstackdriver.LogHTTPRequest(&zapstackdriver.HTTPRequest{
-			Method:    r.Method,
-			URL:       r.RequestURI,
-			UserAgent: r.UserAgent(),
-			Referrer:  r.Referer(),
-			RemoteIP:  r.RemoteAddr,
-		}))
-
-		logger.Info("on /_ah/start")
+		ctx := r.Context()
+		log.Infof(ctx, "on /_ah/start")
 		fmt.Fprint(w, "on start!")
 	})
 	ucon.HandleFunc("*", "/_ah/stop", func(w http.ResponseWriter, r *http.Request) {
-		logger.Info("on /_ah/stop")
+		ctx := r.Context()
+		log.Infof(ctx, "on /_ah/stop")
 		fmt.Fprint(w, "on stop!")
 	})
 
@@ -160,16 +130,8 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	ctx, span := trace.StartSpan(ctx, "indexHandler")
 	defer span.End()
 
-	logger := logger.With(zapstackdriver.LogHTTPRequest(&zapstackdriver.HTTPRequest{
-		Method:    r.Method,
-		URL:       r.RequestURI,
-		UserAgent: r.UserAgent(),
-		Referrer:  r.Referer(),
-		RemoteIP:  r.RemoteAddr,
-	}))
-
-	logger.Debug("Hi, 1")
-	logger.Info("Hi, 2")
+	log.Debugf(ctx, "Hi, 1")
+	log.Infof(ctx, "Hi, 2")
 
 	fmt.Fprint(w, "Hello, World!")
 }
@@ -179,14 +141,6 @@ func fibonacciHandler(w http.ResponseWriter, r *http.Request) error {
 	ctx := r.Context()
 	ctx, span := trace.StartSpan(ctx, "fibonacciHandler")
 	defer span.End()
-
-	logger := logger.With(zapstackdriver.LogHTTPRequest(&zapstackdriver.HTTPRequest{
-		Method:    r.Method,
-		URL:       r.RequestURI,
-		UserAgent: r.UserAgent(),
-		Referrer:  r.Referer(),
-		RemoteIP:  r.RemoteAddr,
-	}))
 
 	f := fibonacci()
 
@@ -213,7 +167,7 @@ func fibonacciHandler(w http.ResponseWriter, r *http.Request) error {
 		defer span.End()
 
 		v := f()
-		logger.Debug("loop", zap.Int("index", i), zap.Int("value", v))
+		log.Debugf(ctx, "#%d: %d", i, v)
 		fmt.Fprintf(w, "%d\n", v)
 	}
 
@@ -243,7 +197,7 @@ func datastoreHandler(w http.ResponseWriter, r *http.Request) error {
 	go func() {
 		key, err := bm.Put(&Go111SampleKind{})
 		if err != nil {
-			log.Fatal(err)
+			rlog.Fatal(err)
 		}
 		fmt.Fprintf(w, "%s\n", key.String())
 		wg.Done()
@@ -251,7 +205,7 @@ func datastoreHandler(w http.ResponseWriter, r *http.Request) error {
 	go func() {
 		key, err := bm.Put(&Go111SampleKind{})
 		if err != nil {
-			log.Fatal(err)
+			rlog.Fatal(err)
 		}
 		fmt.Fprintf(w, "%s\n", key.String())
 		wg.Done()
@@ -259,7 +213,7 @@ func datastoreHandler(w http.ResponseWriter, r *http.Request) error {
 	go func() {
 		key, err := bm.Put(&Go111SampleKind{})
 		if err != nil {
-			log.Fatal(err)
+			rlog.Fatal(err)
 		}
 		fmt.Fprintf(w, "%s\n", key.String())
 		wg.Done()
@@ -272,14 +226,6 @@ func datastoreHandler(w http.ResponseWriter, r *http.Request) error {
 func cloudTasksHandler(w http.ResponseWriter, r *http.Request) error {
 
 	ctx := r.Context()
-
-	logger := logger.With(zapstackdriver.LogHTTPRequest(&zapstackdriver.HTTPRequest{
-		Method:    r.Method,
-		URL:       r.RequestURI,
-		UserAgent: r.UserAgent(),
-		Referrer:  r.Referer(),
-		RemoteIP:  r.RemoteAddr,
-	}))
 
 	taskClient, err := cloudtasks.NewClient(ctx)
 	if err != nil {
@@ -303,7 +249,7 @@ func cloudTasksHandler(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return err
 	}
-	logger.Info("on taskClient.CreateTask", zap.Any("task", task))
+	log.Infof(ctx, "on taskClient.CreateTask: %+v", task)
 
 	fmt.Fprintf(w, "added!")
 
@@ -312,15 +258,9 @@ func cloudTasksHandler(w http.ResponseWriter, r *http.Request) error {
 
 func cloudTaskExecHandler(w http.ResponseWriter, r *http.Request) error {
 
-	logger := logger.With(zapstackdriver.LogHTTPRequest(&zapstackdriver.HTTPRequest{
-		Method:    r.Method,
-		URL:       r.RequestURI,
-		UserAgent: r.UserAgent(),
-		Referrer:  r.Referer(),
-		RemoteIP:  r.RemoteAddr,
-	}))
+	ctx := r.Context()
 
-	logger.Info("task done!")
+	log.Infof(ctx, "task done!")
 	fmt.Fprintf(w, "done!")
 
 	return nil

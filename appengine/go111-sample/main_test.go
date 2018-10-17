@@ -11,12 +11,10 @@ import (
 	"testing"
 
 	"github.com/favclip/ucon"
-	"go.uber.org/zap"
 )
 
 func TestMain(m *testing.M) {
 	handlerMain()
-	logger = zap.NewNop()
 
 	os.Exit(m.Run())
 }
