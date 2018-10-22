@@ -7,8 +7,8 @@ const author = "vvakame";
 const ignoreOrgs = [
     "TechBooster",
 ];
-const start = new Date("2018-10-06T09:00:00Z");
-const end = new Date("2018-10-13T09:00:00Z");
+const start = new Date("2018-10-13T09:00:00Z");
+const end = new Date("2018-10-20T09:00:00Z");
 
 // https://developer.github.com/v4/explorer/
 const query = `
