@@ -3,13 +3,13 @@ package log
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"strings"
 	"sync"
 
+	"cloud.google.com/go/compute/metadata"
 	"cloud.google.com/go/logging"
 	"google.golang.org/genproto/googleapis/api/monitoredres"
 )
@@ -74,25 +74,11 @@ func emitf(severity logging.Severity, ctx context.Context, format string, args .
 			zone = v
 			return
 		}
-
-		req, err := http.NewRequest("GET", "http://metadata.google.internal/computeMetadata/v1/instance/zone", nil)
+		v, err := metadata.Zone()
 		if err != nil {
-			log.Fatalf("can't create http request: %s", err.Error())
+			log.Fatalf("can't get zone metadata: %s", err.Error())
 		}
-		req.Header.Add("Metadata-Flavor", "Google")
-		resp, err := http.DefaultClient.Do(req)
-		if err != nil {
-			log.Fatalf("can't fetch metadata: %s", err.Error())
-		}
-		b, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			log.Fatalf("can't read metadata: %s", err.Error())
-		}
-		ss := strings.SplitN(string(b), "/", 4)
-		if v := len(ss); v != 4 {
-			log.Fatalf("unexpected metadata format: %s", string(b))
-		}
-		zone = ss[3]
+		zone = v
 	})
 
 	// TODO なんとかして os.Getenv("GAE_DEPLOYMENT_ID") を記録しておきたい…
