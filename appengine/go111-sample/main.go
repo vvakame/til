@@ -14,19 +14,19 @@ import (
 	"time"
 
 	"cloud.google.com/go/cloudtasks/apiv2beta3"
+	clouddatastore "cloud.google.com/go/datastore"
 	"contrib.go.opencensus.io/exporter/stackdriver"
 	"contrib.go.opencensus.io/exporter/stackdriver/propagation"
 	"github.com/favclip/ucon"
 	"github.com/vvakame/til/appengine/go111-sample/log"
-	"go.mercari.io/datastore"
 	"go.mercari.io/datastore/boom"
-	"go.mercari.io/datastore/clouddatastore"
+	cloudds "go.mercari.io/datastore/clouddatastore"
 	"go.opencensus.io/plugin/ochttp"
 	"go.opencensus.io/trace"
 	taskspb "google.golang.org/genproto/googleapis/cloud/tasks/v2beta3"
 )
 
-var dsClient datastore.Client
+var dsClient *clouddatastore.Client
 
 func main() {
 
@@ -45,7 +45,7 @@ func main() {
 	trace.RegisterExporter(exporter)
 	defer exporter.Flush()
 
-	dsClient, err = clouddatastore.FromContext(context.Background())
+	dsClient, err = clouddatastore.NewClient(context.Background(), os.Getenv("GOOGLE_CLOUD_PROJECT"))
 	if err != nil {
 		rlog.Fatalf("Failed to create cloud datastore client: %v", err)
 	}
@@ -190,7 +190,14 @@ type Go111SampleKind struct {
 func datastoreHandler(w http.ResponseWriter, r *http.Request) error {
 	ctx := r.Context()
 
-	bm := boom.FromClient(ctx, dsClient)
+	var bm *boom.Boom
+	{
+		client, err := cloudds.FromClient(ctx, dsClient)
+		if err != nil {
+			return err
+		}
+		bm = boom.FromClient(ctx, client)
+	}
 
 	var wg sync.WaitGroup
 	wg.Add(3)
