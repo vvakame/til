@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+
+package chat;
+
+message SpeakRequest {
+    string user_name = 1;
+    string message = 2;
+}
+
+message SpeakResponse {
+    int32 speak_id = 1;
+    string user_name = 2;
+    string message = 3;
+    google.protobuf.Timestamp speak_at = 4;
+}
+
+message ListenSpeakRequest {
+}
+
+service ChatService {
+    rpc Speak(SpeakRequest) returns (SpeakResponse);
+    rpc ListenSpeak(ListenSpeakRequest) returns (stream SpeakResponse);
+}
