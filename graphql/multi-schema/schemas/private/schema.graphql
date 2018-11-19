@@ -1,0 +1,16 @@
+# GraphQL schema example
+#
+# https://gqlgen.com/getting-started/
+
+extend type User {
+  staff: Boolean!
+}
+
+input NewUser {
+  name: String!
+  staff: Boolean!
+}
+
+extend type Mutation {
+  createUser(input: NewUser!): User!
+}
