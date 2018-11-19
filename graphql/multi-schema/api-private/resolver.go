@@ -6,6 +6,12 @@ import "github.com/vvakame/til/graphql/multi-schema/api-impl"
 
 var _ ResolverRoot = (*Resolver)(nil)
 
+func NewDirectiveRoot() DirectiveRoot {
+	return DirectiveRoot{
+		HasRole: api_impl.HasRole,
+	}
+}
+
 type Resolver api_impl.Resolver
 
 func NewResolver() ResolverRoot {

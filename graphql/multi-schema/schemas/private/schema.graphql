@@ -1,9 +1,12 @@
-# GraphQL schema example
-#
-# https://gqlgen.com/getting-started/
+enum Role {
+  PUBLIC
+  STAFF
+}
+
+directive @hasRole(requires: Role) on OBJECT | FIELD_DEFINITION
 
 extend type User {
-  staff: Boolean!
+  staff: Boolean! @hasRole(requires: STAFF)
 }
 
 input NewUser {
@@ -12,5 +15,5 @@ input NewUser {
 }
 
 extend type Mutation {
-  createUser(input: NewUser!): User!
+  createUser(input: NewUser!): User! @hasRole
 }

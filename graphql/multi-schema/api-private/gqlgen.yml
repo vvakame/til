@@ -13,6 +13,8 @@ model:
   filename: models_gen.go
 
 models:
+  Role:
+    model: github.com/vvakame/til/graphql/multi-schema/api-impl.Role
   NewTodo:
     model: github.com/vvakame/til/graphql/multi-schema/api-impl.NewTodo
   Todo:

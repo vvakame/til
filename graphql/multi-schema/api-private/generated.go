@@ -37,6 +37,7 @@ type ResolverRoot interface {
 }
 
 type DirectiveRoot struct {
+	HasRole func(ctx context.Context, obj interface{}, next graphql.Resolver, requires *api_impl.Role) (res interface{}, err error)
 }
 
 type ComplexityRoot struct {
@@ -145,6 +146,26 @@ func field___Type_enumValues_args(rawArgs map[string]interface{}) (map[string]in
 		}
 	}
 	args["includeDeprecated"] = arg0
+	return args, nil
+
+}
+
+func dir_hasRole_args(rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	args := map[string]interface{}{}
+	var arg0 *api_impl.Role
+	if tmp, ok := rawArgs["requires"]; ok {
+		var err error
+		var ptr1 api_impl.Role
+		if tmp != nil {
+			err = (&ptr1).UnmarshalGQL(tmp)
+			arg0 = &ptr1
+		}
+
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["requires"] = arg0
 	return args, nil
 
 }
@@ -2334,6 +2355,24 @@ func (ec *executionContext) FieldMiddleware(ctx context.Context, obj interface{}
 			ret = nil
 		}
 	}()
+	rctx := graphql.GetResolverContext(ctx)
+	for _, d := range rctx.Field.Definition.Directives {
+		switch d.Name {
+		case "hasRole":
+			if ec.directives.HasRole != nil {
+				rawArgs := d.ArgumentMap(ec.Variables)
+				args, err := dir_hasRole_args(rawArgs)
+				if err != nil {
+					ec.Error(ctx, err)
+					return nil
+				}
+				n := next
+				next = func(ctx context.Context) (interface{}, error) {
+					return ec.directives.HasRole(ctx, obj, n, args["requires"].(*api_impl.Role))
+				}
+			}
+		}
+	}
 	res, err := ec.ResolverMiddleware(ctx, next)
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2351,12 +2390,15 @@ func (ec *executionContext) introspectType(name string) *introspection.Type {
 }
 
 var parsedSchema = gqlparser.MustLoadSchema(
-	&ast.Source{Name: "../schemas/private/schema.graphql", Input: `# GraphQL schema example
-#
-# https://gqlgen.com/getting-started/
+	&ast.Source{Name: "../schemas/private/schema.graphql", Input: `enum Role {
+  PUBLIC
+  STAFF
+}
+
+directive @hasRole(requires: Role) on OBJECT | FIELD_DEFINITION
 
 extend type User {
-  staff: Boolean!
+  staff: Boolean! @hasRole(requires: STAFF)
 }
 
 input NewUser {
@@ -2365,7 +2407,7 @@ input NewUser {
 }
 
 extend type Mutation {
-  createUser(input: NewUser!): User!
+  createUser(input: NewUser!): User! @hasRole
 }
 `},
 	&ast.Source{Name: "../schemas/public/schema.graphql", Input: `# GraphQL schema example

@@ -23,7 +23,8 @@ func main() {
 		handler.GraphQL(
 			api.NewExecutableSchema(
 				api.Config{
-					Resolvers: api.NewResolver(),
+					Resolvers:  api.NewResolver(),
+					Directives: api.NewDirectiveRoot(),
 				},
 			),
 			handler.RequestMiddleware(gqlapollotracing.RequestMiddleware()),
