@@ -1,0 +1,19 @@
+enum Role {
+  PUBLIC
+  STAFF
+}
+
+directive @hasRole(requires: Role) on OBJECT | FIELD_DEFINITION
+
+extend type User {
+  staff: Boolean! @hasRole(requires: STAFF)
+}
+
+input NewUser {
+  name: String!
+  staff: Boolean!
+}
+
+extend type Mutation {
+  createUser(input: NewUser!): User! @hasRole
+}

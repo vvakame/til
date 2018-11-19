@@ -1,0 +1,20 @@
+# .gqlgen.yml example
+#
+# Refer to https://gqlgen.com/config/
+# for detailed .gqlgen.yml documentation.
+
+schema:
+- ../schemas/public/schema.graphql
+
+exec:
+  filename: generated.go
+model:
+  filename: models_gen.go
+
+models:
+  NewTodo:
+    model: github.com/vvakame/til/graphql/multi-schema/api-impl.NewTodo
+  Todo:
+    model: github.com/vvakame/til/graphql/multi-schema/api-impl.Todo
+  User:
+    model: github.com/vvakame/til/graphql/multi-schema/api-impl.User
