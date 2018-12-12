@@ -2,10 +2,20 @@ package main
 
 import (
 	"context"
-	"contrib.go.opencensus.io/exporter/stackdriver"
-	"contrib.go.opencensus.io/exporter/stackdriver/propagation"
 	"errors"
 	"fmt"
+	rlog "log"
+	"net"
+	"net/http"
+	"os"
+	"os/signal"
+	"path/filepath"
+	"sync"
+	"syscall"
+	"time"
+
+	"contrib.go.opencensus.io/exporter/stackdriver"
+	"contrib.go.opencensus.io/exporter/stackdriver/propagation"
 	"github.com/favclip/ucon"
 	"github.com/vvakame/til/appengine/go111-internal-grpc/echopb"
 	"github.com/vvakame/til/appengine/go111-internal-grpc/log"
@@ -16,15 +26,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
-	rlog "log"
-	"net"
-	"net/http"
-	"os"
-	"os/signal"
-	"path/filepath"
-	"sync"
-	"syscall"
-	"time"
 )
 
 var echoCli echopb.EchoClient

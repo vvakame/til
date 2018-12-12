@@ -2,12 +2,13 @@ package main
 
 import (
 	"context"
+	"strings"
+
 	"github.com/golang/protobuf/ptypes"
 	"github.com/vvakame/til/appengine/go111-internal-grpc/echopb"
 	"go.opencensus.io/trace"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"strings"
 )
 
 var _ echopb.EchoServer = (*echoServiceImpl)(nil)
