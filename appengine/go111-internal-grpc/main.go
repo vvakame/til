@@ -9,10 +9,13 @@ import (
 	"github.com/favclip/ucon"
 	"github.com/vvakame/til/appengine/go111-internal-grpc/echopb"
 	"github.com/vvakame/til/appengine/go111-internal-grpc/log"
+	"go.opencensus.io/plugin/ocgrpc"
 	"go.opencensus.io/plugin/ochttp"
+	"go.opencensus.io/stats/view"
 	"go.opencensus.io/trace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
+	"google.golang.org/grpc/status"
 	rlog "log"
 	"net"
 	"net/http"
@@ -40,6 +43,10 @@ func main() {
 		rlog.Fatalf("Failed to create stackdriver exporter: %v", err)
 	}
 	trace.RegisterExporter(exporter)
+	view.RegisterExporter(exporter)
+	trace.ApplyConfig(trace.Config{
+		DefaultSampler: trace.AlwaysSample(),
+	})
 	defer exporter.Flush()
 
 	ucon.Middleware(func(b *ucon.Bubble) error {
@@ -63,8 +70,9 @@ func main() {
 	server := &http.Server{
 		Addr: fmt.Sprintf(":%s", port),
 		Handler: &ochttp.Handler{
-			Handler:     ucon.DefaultMux,
-			Propagation: &propagation.HTTPFormat{},
+			Handler:          ucon.DefaultMux,
+			IsPublicEndpoint: true,
+			Propagation:      &propagation.HTTPFormat{},
 		},
 	}
 
@@ -84,7 +92,14 @@ func main() {
 	if err != nil {
 		rlog.Fatal(err)
 	}
-	grpcServer := grpc.NewServer()
+	if err := view.Register(ocgrpc.DefaultClientViews...); err != nil {
+		rlog.Fatalf("Failed to register gRPC client views: %v", err)
+	}
+	if err := view.Register(ocgrpc.DefaultServerViews...); err != nil {
+		rlog.Fatalf("Failed to register gRPC server views: %v", err)
+	}
+
+	grpcServer := grpc.NewServer(grpc.StatsHandler(&ocgrpc.ServerHandler{}))
 	echopb.RegisterEchoServer(grpcServer, &echoServiceImpl{})
 	reflection.Register(grpcServer)
 
@@ -130,13 +145,22 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func echoHandler(ctx context.Context, req *echopb.SayRequest) (*echopb.SayResponse, error) {
+	ctx, span := trace.StartSpan(ctx, "echoHandler")
+	defer span.End()
+	span.AddAttributes(trace.StringAttribute("messageId", req.MessageId))
+	span.AddAttributes(trace.StringAttribute("messageBody", req.MessageBody))
+
 	echoOnce.Do(func() {
 		port := os.Getenv("GRPC_PORT")
 		if port == "" {
 			port = "5000"
 		}
 
-		conn, err := grpc.Dial(fmt.Sprintf("localhost:%s", port), grpc.WithInsecure())
+		conn, err := grpc.Dial(
+			fmt.Sprintf("localhost:%s", port),
+			grpc.WithInsecure(),
+			grpc.WithStatsHandler(&ocgrpc.ClientHandler{}),
+		)
 		if err != nil {
 			return
 		}
@@ -147,5 +171,12 @@ func echoHandler(ctx context.Context, req *echopb.SayRequest) (*echopb.SayRespon
 		return nil, errors.New("echoCli is nil")
 	}
 
-	return echoCli.Say(ctx, req)
+	resp, err := echoCli.Say(ctx, req)
+	status := status.Convert(err)
+	log.Debugf(ctx, "%#v", status)
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
 }
