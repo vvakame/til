@@ -21,6 +21,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"sync"
 	"syscall"
 	"time"
@@ -82,16 +83,6 @@ func main() {
 		}
 	}()
 
-	port = os.Getenv("GRPC_PORT")
-	if port == "" {
-		port = "5000"
-		rlog.Printf("Defaulting to port %s for gRPC", port)
-	}
-
-	lis, err := net.Listen("tcp", fmt.Sprintf("localhost:%s", port))
-	if err != nil {
-		rlog.Fatal(err)
-	}
 	if err := view.Register(ocgrpc.DefaultClientViews...); err != nil {
 		rlog.Fatalf("Failed to register gRPC client views: %v", err)
 	}
@@ -103,10 +94,18 @@ func main() {
 	echopb.RegisterEchoServer(grpcServer, &echoServiceImpl{})
 	reflection.Register(grpcServer)
 
-	rlog.Printf("Listening gRPC on port %s", port)
+	socketPath := filepath.Join(os.TempDir(), "go111-internal-grpc")
+	os.Remove(socketPath)
+	listener, err := net.Listen("unix", socketPath)
+	if err != nil {
+		rlog.Fatal(err)
+	}
+	defer listener.Close()
+
+	rlog.Printf("Listening gRPC on unix domain socket %s", socketPath)
 
 	go func() {
-		if err := grpcServer.Serve(lis); err != nil && err != http.ErrServerClosed {
+		if err := grpcServer.Serve(listener); err != nil && err != http.ErrServerClosed {
 			rlog.Fatal(err)
 		}
 	}()
@@ -151,14 +150,13 @@ func echoHandler(ctx context.Context, req *echopb.SayRequest) (*echopb.SayRespon
 	span.AddAttributes(trace.StringAttribute("messageBody", req.MessageBody))
 
 	echoOnce.Do(func() {
-		port := os.Getenv("GRPC_PORT")
-		if port == "" {
-			port = "5000"
-		}
-
+		socketPath := filepath.Join(os.TempDir(), "go111-internal-grpc")
 		conn, err := grpc.Dial(
-			fmt.Sprintf("localhost:%s", port),
+			socketPath,
 			grpc.WithInsecure(),
+			grpc.WithDialer(func(addr string, timeout time.Duration) (net.Conn, error) {
+				return net.DialTimeout("unix", addr, timeout)
+			}),
 			grpc.WithStatsHandler(&ocgrpc.ClientHandler{}),
 		)
 		if err != nil {
