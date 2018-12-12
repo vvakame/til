@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package vvakame.echo;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/vvakame/til/appengine/go111-internal-grpc/echopb";
+
+service Echo {
+  rpc Say(SayRequest) returns (SayResponse) {};
+}
+
+message SayRequest {
+  string message_id = 1;
+  string message_body = 2;
+}
+
+message SayResponse {
+  string message_id = 1;
+  string message_body = 2;
+  google.protobuf.Timestamp received = 3;
+}
