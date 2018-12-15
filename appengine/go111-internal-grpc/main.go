@@ -2,20 +2,18 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	rlog "log"
 	"net"
 	"net/http"
 	"os"
 	"os/signal"
-	"path/filepath"
-	"sync"
 	"syscall"
 	"time"
 
 	"contrib.go.opencensus.io/exporter/stackdriver"
 	"contrib.go.opencensus.io/exporter/stackdriver/propagation"
+	"github.com/akutz/memconn"
 	"github.com/favclip/ucon"
 	"github.com/vvakame/til/appengine/go111-internal-grpc/echopb"
 	"github.com/vvakame/til/appengine/go111-internal-grpc/log"
@@ -29,7 +27,6 @@ import (
 )
 
 var echoCli echopb.EchoClient
-var echoOnce sync.Once
 
 func main() {
 	close, err := log.Init()
@@ -95,21 +92,33 @@ func main() {
 	echopb.RegisterEchoServer(grpcServer, &echoServiceImpl{})
 	reflection.Register(grpcServer)
 
-	socketPath := filepath.Join(os.TempDir(), "go111-internal-grpc")
-	os.Remove(socketPath)
-	listener, err := net.Listen("unix", socketPath)
+	listener, err := memconn.Listen("memu", "grpc")
 	if err != nil {
 		rlog.Fatal(err)
 	}
 	defer listener.Close()
 
-	rlog.Printf("Listening gRPC on unix domain socket %s", socketPath)
+	rlog.Print("Listening gRPC on net.Pipe")
 
 	go func() {
 		if err := grpcServer.Serve(listener); err != nil && err != http.ErrServerClosed {
 			rlog.Fatal(err)
 		}
 	}()
+
+	conn, err := grpc.Dial(
+		"grpc",
+		grpc.WithInsecure(),
+		grpc.WithDialer(func(addr string, timeout time.Duration) (net.Conn, error) {
+			return memconn.Dial("memu", addr)
+		}),
+		grpc.WithStatsHandler(&ocgrpc.ClientHandler{}),
+	)
+	if err != nil {
+		rlog.Fatal(err)
+	}
+
+	echoCli = echopb.NewEchoClient(conn)
 
 	rlog.Printf("running...")
 
@@ -149,26 +158,6 @@ func echoHandler(ctx context.Context, req *echopb.SayRequest) (*echopb.SayRespon
 	defer span.End()
 	span.AddAttributes(trace.StringAttribute("messageId", req.MessageId))
 	span.AddAttributes(trace.StringAttribute("messageBody", req.MessageBody))
-
-	echoOnce.Do(func() {
-		socketPath := filepath.Join(os.TempDir(), "go111-internal-grpc")
-		conn, err := grpc.Dial(
-			socketPath,
-			grpc.WithInsecure(),
-			grpc.WithDialer(func(addr string, timeout time.Duration) (net.Conn, error) {
-				return net.DialTimeout("unix", addr, timeout)
-			}),
-			grpc.WithStatsHandler(&ocgrpc.ClientHandler{}),
-		)
-		if err != nil {
-			return
-		}
-
-		echoCli = echopb.NewEchoClient(conn)
-	})
-	if echoCli == nil {
-		return nil, errors.New("echoCli is nil")
-	}
 
 	resp, err := echoCli.Say(ctx, req)
 	status := status.Convert(err)
