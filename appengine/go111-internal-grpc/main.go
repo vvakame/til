@@ -15,6 +15,7 @@ import (
 	"contrib.go.opencensus.io/exporter/stackdriver/propagation"
 	"github.com/akutz/memconn"
 	"github.com/favclip/ucon"
+	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/vvakame/til/appengine/go111-internal-grpc/echopb"
 	"github.com/vvakame/til/appengine/go111-internal-grpc/log"
 	"go.opencensus.io/plugin/ocgrpc"
@@ -34,6 +35,8 @@ func main() {
 		rlog.Fatalf("Failed to create logger: %v", err)
 	}
 	defer close()
+
+	ctx := context.Background()
 
 	exporter, err := stackdriver.NewExporter(stackdriver.Options{
 		ProjectID: os.Getenv("GOOGLE_CLOUD_PROJECT"),
@@ -120,6 +123,15 @@ func main() {
 
 	echoCli = echopb.NewEchoClient(conn)
 
+	mux := runtime.NewServeMux()
+	err = echopb.RegisterEchoHandlerClient(ctx, mux, echoCli)
+	if err != nil {
+		rlog.Fatal(err)
+	}
+	ucon.HandleFunc("*", "/v1/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mux.ServeHTTP(w, r)
+	}))
+
 	rlog.Printf("running...")
 
 	// setup graceful shutdown...
@@ -127,7 +139,7 @@ func main() {
 	signal.Notify(sigCh, syscall.SIGTERM)
 	<-sigCh
 
-	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, _ = context.WithTimeout(context.Background(), 10*time.Second)
 	if err := server.Shutdown(ctx); err != nil {
 		rlog.Fatalf("graceful shutdown failure: %s", err)
 	}
