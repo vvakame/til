@@ -11,6 +11,7 @@ require (
 	github.com/golang/protobuf v1.2.0
 	github.com/google/martian v2.1.0+incompatible // indirect
 	github.com/googleapis/gax-go v2.0.2+incompatible // indirect
+	github.com/grpc-ecosystem/grpc-gateway v1.6.2
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/stretchr/testify v1.2.2 // indirect
 	go.opencensus.io v0.18.0

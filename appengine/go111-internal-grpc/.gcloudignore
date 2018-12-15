@@ -26,6 +26,8 @@
 
 # misc
 .idea/
+bin/
+vendor/
 .envrc
 .envrc.sample
 README.md

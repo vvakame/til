@@ -2,3 +2,6 @@
 
 .envrc
 vvakame-playground*.json
+
+bin/
+vendor/

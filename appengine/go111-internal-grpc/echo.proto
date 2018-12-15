@@ -1,13 +1,19 @@
 syntax = "proto3";
 
-package vvakame.echo;
+package echo;
 
+import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/vvakame/til/appengine/go111-internal-grpc/echopb";
 
 service Echo {
-  rpc Say(SayRequest) returns (SayResponse) {};
+  rpc Say(SayRequest) returns (SayResponse) {
+    option (google.api.http) = {
+      post : "/v1/echo/say"
+      body : "*"
+    };
+  };
 }
 
 message SayRequest {
