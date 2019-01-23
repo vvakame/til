@@ -5,10 +5,11 @@ const authToken = process.env["GITHUB_TOKEN"];
 
 const author = "vvakame";
 const ignoreOrgs = [
+    "techbookfest",
     "TechBooster",
 ];
-const start = new Date("2018-11-24T09:00:00Z");
-const end = new Date("2018-12-01T09:00:00Z");
+const start = new Date("2019-01-12T09:00:00Z");
+const end = new Date("2019-01-19T09:00:00Z");
 
 // https://developer.github.com/v4/explorer/
 const query = `
