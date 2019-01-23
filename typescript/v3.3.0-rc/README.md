@@ -4,7 +4,7 @@
 
 [TypeScript 3.3 RC](https://blogs.msdn.microsoft.com/typescript/2019/01/23/announcing-typescript-3-3-rc/)がアナウンスされました。
 
-[What's new in TypeScriptも更新](https://github.com/Microsoft/TypeScript/wiki/What's-new-in-TypeScript#typescript-33)されて…いません！！ナンデ？？？
+[What's new in TypeScriptも更新](https://github.com/Microsoft/TypeScript/wiki/What's-new-in-TypeScript#typescript-33)されています。
 v3.3.0では破壊的変更<!-- https://github.com/Microsoft/TypeScript/wiki/Breaking-Changes#typescript-33 -->は存在しない予定です。エライ！
 
 [この辺](https://github.com/vvakame/til/tree/master/typescript/v3.3.0-rc)に僕が試した時のコードを投げてあります。
