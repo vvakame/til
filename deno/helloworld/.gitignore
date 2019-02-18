@@ -1,0 +1,4 @@
+# deno https://denopkg.com/syumai/deno-libs/denoinit/denoinit.ts --allow-write --allow-env --allow-run
+tsconfig.json
+
+deno_modules/gen
