@@ -1,0 +1,22 @@
+{
+  "name": "apollo-link-subscription",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "download-schema": "apollo schema:download --endpoint https://api.github.com/graphql --header \"Authorization: Bearer ${GITHUB_TOKEN}\"",
+    "codegen": "apollo client:codegen --localSchemaFile=./schema.json --addTypename --target=typescript --outputFlat src/graphql"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/graphql": "^14.0.7",
+    "apollo": "^2.6.0",
+    "typescript": "^3.3.3333"
+  },
+  "dependencies": {
+    "apollo-cache-inmemory": "^1.5.1",
+    "apollo-client": "^2.5.1",
+    "graphql-tag": "^2.10.1"
+  }
+}
