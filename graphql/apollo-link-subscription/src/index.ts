@@ -1,4 +1,4 @@
-import { graphql, print } from "graphql";
+import { graphql, graphqlSync, print, introspectionQuery } from "graphql";
 import { makeExecutableSchema, addMockFunctionsToSchema } from 'graphql-tools';
 import { ApolloLink, Observable, Operation, NextLink, FetchResult } from "apollo-link";
 
@@ -8,6 +8,7 @@ import { InMemoryCache } from "apollo-cache-inmemory";
 
 const schemaString = `
 type Query {
+  node(id: ID!): Node
   comment(id: ID): Comment
 }
 
@@ -15,7 +16,11 @@ type Subscription {
   commentAdded: Comment
 }
 
-type Comment {
+interface Node {
+  id: ID!
+}
+
+type Comment implements Node {
   id: ID!
   text: String!
 }
@@ -23,7 +28,7 @@ type Comment {
 
 const schema = makeExecutableSchema({ typeDefs: schemaString });
 addMockFunctionsToSchema({ schema });
-
+const introspectionResult = graphqlSync(schema, introspectionQuery).data!;
 
 function idReceiver(): Observable<string> {
   return new Observable<string>(observer => {
@@ -55,12 +60,16 @@ class SubscribeLink extends ApolloLink {
       }
       return null;
     }
-    const subscriptionDef = query.definitions.find(def => def.kind === "OperationDefinition" && def.operation === "subscription");
-    if (!subscriptionDef) {
+    const def = query.definitions.find(def => def.kind === "OperationDefinition" && def.operation === "subscription");
+    if (!def) {
       if (forward) {
         return forward(operation);
       }
       return null;
+    }
+    if (def.kind !== "OperationDefinition" || def.operation !== "subscription") {
+      // for type narrowing
+      throw new Error("unexpected state");
     }
 
     // 肩代わり開始
@@ -71,17 +80,35 @@ class SubscribeLink extends ApolloLink {
         (async () => {
           try {
             await delay(800);
+            const sel = def.selectionSet.selections[0];
+            let name = "default";
+            if (sel.kind === "Field") {
+              if (sel.alias) {
+                name = sel.alias.value;
+              } else {
+                name = sel.name.value;
+              }
+              sel.selectionSet
+            }
+            const subscriptionType: string = introspectionResult.__schema.subscriptionType.name;
+            const subscription = introspectionResult.__schema.types.find((t: any) => t.kind === "OBJECT" && t.name === subscriptionType);
+            const resultType = subscription.fields.find((f: any) => f.name === (sel as any).name.value);
+
+            const queryName = `Resolve_${operationName}`;
             const query = gql`
-              query AlternativeGet($id: ID!) {
-                commentAdded: comment(id: $id) {
-                  # ここsubscriptionのselectionで代替したい
-                  id
-                  text
+              query ${queryName} ($id: ID!) {
+                ${name}: node(id: $id) {
+                  ... on ${resultType.type.name} {
+                    __typename
+                  }
                 }
               }
             `;
+            (query as any).definitions[0].selectionSet.selections[0].selectionSet.selections[0].selectionSet = (sel as any).selectionSet;
+            console.log(print(query));
+
             const variables = { id };
-            const result = await graphql(schema, print(query), null, null, variables, "AlternativeGet");
+            const result = await graphql(schema, print(query), null, null, variables, queryName);
             console.log("alternative result", JSON.stringify(result, null, 2));
             observer.next(result);
             observer.complete();
