@@ -9,7 +9,7 @@ Roadmapは[こちら](https://github.com/Microsoft/TypeScript/wiki/Roadmap#34-ma
 v3.4.0での[破壊的変更](https://github.com/Microsoft/TypeScript/wiki/Breaking-Changes#typescript-34)はこちら。
 
 今回から進捗管理の方法に変化があるようですね。
-外部から変更を後押しやすくなった印象です。
+外部から変更を後追いしやすくなった印象です。
 
 * [TypeScript 3.4 Iteration Plan](https://github.com/Microsoft/TypeScript/issues/30281)
 * [TypeScript Roadmap: January - June 2019](https://github.com/Microsoft/TypeScript/issues/29288)
