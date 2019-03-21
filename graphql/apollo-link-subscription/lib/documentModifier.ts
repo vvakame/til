@@ -1,5 +1,6 @@
-import { DefinitionNode, OperationDefinitionNode, IntrospectionQuery, DocumentNode, visitWithTypeInfo, TypeInfo, buildClientSchema, visit, ASTNode } from "graphql";
 import { Operation } from "apollo-link";
+
+import { DefinitionNode, OperationDefinitionNode, IntrospectionQuery, DocumentNode, visit, ASTNode } from "graphql";
 import gql from "graphql-tag";
 
 export function findSubscription(operation: Operation): OperationDefinitionNode | null {

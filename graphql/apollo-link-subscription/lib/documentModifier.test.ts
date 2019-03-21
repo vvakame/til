@@ -1,7 +1,8 @@
 import { print, graphqlSync, introspectionQuery, IntrospectionQuery } from "graphql";
 import { makeExecutableSchema } from "graphql-tools";
-import { createOperation } from "apollo-link";
 import gql, { resetCaches } from "graphql-tag";
+
+import { createOperation } from "apollo-link";
 
 import { findSubscription, subscriptionToQuery } from "./documentModifier";
 

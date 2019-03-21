@@ -1,10 +1,11 @@
-import { graphql, graphqlSync, print, introspectionQuery, IntrospectionQuery } from "graphql";
-import { makeExecutableSchema, addMockFunctionsToSchema } from 'graphql-tools';
-import { ApolloLink, Observable, Operation, NextLink, FetchResult } from "apollo-link";
-
-import gql from "graphql-tag";
 import { ApolloClient } from "apollo-client";
 import { InMemoryCache, NormalizedCacheObject } from "apollo-cache-inmemory";
+import { ApolloLink, Observable } from "apollo-link";
+
+import { graphql, graphqlSync, print, introspectionQuery, IntrospectionQuery } from "graphql";
+import { makeExecutableSchema, addMockFunctionsToSchema } from 'graphql-tools';
+import gql from "graphql-tag";
+
 import { SubscriptionCovertLink, EntityInfo } from "../lib/";
 
 import fs from "fs";

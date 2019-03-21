@@ -1,7 +1,7 @@
-import { IntrospectionQuery, DocumentNode, print } from "graphql";
-
 import { ApolloClient, ApolloQueryResult } from "apollo-client";
 import { ApolloLink, Observable, Operation, NextLink, FetchResult } from "apollo-link";
+
+import { IntrospectionQuery, DocumentNode } from "graphql";
 
 import { subscriptionToQuery, AlternativeQueries } from "./documentModifier";
 
