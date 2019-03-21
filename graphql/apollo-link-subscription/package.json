@@ -4,9 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "jest",
-    "download-schema": "apollo schema:download --endpoint https://api.github.com/graphql --header \"Authorization: Bearer ${GITHUB_TOKEN}\"",
-    "codegen": "apollo client:codegen --localSchemaFile=./schema.json --addTypename --target=typescript --outputFlat src/graphql"
+    "test": "jest"
   },
   "author": "",
   "license": "ISC",
@@ -14,9 +12,11 @@
     "@babel/preset-env": "^7.3.4",
     "@babel/preset-react": "^7.0.0",
     "@babel/preset-typescript": "^7.3.3",
+    "@types/glob": "^7.1.1",
     "@types/graphql": "^14.0.7",
     "@types/jest": "^24.0.11",
     "apollo": "^2.6.0",
+    "glob": "^7.1.3",
     "jest": "^24.5.0",
     "typescript": "^3.3.3333"
   },

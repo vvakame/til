@@ -33,7 +33,11 @@ export function findSubscription(operation: Operation): OperationDefinitionNode 
     return def;
 }
 
-export function subscriptionToQuery(introspectionResult: IntrospectionQuery, operation: Operation): { [fieldName: string]: DocumentNode; } | null {
+export type AlternativeQueries = {
+    [fieldName: string]: DocumentNode;
+};
+
+export function subscriptionToQuery(introspectionResult: IntrospectionQuery, operation: Operation): AlternativeQueries | null {
     if (!introspectionResult.__schema.subscriptionType) {
         return null;
     }
@@ -116,7 +120,6 @@ export function subscriptionToQuery(introspectionResult: IntrospectionQuery, ope
             });
         }
         extractFragmentName(sel);
-        debugger;
         while (true) {
             const before = relatedFragments.length;
 

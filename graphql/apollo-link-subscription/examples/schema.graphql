@@ -1,0 +1,17 @@
+type Query {
+  node(id: ID!): Node
+  comment(id: ID): Comment
+}
+
+type Subscription {
+  commentAdded: Comment
+}
+
+interface Node {
+  id: ID!
+}
+
+type Comment implements Node {
+  id: ID!
+  text: String!
+}
