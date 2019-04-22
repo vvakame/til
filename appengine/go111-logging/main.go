@@ -19,6 +19,8 @@ import (
 	"time"
 )
 
+// LogEntry2 is nanika.
+// spec: https://cloud.google.com/logging/docs/agent/configuration#special-fields
 type LogEntry2 struct {
 	Severity       string             `json:"severity" validate:"enum=DEFAULT|DEBUG|INFO|NOTICE|WARNING|ERROR|CRITICAL|ALERT|EMERGENCY"`
 	Time           string             `json:"time,omitempty"`
@@ -36,11 +38,8 @@ type LogEntryOperation struct {
 	Last     *bool  `json:"last,omitempty"`
 }
 
-type LogEntryTimestamp struct {
-	Seconds int64 `json:"seconds,string"`
-	Nanos   int64 `json:"nanos,string"`
-}
-
+// LogEntry provides Stackdriver LogEntry format.
+// spec: https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry
 type LogEntry struct {
 	LogName          string               `json:"logName"`
 	Resource         interface{}          `json:"resource,omitempty"`
@@ -157,11 +156,18 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 
 func log2f(ctx context.Context, r *http.Request, format string, a ...interface{}) {
 
-	traceValue := ""
+	traceID := ""
 	spanID := ""
-	if traceHeader := r.Header.Get("X-Cloud-Trace-Context"); traceHeader != "" {
+
+	if span := trace.FromContext(ctx); span != nil {
+		// 一般用
+		traceID = fmt.Sprintf("projects/%s/traces/%s", os.Getenv("GOOGLE_CLOUD_PROJECT"), span.SpanContext().TraceID.String())
+		spanID = span.SpanContext().SpanID.String()
+
+	} else if traceHeader := r.Header.Get("X-Cloud-Trace-Context"); traceHeader != "" {
+		// AppEngine とか用
 		ss := strings.SplitN(traceHeader, "/", 2)
-		traceValue = fmt.Sprintf("projects/%s/traces/%s", os.Getenv("GOOGLE_CLOUD_PROJECT"), ss[0])
+		traceID = fmt.Sprintf("projects/%s/traces/%s", os.Getenv("GOOGLE_CLOUD_PROJECT"), ss[0])
 
 		if len(ss) == 2 {
 			ss = strings.SplitN(ss[1], ";", 2)
@@ -172,7 +178,7 @@ func log2f(ctx context.Context, r *http.Request, format string, a ...interface{}
 	logEntry := &LogEntry2{
 		Severity: "WARNING",
 		Time:     time.Now().Format(time.RFC3339Nano),
-		Trace:    traceValue,
+		Trace:    traceID,
 		SpanID:   spanID,
 		// NOTE Operation はなくてもちゃんとグルーピングされるぽい
 		Operation: &LogEntryOperation{
