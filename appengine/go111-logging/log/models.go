@@ -35,10 +35,10 @@ type LogEntryHttpRequest struct {
 	RequestSize                    int64  `json:"requestSize,string,omitempty"`
 	Status                         int    `json:"status"`
 	ResponseSize                   int64  `json:"responseSize,string,omitempty"`
-	UserAgent                      string `json:"userAgent"`
+	UserAgent                      string `json:"userAgent,omitempty"`
 	RemoteIP                       string `json:"remoteIp,omitempty"`
-	Referer                        string `json:"referer"`
-	Latency                        string `json:"latency"`
+	Referer                        string `json:"referer,omitempty"`
+	Latency                        string `json:"latency,omitempty"`
 	CacheLookup                    *bool  `json:"cacheLookup,omitempty"`
 	CacheHit                       *bool  `json:"cacheHit,omitempty"`
 	CacheValidatedWithOriginServer *bool  `json:"cacheValidatedWithOriginServer,omitempty"`

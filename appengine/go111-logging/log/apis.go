@@ -85,7 +85,7 @@ func RequestLogf(ctx context.Context, r *http.Request, status int, responseSize 
 	}
 
 	endAt := time.Now()
-	duration := endAt.Sub(startAt)
+	//duration := endAt.Sub(startAt)
 
 	falseV := false
 	httpRequestEntry := &LogEntryHttpRequest{
@@ -97,7 +97,7 @@ func RequestLogf(ctx context.Context, r *http.Request, status int, responseSize 
 		UserAgent:                      r.UserAgent(),
 		RemoteIP:                       remoteIP,
 		Referer:                        r.Referer(),
-		Latency:                        fmt.Sprintf("%fs", duration.Seconds()),
+		//Latency:                        fmt.Sprintf("%fs", duration.Seconds()),
 		CacheLookup:                    &falseV,
 		CacheHit:                       &falseV,
 		CacheValidatedWithOriginServer: &falseV,
