@@ -38,7 +38,7 @@ type LogEntryHttpRequest struct {
 	UserAgent                      string `json:"userAgent,omitempty"`
 	RemoteIP                       string `json:"remoteIp,omitempty"`
 	Referer                        string `json:"referer,omitempty"`
-	Latency                        string `json:"latency,omitempty"`
+	Latency                        *Duration `json:"latency,omitempty"`
 	CacheLookup                    *bool  `json:"cacheLookup,omitempty"`
 	CacheHit                       *bool  `json:"cacheHit,omitempty"`
 	CacheValidatedWithOriginServer *bool  `json:"cacheValidatedWithOriginServer,omitempty"`
@@ -57,4 +57,9 @@ type LogEntry struct {
 	Operation      *LogEntryOperation   `json:"logging.googleapis.com/operation,omitempty"`
 	SourceLocation interface{}          `json:"logging.googleapis.com/sourceLocation,omitempty"`
 	Message        string               `json:"message,omitempty"`
+}
+
+type Duration struct {
+	Seconds int64 `json:"seconds,omitempty"`
+	Nanos int32 `json:"nanos,omitempty"`
 }

@@ -85,19 +85,26 @@ func RequestLogf(ctx context.Context, r *http.Request, status int, responseSize 
 	}
 
 	endAt := time.Now()
-	//duration := endAt.Sub(startAt)
+	duration := endAt.Sub(startAt)
+	duration.Seconds()
+	nanos := endAt.Sub(startAt).Nanoseconds()
+	secs := nanos / 1e9
+	nanos -= secs * 1e9
 
 	falseV := false
 	httpRequestEntry := &LogEntryHttpRequest{
-		RequestMethod:                  r.Method,
-		RequestURL:                     u.RequestURI(),
-		RequestSize:                    r.ContentLength,
-		Status:                         status,
-		ResponseSize:                   responseSize,
-		UserAgent:                      r.UserAgent(),
-		RemoteIP:                       remoteIP,
-		Referer:                        r.Referer(),
-		//Latency:                        fmt.Sprintf("%fs", duration.Seconds()),
+		RequestMethod: r.Method,
+		RequestURL:    u.RequestURI(),
+		RequestSize:   r.ContentLength,
+		Status:        status,
+		ResponseSize:  responseSize,
+		UserAgent:     r.UserAgent(),
+		RemoteIP:      remoteIP,
+		Referer:       r.Referer(),
+		Latency: &Duration{
+			Seconds: secs,
+			Nanos:   int32(nanos),
+		},
 		CacheLookup:                    &falseV,
 		CacheHit:                       &falseV,
 		CacheValidatedWithOriginServer: &falseV,
