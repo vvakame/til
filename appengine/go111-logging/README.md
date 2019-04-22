@@ -2,6 +2,7 @@
 
 https://twitter.com/furuyamayuki/statuses/1118382226205487106
 https://github.com/yfuruyama/stackdriver-request-context-log
+https://medium.com/google-cloud-jp/gae-%E3%81%AE%E3%83%AD%E3%82%B0%E3%81%AB%E6%86%A7%E3%82%8C%E3%81%A6-895ebe927c4
 
 https://gcpug.slack.com/archives/C0D60LCAE/p1555837886044100
 

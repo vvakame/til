@@ -4,78 +4,19 @@ import (
 	"context"
 	"contrib.go.opencensus.io/exporter/stackdriver"
 	"contrib.go.opencensus.io/exporter/stackdriver/propagation"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/favclip/ucon"
+	"github.com/vvakame/til/appengine/go111-logging/log"
 	"go.opencensus.io/plugin/ochttp"
 	"go.opencensus.io/trace"
 	"net/http"
 	"os"
 	"os/signal"
 	"strconv"
-	"strings"
 	"syscall"
 	"time"
 )
-
-// LogEntry2 is nanika.
-// spec: https://cloud.google.com/logging/docs/agent/configuration#special-fields
-type LogEntry2 struct {
-	Severity       string             `json:"severity" validate:"enum=DEFAULT|DEBUG|INFO|NOTICE|WARNING|ERROR|CRITICAL|ALERT|EMERGENCY"`
-	Time           string             `json:"time,omitempty"`
-	Trace          string             `json:"logging.googleapis.com/trace,omitempty"`
-	SpanID         string             `json:"logging.googleapis.com/spanId,omitempty"`
-	Operation      *LogEntryOperation `json:"logging.googleapis.com/operation,omitempty"`
-	SourceLocation interface{}        `json:"logging.googleapis.com/sourceLocation,omitempty"`
-	Message        string             `json:"message,omitempty"`
-}
-
-type LogEntryOperation struct {
-	ID       string `json:"id,omitempty"`
-	Producer string `json:"producer,omitempty"`
-	First    *bool  `json:"first,omitempty"`
-	Last     *bool  `json:"last,omitempty"`
-}
-
-// LogEntry provides Stackdriver LogEntry format.
-// spec: https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry
-type LogEntry struct {
-	LogName          string               `json:"logName"`
-	Resource         interface{}          `json:"resource,omitempty"`
-	Timestamp        interface{}          `json:"timestamp,omitempty"`
-	ReceiveTimestamp interface{}          `json:"receiveTimestamp,omitempty"`
-	Severity         string               `json:"severity" validate:"enum=DEFAULT|DEBUG|INFO|NOTICE|WARNING|ERROR|CRITICAL|ALERT|EMERGENCY"`
-	InsertID         string               `json:"insertId,omitempty"`
-	HttpRequest      *LogEntryHttpRequest `json:"httpRequest,omitempty"`
-	Labels           map[string]string    `json:"labels,omitempty"`
-	Operation        interface{}          `json:"operation,omitempty"`
-	Trace            string               `json:"trace,omitempty"`
-	SpanID           string               `json:"spanId,omitempty"`
-	TraceSampled     *bool                `json:"traceSampled,omitempty"`
-	SourceLocation   interface{}          `json:"sourceLocation,omitempty"`
-	TextPayload      string               `json:"textPayload,omitempty"`
-	JSONPayload      interface{}          `json:"jsonPayload,omitempty"`
-}
-
-// LogEntryHttpRequest provides HttpRequest log.
-// spec: https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry#httprequest
-type LogEntryHttpRequest struct {
-	RequestMethod                  string `json:"requestMethod"`
-	RequestURL                     string `json:"requestUrl"`
-	RequestSize                    int64  `json:"requestSize,string,omitempty"`
-	Status                         int    `json:"status"`
-	ResponseSize                   int64  `json:"responseSize,string,omitempty"`
-	UserAgent                      string `json:"userAgent"`
-	RemoteIP                       string `json:"remoteIp"`
-	Referer                        string `json:"referer"`
-	Latency                        string `json:"responseSize,string,omitempty"` // protobuf Duration
-	CacheLookup                    *bool  `json:"cacheLookup,omitempty"`
-	CacheHit                       *bool  `json:"cacheHit,omitempty"`
-	CacheValidatedWithOriginServer *bool  `json:"cacheValidatedWithOriginServer,omitempty"`
-	CacheFillBytes                 int64  `json:"cacheFillBytes,string,omitempty"`
-	Protocol                       string `json:"protocol"`
-}
 
 func main() {
 
@@ -121,6 +62,7 @@ func main() {
 }
 
 func handlerMain() {
+	ucon.Middleware(log.LoggerMiddleware)
 	ucon.Orthodox()
 
 	ucon.HandleFunc("*", "/_ah/start", func(w http.ResponseWriter, r *http.Request) {
@@ -145,92 +87,15 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	ctx, span := trace.StartSpan(ctx, "indexHandler")
 	defer span.End()
 
-	log2f(ctx, r, "Hello, logging! 1")
+	log.AppLogf(ctx, "Hello, logging! 1")
 
 	for key, value := range r.Header {
-		log2f(ctx, r, "%s: %+v", key, value)
+		log.AppLogf(ctx, "%s: %+v", key, value)
 	}
 
-	log2f(ctx, r, "Hello, logging! 2")
-}
+	log.AppLogf(ctx, "Hello, logging! 2")
 
-func log2f(ctx context.Context, r *http.Request, format string, a ...interface{}) {
-
-	traceID := ""
-	spanID := ""
-
-	if span := trace.FromContext(ctx); span != nil {
-		// 一般用
-		traceID = fmt.Sprintf("projects/%s/traces/%s", os.Getenv("GOOGLE_CLOUD_PROJECT"), span.SpanContext().TraceID.String())
-		spanID = span.SpanContext().SpanID.String()
-
-	} else if traceHeader := r.Header.Get("X-Cloud-Trace-Context"); traceHeader != "" {
-		// AppEngine とか用
-		ss := strings.SplitN(traceHeader, "/", 2)
-		traceID = fmt.Sprintf("projects/%s/traces/%s", os.Getenv("GOOGLE_CLOUD_PROJECT"), ss[0])
-
-		if len(ss) == 2 {
-			ss = strings.SplitN(ss[1], ";", 2)
-			spanID = ss[0]
-		}
-	}
-
-	logEntry := &LogEntry2{
-		Severity: "WARNING",
-		Time:     time.Now().Format(time.RFC3339Nano),
-		Trace:    traceID,
-		SpanID:   spanID,
-		// NOTE Operation はなくてもちゃんとグルーピングされるぽい
-		Operation: &LogEntryOperation{
-			ID:       r.Header.Get("X-Appengine-Request-Log-Id"),
-			Producer: "appengine.googleapis.com/request_id",
-		},
-		Message: fmt.Sprintf(format, a...),
-	}
-	b, err := json.Marshal(logEntry)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println(string(b))
-}
-
-func logf(ctx context.Context, r *http.Request, format string, a ...interface{}) {
-	u := *r.URL
-	u.Fragment = ""
-
-	traceValue := ""
-	spanID := ""
-	if traceHeader := r.Header.Get("X-Cloud-Trace-Context"); traceHeader != "" {
-		ss := strings.SplitN(traceHeader, "/", 2)
-		traceValue = fmt.Sprintf("projects/%s/traces/%s", os.Getenv("GOOGLE_CLOUD_PROJECT"), ss[0])
-
-		if len(ss) == 2 {
-			ss = strings.SplitN(ss[1], ";", 2)
-			spanID = ss[0]
-		}
-	}
-	httpRequestEntry := &LogEntryHttpRequest{
-		RequestMethod: r.Method,
-		RequestURL:    u.String(),
-		UserAgent:     r.UserAgent(),
-		Referer:       r.Referer(),
-		Protocol:      r.Proto,
-	}
-	fmt.Println(httpRequestEntry)
-
-	logEntry := &LogEntry{
-		LogName:  fmt.Sprintf("projects/%s/logs/test-log", os.Getenv("GOOGLE_CLOUD_PROJECT")),
-		Severity: "DEBUG",
-		// HttpRequest: httpRequestEntry,
-		Trace:       traceValue,
-		SpanID:      spanID,
-		TextPayload: fmt.Sprintf(format, a...),
-	}
-	b, err := json.Marshal(logEntry)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println(string(b))
+	w.Write([]byte("test"))
 }
 
 func fibonacciHandler(w http.ResponseWriter, r *http.Request) error {
