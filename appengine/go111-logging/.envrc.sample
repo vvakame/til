@@ -1,0 +1,4 @@
+export GO111MODULE=on
+
+export GAE_SERVICE=go111-logging
+export GOOGLE_CLOUD_PROJECT=<Your GCP Project ID place here>

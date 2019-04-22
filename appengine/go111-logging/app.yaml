@@ -1,0 +1,4 @@
+runtime: go111
+service: go111-logging
+
+env_variables:
