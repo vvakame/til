@@ -19,7 +19,7 @@ https://gcpug.slack.com/archives/C0D60LCAE/p1555837886044100
 
 https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry
 https://cloud.google.com/logging/docs/agent/configuration#special-fields
-https://cloud.google.com/appengine/docs/flexible/go/writing-application-logs
+https://cloud.google.com/appengine/docs/standard/go111/writing-application-logs
 
 https://cloud.google.com/appengine/docs/standard/go112/go-differences
 

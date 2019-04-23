@@ -4,12 +4,14 @@ import (
 	"context"
 	"contrib.go.opencensus.io/exporter/stackdriver"
 	"contrib.go.opencensus.io/exporter/stackdriver/propagation"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/favclip/ucon"
 	"github.com/vvakame/til/appengine/go111-logging/log"
 	"go.opencensus.io/plugin/ochttp"
 	"go.opencensus.io/trace"
+	"math/rand"
 	"net/http"
 	"os"
 	"os/signal"
@@ -87,19 +89,38 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	ctx, span := trace.StartSpan(ctx, "indexHandler")
 	defer span.End()
 
-	log.AppLogf(ctx, "Hello, logging! 1")
+	log.AppLogf(ctx, log.SeverityDebug, "Hello, logging! 1")
 
 	for key, value := range r.Header {
-		log.AppLogf(ctx, "%s: %+v", key, value)
+		log.AppLogf(ctx, log.SeverityDebug, "%s: %+v", key, value)
 	}
 
-	log.AppLogf(ctx, "Hello, logging! 2")
+	log.AppLogf(ctx, log.SeverityDebug, "Hello, logging! 2")
 
 	for _, kv := range os.Environ() {
-		log.AppLogf(ctx, "%s", kv)
+		log.AppLogf(ctx, log.SeverityDebug, "%s", kv)
 	}
 
-	log.AppLogf(ctx, "Hello, logging! 3")
+	log.AppLogf(ctx, log.SeverityInfo, "Hello, logging! 3")
+
+	if rand.Int()%2 == 0 {
+		type MyLog struct {
+			*log.LogEntry
+			Name string
+			Note string
+		}
+
+		logEntry := &MyLog{
+			LogEntry: log.NewAppLogEntry(ctx, log.SeverityWarning),
+			Name:     "yukari",
+			Note:     "super kawaii cat",
+		}
+		b, err := json.Marshal(logEntry)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println(string(b))
+	}
 
 	w.Write([]byte("test"))
 }

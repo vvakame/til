@@ -11,17 +11,6 @@ import (
 	"time"
 )
 
-type rootLogger struct{}
-
-func (rl *rootLogger) write(ctx context.Context, r *http.Request, w *responseWriterWatcher, startAt time.Time) {
-	//var buf bytes.Buffer
-	//_ = w.Header().Write(&buf)
-	//fmt.Println(int64(buf.Len()), buf.String())
-	//responseSize := int64(buf.Len()) + w.responseSize
-	responseSize := w.responseSize
-	RequestLogf(ctx, r, w.status, responseSize, startAt)
-}
-
 func GetProjectID() string {
 	if v := os.Getenv("GCP_PROJECT"); v != "" {
 		return v
@@ -34,39 +23,7 @@ func GetProjectID() string {
 	return ""
 }
 
-func AppLogf(ctx context.Context, format string, a ...interface{}) {
-
-	traceID := ""
-	spanID := ""
-
-	if span := trace.FromContext(ctx); span != nil {
-		// X-Cloud-Trace-Context のケアはOpenCensusレベルで行っておく
-
-		traceID = fmt.Sprintf("projects/%s/traces/%s", GetProjectID(), span.SpanContext().TraceID.String())
-		spanID = span.SpanContext().SpanID.String()
-	}
-
-	operation, ok := ctx.Value(contextOperationKey{}).(*LogEntryOperation)
-	if !ok {
-		operation = nil
-	}
-
-	logEntry := &LogEntry{
-		Severity:  "INFO",
-		Time:      time.Now().Format(time.RFC3339Nano),
-		Trace:     traceID,
-		SpanID:    spanID,
-		Operation: operation,
-		Message:   fmt.Sprintf(format, a...),
-	}
-	b, err := json.Marshal(logEntry)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println(string(b))
-}
-
-func RequestLogf(ctx context.Context, r *http.Request, status int, responseSize int64, startAt time.Time) {
+func NewRequestLogEntry(ctx context.Context, r *http.Request, severity LogSeverity, status int, responseSize int64, startAt time.Time) *LogEntry {
 	u := *r.URL
 	u.Fragment = ""
 
@@ -99,26 +56,18 @@ func RequestLogf(ctx context.Context, r *http.Request, status int, responseSize 
 	}
 
 	endAt := time.Now()
-	duration := endAt.Sub(startAt)
-	duration.Seconds()
-	nanos := endAt.Sub(startAt).Nanoseconds()
-	secs := nanos / 1e9
-	nanos -= secs * 1e9
 
 	falseV := false
-	httpRequestEntry := &LogEntryHttpRequest{
-		RequestMethod: r.Method,
-		RequestURL:    u.RequestURI(),
-		RequestSize:   r.ContentLength,
-		Status:        status,
-		ResponseSize:  responseSize,
-		UserAgent:     r.UserAgent(),
-		RemoteIP:      remoteIP,
-		Referer:       r.Referer(),
-		Latency: &Duration{
-			Seconds: secs,
-			Nanos:   int32(nanos),
-		},
+	httpRequestEntry := &HttpRequest{
+		RequestMethod:                  r.Method,
+		RequestURL:                     u.RequestURI(),
+		RequestSize:                    r.ContentLength,
+		Status:                         status,
+		ResponseSize:                   responseSize,
+		UserAgent:                      r.UserAgent(),
+		RemoteIP:                       remoteIP,
+		Referer:                        r.Referer(),
+		Latency:                        Duration(endAt.Sub(startAt)),
 		CacheLookup:                    &falseV,
 		CacheHit:                       &falseV,
 		CacheValidatedWithOriginServer: &falseV,
@@ -132,17 +81,67 @@ func RequestLogf(ctx context.Context, r *http.Request, status int, responseSize 
 	}
 
 	logEntry := &LogEntry{
-		Severity:    "WARNING",
-		Time:        endAt.Format(time.RFC3339Nano),
+		Severity:    severity,
+		Time:        Time(endAt),
 		HttpRequest: httpRequestEntry,
 		Trace:       traceID,
 		SpanID:      spanID,
 		Operation:   operation,
 	}
+
+	return logEntry
+}
+
+func NewAppLogEntry(ctx context.Context, severity LogSeverity) *LogEntry {
+	logger, ok := ctx.Value(contextLoggerKey{}).(RequestLogger)
+	if !ok {
+		panic("unexpected ctx. use ctx from NewRequestLogger")
+	}
+	logger.PushSeverity(severity)
+
+	traceID := ""
+	spanID := ""
+
+	if span := trace.FromContext(ctx); span != nil {
+		// X-Cloud-Trace-Context のケアはOpenCensusレベルで行っておく
+
+		traceID = fmt.Sprintf("projects/%s/traces/%s", GetProjectID(), span.SpanContext().TraceID.String())
+		spanID = span.SpanContext().SpanID.String()
+	}
+
+	operation, ok := ctx.Value(contextOperationKey{}).(*LogEntryOperation)
+	if !ok {
+		operation = nil
+	}
+
+	logEntry := &LogEntry{
+		Severity:  severity,
+		Time:      Time(time.Now()),
+		Trace:     traceID,
+		SpanID:    spanID,
+		Operation: operation,
+	}
+
+	return logEntry
+}
+
+func RequestLog(ctx context.Context, r *http.Request, severity LogSeverity, status int, responseSize int64, startAt time.Time) {
+	logEntry := NewRequestLogEntry(ctx, r, severity, status, responseSize, startAt)
 	b, err := json.Marshal(logEntry)
 	if err != nil {
 		panic(err)
 	}
 	_, _ = fmt.Fprintln(os.Stderr, string(b))
-	fmt.Println("debug:", string(b))
+}
+
+func AppLogf(ctx context.Context, severity LogSeverity, format string, a ...interface{}) {
+
+	logEntry := NewAppLogEntry(ctx, severity)
+	logEntry.Message = fmt.Sprintf(format, a...)
+
+	b, err := json.Marshal(logEntry)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(string(b))
 }
