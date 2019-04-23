@@ -1,9 +1,7 @@
 package log
 
 import (
-	"bytes"
 	"context"
-	"fmt"
 	"github.com/favclip/ucon"
 	"github.com/rs/xid"
 	"net/http"
@@ -40,17 +38,12 @@ func LoggerMiddleware(b *ucon.Bubble) error {
 	}
 	ctx = context.WithValue(ctx, contextOperationKey{}, op)
 
-	RequestLogf(ctx, b.R, 0, 0, start)
-
 	b.R = b.R.WithContext(ctx)
 	b.Context = ctx
 
+	rootLogger := &rootLogger{}
 	defer func() {
-		var buf bytes.Buffer
-		_ = w.Header().Write(&buf)
-		fmt.Println(int64(buf.Len()), buf.String())
-		responseSize := int64(buf.Len()) + w.responseSize
-		RequestLogf(ctx, b.R, w.status, responseSize, start)
+		rootLogger.write(b.Context, b.R, w, start)
 	}()
 
 	return b.Next()

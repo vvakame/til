@@ -11,6 +11,17 @@ import (
 	"time"
 )
 
+type rootLogger struct{}
+
+func (rl *rootLogger) write(ctx context.Context, r *http.Request, w *responseWriterWatcher, startAt time.Time) {
+	//var buf bytes.Buffer
+	//_ = w.Header().Write(&buf)
+	//fmt.Println(int64(buf.Len()), buf.String())
+	//responseSize := int64(buf.Len()) + w.responseSize
+	responseSize := w.responseSize
+	RequestLogf(ctx, r, w.status, responseSize, startAt)
+}
+
 func AppLogf(ctx context.Context, format string, a ...interface{}) {
 
 	traceID := ""
@@ -104,19 +115,6 @@ func RequestLogf(ctx context.Context, r *http.Request, status int, responseSize 
 	operation, ok := ctx.Value(contextOperationKey{}).(*LogEntryOperation)
 	if !ok {
 		operation = nil
-	}
-	first := false
-	last := false
-	if status == 0 {
-		first = true
-	} else {
-		last = true
-	}
-	operation = &LogEntryOperation{
-		ID:       operation.ID,
-		Producer: operation.Producer,
-		First:    &first,
-		Last:     &last,
 	}
 
 	logEntry := &LogEntry{
