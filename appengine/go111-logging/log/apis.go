@@ -22,6 +22,18 @@ func (rl *rootLogger) write(ctx context.Context, r *http.Request, w *responseWri
 	RequestLogf(ctx, r, w.status, responseSize, startAt)
 }
 
+func GetProjectID() string {
+	if v := os.Getenv("GCP_PROJECT"); v != "" {
+		return v
+	} else if v := os.Getenv("GOOGLE_CLOUD_PROJECT"); v != "" {
+		return v
+	} else if v := os.Getenv("GCLOUD_PROJECT"); v != "" {
+		return v
+	}
+
+	return ""
+}
+
 func AppLogf(ctx context.Context, format string, a ...interface{}) {
 
 	traceID := ""
@@ -30,7 +42,7 @@ func AppLogf(ctx context.Context, format string, a ...interface{}) {
 	if span := trace.FromContext(ctx); span != nil {
 		// X-Cloud-Trace-Context のケアはOpenCensusレベルで行っておく
 
-		traceID = fmt.Sprintf("projects/%s/traces/%s", os.Getenv("GOOGLE_CLOUD_PROJECT"), span.SpanContext().TraceID.String())
+		traceID = fmt.Sprintf("projects/%s/traces/%s", GetProjectID(), span.SpanContext().TraceID.String())
 		spanID = span.SpanContext().SpanID.String()
 	}
 
@@ -63,13 +75,13 @@ func RequestLogf(ctx context.Context, r *http.Request, status int, responseSize 
 
 	if span := trace.FromContext(ctx); span != nil {
 		// 一般用
-		traceID = fmt.Sprintf("projects/%s/traces/%s", os.Getenv("GOOGLE_CLOUD_PROJECT"), span.SpanContext().TraceID.String())
+		traceID = fmt.Sprintf("projects/%s/traces/%s", GetProjectID(), span.SpanContext().TraceID.String())
 		spanID = span.SpanContext().SpanID.String()
 
 	} else if traceHeader := r.Header.Get("X-Cloud-Trace-Context"); traceHeader != "" {
 		// AppEngine とか用
 		ss := strings.SplitN(traceHeader, "/", 2)
-		traceID = fmt.Sprintf("projects/%s/traces/%s", os.Getenv("GOOGLE_CLOUD_PROJECT"), ss[0])
+		traceID = fmt.Sprintf("projects/%s/traces/%s", GetProjectID(), ss[0])
 
 		if len(ss) == 2 {
 			ss = strings.SplitN(ss[1], ";", 2)
@@ -79,6 +91,8 @@ func RequestLogf(ctx context.Context, r *http.Request, status int, responseSize 
 
 	remoteIP := ""
 	if v := r.Header.Get("X-AppEngine-User-IP"); v != "" {
+		remoteIP = v
+	} else if v := r.Header.Get("X-Forwarded-For"); v != "" {
 		remoteIP = v
 	} else {
 		remoteIP = strings.SplitN(r.RemoteAddr, ":", 2)[0]

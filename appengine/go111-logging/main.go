@@ -21,7 +21,7 @@ import (
 func main() {
 
 	exporter, err := stackdriver.NewExporter(stackdriver.Options{
-		ProjectID: os.Getenv("GOOGLE_CLOUD_PROJECT"),
+		ProjectID: log.GetProjectID(),
 	})
 	if err != nil {
 		panic(err)
@@ -94,6 +94,12 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.AppLogf(ctx, "Hello, logging! 2")
+
+	for _, kv := range os.Environ() {
+		log.AppLogf(ctx, "%s", kv)
+	}
+
+	log.AppLogf(ctx, "Hello, logging! 3")
 
 	w.Write([]byte("test"))
 }
