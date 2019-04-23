@@ -90,12 +90,13 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	log.AppLogf(ctx, "Hello, logging! 1")
 
 	for key, value := range r.Header {
+		time.Sleep(100 * time.Millisecond)
 		log.AppLogf(ctx, "%s: %+v", key, value)
 	}
 
 	log.AppLogf(ctx, "Hello, logging! 2")
 
-	w.Write([]byte("test"))
+	_, _ = w.Write([]byte("test"))
 }
 
 func fibonacciHandler(w http.ResponseWriter, r *http.Request) error {
