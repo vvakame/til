@@ -55,23 +55,14 @@ func (severity LogSeverity) String() string {
 // LogEntry provides special fields in structured log.
 // spec: https://cloud.google.com/logging/docs/agent/configuration#special-fields
 type LogEntry struct {
-	Severity       LogSeverity        `json:"severity"`
-	HttpRequest    *HttpRequest       `json:"httpRequest,omitempty"`
-	Time           Time             `json:"time,omitempty"`
-	Trace          string             `json:"logging.googleapis.com/trace,omitempty"`
-	SpanID         string             `json:"logging.googleapis.com/spanId,omitempty"`
-	Operation      *LogEntryOperation `json:"logging.googleapis.com/operation,omitempty"`
-	SourceLocation interface{}        `json:"logging.googleapis.com/sourceLocation,omitempty"`
-	Message        string             `json:"message,omitempty"`
-}
-
-// LogEntryOperation provides information for long-running operation.
-// spec: https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry#logentryoperation
-type LogEntryOperation struct {
-	ID       string `json:"id,omitempty"`
-	Producer string `json:"producer,omitempty"`
-	First    *bool  `json:"first,omitempty"`
-	Last     *bool  `json:"last,omitempty"`
+	Severity       LogSeverity             `json:"severity"`
+	HttpRequest    *HttpRequest            `json:"httpRequest,omitempty"`
+	Time           Time                    `json:"time,omitempty"`
+	Trace          string                  `json:"logging.googleapis.com/trace,omitempty"`
+	SpanID         string                  `json:"logging.googleapis.com/spanId,omitempty"`
+	Operation      *LogEntryOperation      `json:"logging.googleapis.com/operation,omitempty"`
+	SourceLocation *LogEntrySourceLocation `json:"logging.googleapis.com/sourceLocation,omitempty"`
+	Message        string                  `json:"message,omitempty"`
 }
 
 // HttpRequest provides HttpRequest log.
@@ -91,6 +82,23 @@ type HttpRequest struct {
 	CacheValidatedWithOriginServer *bool    `json:"cacheValidatedWithOriginServer,omitempty"`
 	CacheFillBytes                 *int64   `json:"cacheFillBytes,string,omitempty"`
 	Protocol                       string   `json:"protocol"`
+}
+
+// LogEntryOperation provides information for long-running operation.
+// spec: https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry#logentryoperation
+type LogEntryOperation struct {
+	ID       string `json:"id,omitempty"`
+	Producer string `json:"producer,omitempty"`
+	First    *bool  `json:"first,omitempty"`
+	Last     *bool  `json:"last,omitempty"`
+}
+
+// LogEntrySourceLocation provides source location of log emitting.
+// spec: https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry#logentrysourcelocation
+type LogEntrySourceLocation struct {
+	File     string `json:"file,omitempty"`
+	Line     int64  `json:"line,string,omitempty"`
+	Function string `json:"function,omitempty"`
 }
 
 var _ json.Marshaler = Time(time.Time{})

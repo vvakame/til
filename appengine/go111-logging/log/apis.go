@@ -7,9 +7,12 @@ import (
 	"go.opencensus.io/trace"
 	"net/http"
 	"os"
+	"runtime"
 	"strings"
 	"time"
 )
+
+type contextSkipKey struct{}
 
 func GetProjectID() string {
 	if v := os.Getenv("GCP_PROJECT"); v != "" {
@@ -115,14 +118,36 @@ func NewAppLogEntry(ctx context.Context, severity LogSeverity) *LogEntry {
 	}
 
 	logEntry := &LogEntry{
-		Severity:  severity,
-		Time:      Time(time.Now()),
-		Trace:     traceID,
-		SpanID:    spanID,
-		Operation: operation,
+		Severity:       severity,
+		Time:           Time(time.Now()),
+		Trace:          traceID,
+		SpanID:         spanID,
+		Operation:      operation,
+		SourceLocation: NewLogEntrySourceLocation(ctx),
 	}
 
 	return logEntry
+}
+
+func NewLogEntrySourceLocation(ctx context.Context) *LogEntrySourceLocation {
+
+	skip, ok := ctx.Value(contextSkipKey{}).(int)
+	if !ok {
+		skip = 2
+	}
+
+	var sl *LogEntrySourceLocation
+	if pc, file, line, ok := runtime.Caller(skip); ok {
+		sl = &LogEntrySourceLocation{
+			File: file,
+			Line: int64(line),
+		}
+		if function := runtime.FuncForPC(pc); function != nil {
+			sl.Function = function.Name()
+		}
+	}
+
+	return sl
 }
 
 func RequestLog(ctx context.Context, r *http.Request, severity LogSeverity, status int, responseSize int64, startAt time.Time) {
@@ -135,6 +160,8 @@ func RequestLog(ctx context.Context, r *http.Request, severity LogSeverity, stat
 }
 
 func AppLogf(ctx context.Context, severity LogSeverity, format string, a ...interface{}) {
+
+	ctx = context.WithValue(ctx, contextSkipKey{}, 3)
 
 	logEntry := NewAppLogEntry(ctx, severity)
 	logEntry.Message = fmt.Sprintf(format, a...)
