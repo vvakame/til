@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>test</title>
+</head>
+<body>
+<a href="/">Go back</a>
+
+{{if ne .error ""}}
+    <p>
+    <h1>Error!</h1>
+    Error: {{.error}}<br>
+    Description: {{.errorDescription}}
+    </p>
+{{end}}
+
+{{if eq .code ""}}
+    <p>
+        Could not find the authorize code. If you've used the implicit grant, check the
+        browser location bar for the
+        access token
+        <small>
+            <a href="http://en.wikipedia.org/wiki/Fragment_identifier#Basics">
+                (the server side does not have access to url fragments)
+            </a>
+        </small>
+    </p>
+{{end}}
+
+
+<p>
+    Amazing! You just got an authorize code!:<br>
+    <code>{{.code}}</code>
+</p>
+
+<p>Cool! You are now a proud token owner.<br>
+<ul>
+    <li>
+        Access token (click to make <a href="{{.protectedURL}}">authorized call</a>):<br>
+        <code>{{.accessToken}}</code>
+    </li>
+    <li>
+        Extra info: <br>
+        <code>{{.extraInfo}}</code>
+    </li>
+</ul>
+
+</body>
+
+</html>
