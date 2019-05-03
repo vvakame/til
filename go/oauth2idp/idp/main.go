@@ -5,15 +5,16 @@ package idp
 import (
 	"context"
 	"fmt"
-	"github.com/favclip/ucon"
-	"github.com/favclip/ucon/swagger"
-	"github.com/ory/fosite"
-	"github.com/vvakame/til/go/oauth2idp-example/domains"
 	"html/template"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"strings"
+
+	"github.com/favclip/ucon"
+	"github.com/favclip/ucon/swagger"
+	"github.com/ory/fosite"
+	"github.com/vvakame/til/go/oauth2idp-example/domains"
 )
 
 func SetupIDP(swPlugin *swagger.Plugin) {

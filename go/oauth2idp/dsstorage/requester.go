@@ -3,10 +3,11 @@ package dsstorage
 import (
 	"context"
 	"encoding/json"
-	"github.com/ory/fosite"
-	"go.mercari.io/datastore"
 	"net/url"
 	"time"
+
+	"github.com/ory/fosite"
+	"go.mercari.io/datastore"
 )
 
 var _ fosite.Requester = (*DefaultRequester)(nil)

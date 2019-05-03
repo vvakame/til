@@ -5,6 +5,8 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"fmt"
+	"time"
+
 	"github.com/ory/fosite"
 	"github.com/ory/fosite/compose"
 	"github.com/ory/fosite/handler/openid"
@@ -13,7 +15,6 @@ import (
 	"github.com/vvakame/til/go/oauth2idp-example/dsstorage"
 	"go.mercari.io/datastore"
 	"go.mercari.io/datastore/clouddatastore"
-	"time"
 )
 
 var dsCli datastore.Client

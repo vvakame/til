@@ -4,6 +4,7 @@ package idp
 
 import (
 	"context"
+
 	"github.com/google/wire"
 	"github.com/ory/fosite"
 	"github.com/vvakame/til/go/oauth2idp-example/domains"

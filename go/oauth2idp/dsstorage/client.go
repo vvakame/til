@@ -3,10 +3,11 @@ package dsstorage
 import (
 	"context"
 	"encoding/json"
+	"time"
+
 	"github.com/ory/fosite"
 	"go.mercari.io/datastore"
 	"gopkg.in/square/go-jose.v2"
-	"time"
 )
 
 var _ fosite.Client = (*DefaultClient)(nil)

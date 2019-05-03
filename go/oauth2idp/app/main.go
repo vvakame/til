@@ -3,15 +3,16 @@ package app
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/favclip/ucon"
-	"github.com/favclip/ucon/swagger"
-	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/clientcredentials"
 	"html/template"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
+
+	"github.com/favclip/ucon"
+	"github.com/favclip/ucon/swagger"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/clientcredentials"
 )
 
 // OAuth2のクライアント側になるアプリの世界…
@@ -23,8 +24,8 @@ var clientConf = oauth2.Config{
 	RedirectURL:  "http://localhost:8080/callback",
 	Scopes:       []string{"photos", "openid", "offline"},
 	Endpoint: oauth2.Endpoint{
-		AuthURL:  "http://localhost:8080/oauth2/auth",
-		TokenURL: "http://localhost:8080/oauth2/token",
+		AuthURL:   "http://localhost:8080/oauth2/auth",
+		TokenURL:  "http://localhost:8080/oauth2/token",
 		AuthStyle: oauth2.AuthStyleInParams, // client_secret_post
 	},
 }
@@ -272,8 +273,7 @@ func protectedHandler(w http.ResponseWriter, r *http.Request, req *CallbackReque
 		return err
 	}
 
-	err = tmpl.Execute(w, map[string]interface{}{
-	})
+	err = tmpl.Execute(w, map[string]interface{}{})
 	if err != nil {
 		return err
 	}

@@ -2,6 +2,7 @@ package dsstorage
 
 import (
 	"errors"
+
 	"github.com/ory/fosite"
 )
 

@@ -2,6 +2,9 @@ package main
 
 import (
 	"context"
+	"reflect"
+	"strings"
+
 	"github.com/favclip/ucon"
 	"github.com/favclip/ucon/swagger"
 	"github.com/ory/fosite"
@@ -10,8 +13,6 @@ import (
 	"github.com/vvakame/til/go/oauth2idp-example/idp"
 	"go.mercari.io/datastore"
 	"go.mercari.io/datastore/clouddatastore"
-	"reflect"
-	"strings"
 )
 
 var dsCli datastore.Client
