@@ -10,7 +10,7 @@ import (
 )
 
 func InitializeProvider() (fosite.OAuth2Provider, error) {
-	wire.Build(ProvideStore, ProvideConfig, ProvideRSAPrivateKey, ProvideStrategy, ProvideOAuth2Provider)
+	wire.Build(ProvideDatastore, ProvideStore, ProvideConfig, ProvideRSAPrivateKey, ProvideStrategy, ProvideOAuth2Provider)
 	return nil, nil
 }
 

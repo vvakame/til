@@ -18,7 +18,11 @@ func InitializeProvider() (fosite.OAuth2Provider, error) {
 	if err != nil {
 		return nil, err
 	}
-	storage, err := ProvideStore()
+	client, err := ProvideDatastore()
+	if err != nil {
+		return nil, err
+	}
+	storage, err := ProvideStore(client)
 	if err != nil {
 		return nil, err
 	}

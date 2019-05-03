@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/rsa"
+	"errors"
 	"fmt"
 	"github.com/ory/fosite"
 	"github.com/ory/fosite/compose"
@@ -12,14 +13,23 @@ import (
 	"github.com/ory/fosite/storage"
 	"github.com/ory/fosite/token/jwt"
 	"github.com/vvakame/til/go/oauth2idp-example/domains"
+	"github.com/vvakame/til/go/oauth2idp-example/dsstorage"
 	"go.mercari.io/datastore"
+	"go.mercari.io/datastore/clouddatastore"
 	"time"
 )
 
+var dsCli datastore.Client
 var privateKey *rsa.PrivateKey
 
 func init() {
 	var err error
+
+	dsCli, err = clouddatastore.FromContext(context.Background())
+	if err != nil {
+		panic(err)
+	}
+
 	privateKey, err = rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		panic(err)
@@ -27,7 +37,7 @@ func init() {
 }
 
 func ProvideDatastore() (datastore.Client, error) {
-	panic("test")
+	return dsCli, nil
 }
 
 type Storage interface {
@@ -39,45 +49,55 @@ type Storage interface {
 	// +oauth2.TokenRevocationStorage
 	RevokeRefreshToken(ctx context.Context, requestID string) error
 	RevokeAccessToken(ctx context.Context, requestID string) error
+	// +oauth2.ResourceOwnerPasswordCredentialsGrantStorage
+	// Authenticate(ctx context.Context, name string, secret string) error
 	// and...
 	openid.OpenIDConnectRequestStorage
+	storage.Transactional
 }
 
-func ProvideStore() (Storage, error) {
-	store := &storage.MemoryStore{
-		IDSessions: make(map[string]fosite.Requester),
-		Clients: map[string]fosite.Client{
-			"my-client": &fosite.DefaultClient{
-				ID:            "my-client",
-				Secret:        []byte(`$2a$10$IxMdI6d.LIRZPpSfEwNoeu4rY3FhDREsxFJXikcgdRRAStxUlsuEO`), // = "foobar"
-				RedirectURIs:  []string{"http://localhost:8080/callback"},
-				ResponseTypes: []string{"id_token", "code", "token"},
-				GrantTypes:    []string{"implicit", "refresh_token", "authorization_code", "password", "client_credentials"},
-				Scopes:        []string{"fosite", "openid", "photos", "offline"},
-			},
-			"encoded:client": &fosite.DefaultClient{
-				ID:            "encoded:client",
-				Secret:        []byte(`$2a$10$A7M8b65dSSKGHF0H2sNkn.9Z0hT8U1Nv6OWPV3teUUaczXkVkxuDS`), // = "encoded&password"
-				RedirectURIs:  []string{"http://localhost:8080/callback"},
-				ResponseTypes: []string{"id_token", "code", "token"},
-				GrantTypes:    []string{"implicit", "refresh_token", "authorization_code", "password", "client_credentials"},
-				Scopes:        []string{"fosite", "openid", "photos", "offline"},
-			},
+func ProvideStore(dsCli datastore.Client) (Storage, error) {
+	store, err := dsstorage.NewStorage(&dsstorage.Config{
+		DatastoreClient: func(ctx context.Context) (datastore.Client, error) {
+			return dsCli, nil
 		},
-		Users: map[string]storage.MemoryUserRelation{
-			// see UseUserDI
-			"100": {
-				Username: "vvakame",
-				Password: "foobar",
-			},
+		AuthenticateUser: func(ctx context.Context, name, secret string) error {
+			if name == "vvakame" && secret == "foobar" {
+				return nil
+			}
+			return errors.New("invalid credentials")
 		},
-		AuthorizeCodes:         map[string]storage.StoreAuthorizeCode{},
-		Implicit:               map[string]fosite.Requester{},
-		AccessTokens:           map[string]fosite.Requester{},
-		RefreshTokens:          map[string]fosite.Requester{},
-		PKCES:                  map[string]fosite.Requester{},
-		AccessTokenRequestIDs:  map[string]string{},
-		RefreshTokenRequestIDs: map[string]string{},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	ctx := context.Background()
+
+	err = store.CreateClient(ctx, &fosite.DefaultOpenIDConnectClient{
+		DefaultClient: &fosite.DefaultClient{
+			ID:            "my-client",
+			Secret:        []byte(`$2a$10$IxMdI6d.LIRZPpSfEwNoeu4rY3FhDREsxFJXikcgdRRAStxUlsuEO`), // = "foobar"
+			RedirectURIs:  []string{"http://localhost:8080/callback"},
+			GrantTypes:    []string{"implicit", "refresh_token", "authorization_code", "password", "client_credentials"},
+			ResponseTypes: []string{"id_token", "code", "token"},
+			Scopes:        []string{"fosite", "openid", "photos", "offline"},
+		},
+		TokenEndpointAuthMethod: "client_secret_basic",
+	})
+	if err != nil {
+		return nil, err
+	}
+	err = store.CreateClient(ctx, &fosite.DefaultClient{
+		ID:            "encoded:client",
+		Secret:        []byte(`$2a$10$A7M8b65dSSKGHF0H2sNkn.9Z0hT8U1Nv6OWPV3teUUaczXkVkxuDS`), // = "encoded&password"
+		RedirectURIs:  []string{"http://localhost:8080/callback"},
+		ResponseTypes: []string{"id_token", "code", "token"},
+		GrantTypes:    []string{"implicit", "refresh_token", "authorization_code", "password", "client_credentials"},
+		Scopes:        []string{"fosite", "openid", "photos", "offline"},
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	return store, nil
@@ -126,6 +146,7 @@ func ProvideOAuth2Provider(config *compose.Config, store Storage, strategy *comp
 
 type Session interface {
 	openid.Session
+	// or oauth2.JWTSessionContainer
 }
 
 func ProvideSession(ctx context.Context, user *domains.User) (Session, error) {
