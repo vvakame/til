@@ -4,9 +4,10 @@ import (
 	"context"
 	"github.com/favclip/ucon"
 	"github.com/favclip/ucon/swagger"
+	"github.com/ory/fosite"
+	"github.com/vvakame/til/go/oauth2idp-example/app"
 	"github.com/vvakame/til/go/oauth2idp-example/domains"
 	"github.com/vvakame/til/go/oauth2idp-example/idp"
-	"github.com/vvakame/til/go/oauth2idp-example/restapi"
 	"go.mercari.io/datastore"
 	"go.mercari.io/datastore/clouddatastore"
 	"reflect"
@@ -14,6 +15,21 @@ import (
 )
 
 var dsCli datastore.Client
+var errorType = reflect.TypeOf((*error)(nil)).Elem()
+
+var _ ucon.HTTPErrorResponse = (*fositeError)(nil)
+
+type fositeError struct {
+	Base *fosite.RFC6749Error
+}
+
+func (fe *fositeError) StatusCode() int {
+	return fe.Base.Code
+}
+
+func (fe *fositeError) ErrorMessage() interface{} {
+	return fe.Base
+}
 
 func main() {
 	var err error
@@ -42,8 +58,8 @@ func main() {
 	})
 	ucon.Plugin(swPlugin)
 
-	restapi.SetupRestAPI(swPlugin)
 	idp.SetupIDP(swPlugin)
+	app.SetupAppAPI(swPlugin)
 
 	err = ucon.DefaultMux.ListenAndServe(":8080")
 	if err != nil {

@@ -15,6 +15,19 @@
     </p>
 {{end}}
 
+{{if ne .revoke ""}}
+    <p>Received status code from the revoke endpoint:<br><code>{{.revokeStatusCode}}</code></p>
+    {{if ne .revokeBody ""}}
+        <p>Got a response from the revoke endpoint:<br><code>{{.revokeBody}}</code></p>
+    {{end}}
+    <p>These tokens have been revoked, try to use the refresh token by <br><a href="{{.revokeRefreshTokenAfterProtectURL}}">by clicking here</a></p>
+    <p>Try to use the access token by <br><a href="{{.revokeAccessTokenAfterProtectURL}}">by clicking here</a></p>
+{{end}}
+
+{{if ne .refresh ""}}
+    <p>Got a response from the refresh grant:<br><code>{{.refreshBody}}</code></p>
+{{end}}
+
 {{if eq .code ""}}
     <p>
         Could not find the authorize code. If you've used the implicit grant, check the
@@ -28,17 +41,22 @@
     </p>
 {{end}}
 
-
+{{if ne .code ""}}
 <p>
     Amazing! You just got an authorize code!:<br>
     <code>{{.code}}</code>
 </p>
+{{end}}
 
 <p>Cool! You are now a proud token owner.<br>
 <ul>
     <li>
         Access token (click to make <a href="{{.protectedURL}}">authorized call</a>):<br>
         <code>{{.accessToken}}</code>
+    </li>
+    <li>
+        Refresh token (click <a href="{{.useRefreshTokenURL}}">here to use it</a>) (click <a href="{{.revokeURL}}">here to revoke it</a>):<br>
+        <code>{{.refreshToken}}</code>
     </li>
     <li>
         Extra info: <br>

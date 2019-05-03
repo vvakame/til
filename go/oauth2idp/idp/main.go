@@ -30,6 +30,8 @@ func SetupIDP(swPlugin *swagger.Plugin) {
 	ucon.HandleFunc("GET", "/oauth2/auth", h.AuthHTML)
 	ucon.HandleFunc("POST", "/oauth2/auth", h.AuthEndpoint)
 	ucon.HandleFunc("POST", "/oauth2/token", h.TokenEndpoint)
+	ucon.HandleFunc("POST", "/oauth2/revoke", h.RevokeEndpoint)
+	ucon.HandleFunc("POST", "/oauth2/introspect", h.IntrospectEndpoint)
 }
 
 type handlers struct {
@@ -110,7 +112,6 @@ func (h *handlers) TokenEndpoint(ctx context.Context, r *http.Request, w http.Re
 	}
 
 	accessRequest, err := h.Provider.NewAccessRequest(ctx, r, sessionData)
-
 	if err != nil {
 		h.Provider.WriteAccessError(w, accessRequest, err)
 		return
@@ -131,4 +132,24 @@ func (h *handlers) TokenEndpoint(ctx context.Context, r *http.Request, w http.Re
 	}
 
 	h.Provider.WriteAccessResponse(w, accessRequest, response)
+}
+
+func (h *handlers) RevokeEndpoint(ctx context.Context, r *http.Request, w http.ResponseWriter) {
+	err := h.Provider.NewRevocationRequest(ctx, r)
+	h.Provider.WriteRevocationResponse(w, err)
+}
+
+func (h *handlers) IntrospectEndpoint(ctx context.Context, r *http.Request, w http.ResponseWriter) {
+	sessionData, err := ProvideSession(ctx, nil)
+	if err != nil {
+		panic(err)
+	}
+
+	ir, err := h.Provider.NewIntrospectionRequest(ctx, r, sessionData)
+	if err != nil {
+		h.Provider.WriteIntrospectionError(w, err)
+		return
+	}
+
+	h.Provider.WriteIntrospectionResponse(w, ir)
 }

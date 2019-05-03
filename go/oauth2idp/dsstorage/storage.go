@@ -13,16 +13,23 @@ import (
 	"golang.org/x/xerrors"
 )
 
+var _ Storage = (*datastoreStorage)(nil)
+var _ oauth2.CoreStorage = (*datastoreStorage)(nil)
+var _ oauth2.TokenRevocationStorage = (*datastoreStorage)(nil)
+var _ oauth2.ResourceOwnerPasswordCredentialsGrantStorage = (*datastoreStorage)(nil)
+var _ oauth2.CoreStorage = (*datastoreStorage)(nil)
+
+// Storage provides fosite storage by Google Cloud Datastore or AppEngine Datastore.
 type Storage interface {
 	fosite.Storage
-	// oauth2.CoreStorage
+	// for oauth2.CoreStorage
 	oauth2.AuthorizeCodeStorage
 	oauth2.AccessTokenStorage
 	oauth2.RefreshTokenStorage
-	// +oauth2.TokenRevocationStorage
+	// for oauth2.TokenRevocationStorage
 	RevokeRefreshToken(ctx context.Context, requestID string) error
 	RevokeAccessToken(ctx context.Context, requestID string) error
-	// +oauth2.ResourceOwnerPasswordCredentialsGrantStorage
+	// for oauth2.ResourceOwnerPasswordCredentialsGrantStorage
 	Authenticate(ctx context.Context, name string, secret string) error
 	// and...
 	openid.OpenIDConnectRequestStorage
@@ -33,8 +40,7 @@ type Storage interface {
 	CreateClient(ctx context.Context, client fosite.Client) error
 }
 
-var _ Storage = (*datastoreStorage)(nil)
-
+// Config provides some settings.
 type Config struct {
 	DatastoreClient func(context.Context) (datastore.Client, error)
 
@@ -48,7 +54,7 @@ type Config struct {
 	AuthorizeCodeKind string
 	IDSessionKind     string
 	AccessTokenKind   string
-	RefrefhTokenKind  string
+	RefreshTokenKind  string
 	PKCEKind          string
 }
 
@@ -113,10 +119,10 @@ func NewStorage(config *Config) (Storage, error) {
 	} else {
 		dsStorage.AccessTokenKind = "FositeAccessToken"
 	}
-	if config.RefrefhTokenKind != "" {
-		dsStorage.RefrefhTokenKind = config.RefrefhTokenKind
+	if config.RefreshTokenKind != "" {
+		dsStorage.RefreshTokenKind = config.RefreshTokenKind
 	} else {
-		dsStorage.RefrefhTokenKind = "FositeRefrefhToken"
+		dsStorage.RefreshTokenKind = "FositeRefreshToken"
 	}
 	if config.PKCEKind != "" {
 		dsStorage.PKCEKind = config.PKCEKind
@@ -138,7 +144,7 @@ type datastoreStorage struct {
 	AuthorizeCodeKind string
 	IDSessionKind     string
 	AccessTokenKind   string
-	RefrefhTokenKind  string
+	RefreshTokenKind  string
 	PKCEKind          string
 }
 
@@ -608,7 +614,7 @@ func (s *datastoreStorage) getRequestEntity(ctx context.Context, kind string, id
 			return nil, err
 		}
 
-		invalidator, ok := v.(RequestInvalidator)
+		invalidator, ok := v.(ActiveStateModifier)
 		if !ok {
 			return nil, ErrUnsupportedType
 		}
@@ -629,9 +635,9 @@ func (s *datastoreStorage) getRequestEntity(ctx context.Context, kind string, id
 				clientLoader.SetClient(client)
 			}
 		}
-		if sessionLoader, ok := v.(SessionLoader); ok {
+		if sessionLoader, ok := v.(SessionRestorer); ok {
 			session := s.newSession()
-			err := sessionLoader.LoadSession(ctx, session)
+			err := sessionLoader.RestoreSession(ctx, session)
 			if err != nil {
 				return nil, err
 			}
@@ -671,7 +677,7 @@ func (s *datastoreStorage) deleteRequestEntity(ctx context.Context, kind string,
 
 func (s *datastoreStorage) CreateAuthorizeCodeSession(ctx context.Context, code string, request fosite.Requester) error {
 	return s.putRequestEntity(ctx, s.AuthorizeCodeKind, code, request, func(request fosite.Requester) error {
-		invalidator, ok := request.(RequestInvalidator)
+		invalidator, ok := request.(ActiveStateModifier)
 		if !ok {
 			return ErrUnsupportedType
 		}
@@ -690,7 +696,7 @@ func (s *datastoreStorage) InvalidateAuthorizeCodeSession(ctx context.Context, c
 		return err
 	}
 	return s.putRequestEntity(ctx, s.AuthorizeCodeKind, code, request, func(request fosite.Requester) error {
-		invalidator, ok := request.(RequestInvalidator)
+		invalidator, ok := request.(ActiveStateModifier)
 		if !ok {
 			return ErrUnsupportedType
 		}
@@ -700,7 +706,14 @@ func (s *datastoreStorage) InvalidateAuthorizeCodeSession(ctx context.Context, c
 }
 
 func (s *datastoreStorage) CreateAccessTokenSession(ctx context.Context, signature string, request fosite.Requester) (err error) {
-	return s.putRequestEntity(ctx, s.AccessTokenKind, signature, request, nil)
+	return s.putRequestEntity(ctx, s.AccessTokenKind, signature, request, func(request fosite.Requester) error {
+		invalidator, ok := request.(ActiveStateModifier)
+		if !ok {
+			return ErrUnsupportedType
+		}
+		invalidator.SetActive(true)
+		return nil
+	})
 }
 
 func (s *datastoreStorage) GetAccessTokenSession(ctx context.Context, signature string, session fosite.Session) (request fosite.Requester, err error) {
@@ -712,15 +725,22 @@ func (s *datastoreStorage) DeleteAccessTokenSession(ctx context.Context, signatu
 }
 
 func (s *datastoreStorage) CreateRefreshTokenSession(ctx context.Context, signature string, request fosite.Requester) (err error) {
-	return s.putRequestEntity(ctx, s.RefrefhTokenKind, signature, request, nil)
+	return s.putRequestEntity(ctx, s.RefreshTokenKind, signature, request, func(request fosite.Requester) error {
+		invalidator, ok := request.(ActiveStateModifier)
+		if !ok {
+			return ErrUnsupportedType
+		}
+		invalidator.SetActive(true)
+		return nil
+	})
 }
 
 func (s *datastoreStorage) GetRefreshTokenSession(ctx context.Context, signature string, session fosite.Session) (request fosite.Requester, err error) {
-	return s.getRequestEntity(ctx, s.RefrefhTokenKind, signature)
+	return s.getRequestEntity(ctx, s.RefreshTokenKind, signature)
 }
 
 func (s *datastoreStorage) DeleteRefreshTokenSession(ctx context.Context, signature string) (err error) {
-	return s.deleteRequestEntity(ctx, s.RefrefhTokenKind, signature)
+	return s.deleteRequestEntity(ctx, s.RefreshTokenKind, signature)
 }
 
 func (s *datastoreStorage) RevokeRefreshToken(ctx context.Context, requestID string) error {
@@ -728,7 +748,7 @@ func (s *datastoreStorage) RevokeRefreshToken(ctx context.Context, requestID str
 	if err != nil {
 		return err
 	}
-	q := dsCli.NewQuery(s.RefrefhTokenKind).Filter("ID =", requestID).KeysOnly().Limit(1)
+	q := dsCli.NewQuery(s.RefreshTokenKind).Filter("ID =", requestID).KeysOnly().Limit(1)
 	keys, err := dsCli.GetAll(ctx, q, nil)
 	if err != nil {
 		return err
@@ -761,20 +781,34 @@ func (s *datastoreStorage) Authenticate(ctx context.Context, name string, secret
 }
 
 func (s *datastoreStorage) CreateOpenIDConnectSession(ctx context.Context, authorizeCode string, request fosite.Requester) error {
-	return s.putRequestEntity(ctx, s.IDSessionKind, authorizeCode, request, nil)
+	return s.putRequestEntity(ctx, s.IDSessionKind, authorizeCode, request, func(request fosite.Requester) error {
+		invalidator, ok := request.(ActiveStateModifier)
+		if !ok {
+			return ErrUnsupportedType
+		}
+		invalidator.SetActive(true)
+		return nil
+	})
 
 }
 
 func (s *datastoreStorage) GetOpenIDConnectSession(ctx context.Context, authorizeCode string, requester fosite.Requester) (fosite.Requester, error) {
-	return s.getRequestEntity(ctx, s.RefrefhTokenKind, authorizeCode)
+	return s.getRequestEntity(ctx, s.RefreshTokenKind, authorizeCode)
 }
 
 func (s *datastoreStorage) DeleteOpenIDConnectSession(ctx context.Context, authorizeCode string) error {
-	return s.deleteRequestEntity(ctx, s.RefrefhTokenKind, authorizeCode)
+	return s.deleteRequestEntity(ctx, s.RefreshTokenKind, authorizeCode)
 }
 
 func (s *datastoreStorage) CreatePKCERequestSession(ctx context.Context, signature string, request fosite.Requester) error {
-	return s.putRequestEntity(ctx, s.PKCEKind, signature, request, nil)
+	return s.putRequestEntity(ctx, s.PKCEKind, signature, request, func(request fosite.Requester) error {
+		invalidator, ok := request.(ActiveStateModifier)
+		if !ok {
+			return ErrUnsupportedType
+		}
+		invalidator.SetActive(true)
+		return nil
+	})
 }
 
 func (s *datastoreStorage) GetPKCERequestSession(ctx context.Context, signature string, session fosite.Session) (fosite.Requester, error) {

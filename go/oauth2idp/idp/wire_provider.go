@@ -4,13 +4,10 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/rsa"
-	"errors"
 	"fmt"
 	"github.com/ory/fosite"
 	"github.com/ory/fosite/compose"
-	"github.com/ory/fosite/handler/oauth2"
 	"github.com/ory/fosite/handler/openid"
-	"github.com/ory/fosite/storage"
 	"github.com/ory/fosite/token/jwt"
 	"github.com/vvakame/til/go/oauth2idp-example/domains"
 	"github.com/vvakame/til/go/oauth2idp-example/dsstorage"
@@ -40,23 +37,7 @@ func ProvideDatastore() (datastore.Client, error) {
 	return dsCli, nil
 }
 
-type Storage interface {
-	fosite.Storage
-	// oauth2.CoreStorage
-	oauth2.AuthorizeCodeStorage
-	oauth2.AccessTokenStorage
-	oauth2.RefreshTokenStorage
-	// +oauth2.TokenRevocationStorage
-	RevokeRefreshToken(ctx context.Context, requestID string) error
-	RevokeAccessToken(ctx context.Context, requestID string) error
-	// +oauth2.ResourceOwnerPasswordCredentialsGrantStorage
-	// Authenticate(ctx context.Context, name string, secret string) error
-	// and...
-	openid.OpenIDConnectRequestStorage
-	storage.Transactional
-}
-
-func ProvideStore(dsCli datastore.Client) (Storage, error) {
+func ProvideStore(dsCli datastore.Client) (dsstorage.Storage, error) {
 	store, err := dsstorage.NewStorage(&dsstorage.Config{
 		DatastoreClient: func(ctx context.Context) (datastore.Client, error) {
 			return dsCli, nil
@@ -65,7 +46,7 @@ func ProvideStore(dsCli datastore.Client) (Storage, error) {
 			if name == "vvakame" && secret == "foobar" {
 				return nil
 			}
-			return errors.New("invalid credentials")
+			return fosite.ErrNotFound
 		},
 	})
 	if err != nil {
@@ -80,10 +61,11 @@ func ProvideStore(dsCli datastore.Client) (Storage, error) {
 			Secret:        []byte(`$2a$10$IxMdI6d.LIRZPpSfEwNoeu4rY3FhDREsxFJXikcgdRRAStxUlsuEO`), // = "foobar"
 			RedirectURIs:  []string{"http://localhost:8080/callback"},
 			GrantTypes:    []string{"implicit", "refresh_token", "authorization_code", "password", "client_credentials"},
-			ResponseTypes: []string{"id_token", "code", "token"},
+			ResponseTypes: []string{"id_token", "code", "token", "id_token token"}, // NOTE https://github.com/ory/fosite/issues/304
 			Scopes:        []string{"fosite", "openid", "photos", "offline"},
 		},
-		TokenEndpointAuthMethod: "client_secret_basic",
+		// TokenEndpointAuthMethod: "client_secret_basic",
+		TokenEndpointAuthMethod: "client_secret_post",
 	})
 	if err != nil {
 		return nil, err
@@ -120,7 +102,7 @@ func ProvideStrategy(config *compose.Config, privateKey *rsa.PrivateKey) (*compo
 	return strategy, nil
 }
 
-func ProvideOAuth2Provider(config *compose.Config, store Storage, strategy *compose.CommonStrategy) (fosite.OAuth2Provider, error) {
+func ProvideOAuth2Provider(config *compose.Config, store dsstorage.Storage, strategy *compose.CommonStrategy) (fosite.OAuth2Provider, error) {
 	provider := compose.Compose(
 		config,
 		store,

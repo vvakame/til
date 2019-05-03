@@ -15,11 +15,11 @@ var _ fosite.AuthorizeRequester = (*DefaultRequester)(nil)
 
 var _ datastore.PropertyLoadSaver = (*DefaultRequester)(nil)
 
-var _ RequestInvalidator = (*DefaultRequester)(nil)
+var _ ActiveStateModifier = (*DefaultRequester)(nil)
 var _ ClientLoader = (*DefaultRequester)(nil)
-var _ SessionLoader = (*DefaultRequester)(nil)
+var _ SessionRestorer = (*DefaultRequester)(nil)
 
-type RequestInvalidator interface {
+type ActiveStateModifier interface {
 	IsActive() bool
 	SetActive(active bool)
 }
@@ -29,8 +29,8 @@ type ClientLoader interface {
 	SetClient(client fosite.Client)
 }
 
-type SessionLoader interface {
-	LoadSession(ctx context.Context, session fosite.Session) error
+type SessionRestorer interface {
+	RestoreSession(ctx context.Context, session fosite.Session) error
 }
 
 type DefaultRequester struct {
@@ -116,7 +116,7 @@ func (r *DefaultRequester) SetClient(client fosite.Client) {
 	r.Client = client
 }
 
-func (r *DefaultRequester) LoadSession(ctx context.Context, session fosite.Session) error {
+func (r *DefaultRequester) RestoreSession(ctx context.Context, session fosite.Session) error {
 	if r.SessionJSON != "" {
 		err := json.Unmarshal([]byte(r.SessionJSON), session)
 		if err != nil {

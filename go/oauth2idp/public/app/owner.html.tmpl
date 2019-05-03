@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>test</title>
+</head>
+<body>
+<h1>Resource Owner Password Credentials Grant</h1>
+<form method="post">
+    <ul>
+        <li>
+            <input type="text" name="username" placeholder="username"/> <small>try "vvakame"</small>
+        </li>
+        <li>
+            <input type="password" name="password" placeholder="password"/> <small>try "foobar"</small><br>
+        </li>
+        <li>
+            <input type="submit" />
+        </li>
+    </ul>
+</form>
+
+{{if ne .error ""}}
+    <p>I tried to get a token but received an error: {{.error}}</p>
+{{else if ne .accessToken ""}}
+    <p>
+        Awesome, you just received an access token!<br>
+        <br>
+        {{.accessToken}}<br>
+        <br>
+        <strong>more info:</strong><br>
+        <br>
+        {{.token}}
+    </p>
+{{end}}
+
+<p><a href="/">Go back</a></p>
+
+</body>
+</html>
