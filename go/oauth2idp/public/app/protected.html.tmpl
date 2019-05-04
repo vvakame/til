@@ -5,5 +5,17 @@
     <title>test</title>
 </head>
 <body>
+{{if ne .error ""}}
+    <h1>An error occurred!</h1>
+    <p>Could not perform introspection request: {{.error}}</p>
+{{end}}
+{{if eq .active true}}
+    <h1>Request authorized!</h1>
+    <code>{{.response}}</code>
+{{else}}
+    <h1>Request could not be authorized.</h1>
+{{end}}
+<hr>
+<a href="/">return</a>
 </body>
 </html>

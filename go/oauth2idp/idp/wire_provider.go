@@ -5,10 +5,11 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"fmt"
-	"go.mercari.io/datastore/dsmiddleware/dslog"
 	"log"
 	"os"
 	"time"
+
+	"go.mercari.io/datastore/dsmiddleware/dslog"
 
 	cloudds "cloud.google.com/go/datastore"
 	"github.com/ory/fosite"

@@ -277,7 +277,12 @@ func callbackHandler(w http.ResponseWriter, r *http.Request, req *CallbackReques
 	return nil
 }
 
-func protectedHandler(w http.ResponseWriter, r *http.Request, req *CallbackRequest) error {
+type ProtectedRequest struct {
+	Token string `json:"token"`
+	Scope string `json:"scope"`
+}
+
+func protectedHandler(w http.ResponseWriter, r *http.Request, req *ProtectedRequest) error {
 	data, err := ioutil.ReadFile("./public/app/protected.html.tmpl")
 	if err != nil {
 		return err
@@ -287,7 +292,39 @@ func protectedHandler(w http.ResponseWriter, r *http.Request, req *CallbackReque
 		return err
 	}
 
-	err = tmpl.Execute(w, map[string]interface{}{})
+	params := map[string]interface{}{
+		"error":  "",
+		"active": false,
+	}
+
+	introspectURL := strings.Replace(clientConf.Endpoint.TokenURL, "token", "introspect", 1)
+	resp, err := appClientConf.Client(r.Context()).PostForm(introspectURL, url.Values{
+		"token": {req.Token},
+		"scope": {req.Scope},
+	})
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+	params["response"] = string(b)
+
+	if resp.StatusCode != 200 {
+		params["error"] = string(b)
+	} else {
+		var introspection = struct {
+			Active bool `json:"active"`
+		}{}
+		if err := json.Unmarshal(b, &introspection); err != nil {
+			return err
+		}
+		params["active"] = introspection.Active
+	}
+
+	err = tmpl.Execute(w, params)
 	if err != nil {
 		return err
 	}

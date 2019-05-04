@@ -2,10 +2,11 @@ package domains
 
 import (
 	"context"
+	"time"
+
 	"go.mercari.io/datastore"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/xerrors"
-	"time"
 )
 
 type User struct {
