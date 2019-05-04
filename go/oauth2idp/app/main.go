@@ -22,7 +22,6 @@ var baseURL string
 
 // アプリのClient アプリに対して固定値
 var clientConf *oauth2.Config
-
 var appClientConf *clientcredentials.Config
 
 func init() {
@@ -39,7 +38,7 @@ func init() {
 		Endpoint: oauth2.Endpoint{
 			AuthURL:   baseURL + "/oauth2/auth",
 			TokenURL:  baseURL + "/oauth2/token",
-			AuthStyle: oauth2.AuthStyleInParams, // client_secret_post
+			AuthStyle: oauth2.AuthStyleInHeader, // client_secret_basic
 		},
 	}
 
@@ -82,7 +81,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
-func clientHandler(w http.ResponseWriter, r *http.Request, req *CallbackRequest) error {
+func clientHandler(w http.ResponseWriter, r *http.Request) error {
 	data, err := ioutil.ReadFile("./public/app/client.html.tmpl")
 	if err != nil {
 		return err
@@ -178,20 +177,16 @@ func callbackHandler(w http.ResponseWriter, r *http.Request, req *CallbackReques
 	}
 
 	if req.Revoke != "" {
-		params["revoke"] = req.Revoke
-
 		revokeURL := strings.Replace(clientConf.Endpoint.TokenURL, "token", "revoke", 1)
 		vs := url.Values{
-			"client_id":       {clientConf.ClientID},
-			"client_secret":   {clientConf.ClientSecret},
 			"token_type_hint": {"refresh_token"},
 			"token":           {req.Revoke},
 		}
-
 		hr, err := http.NewRequest("POST", revokeURL, strings.NewReader(vs.Encode()))
 		if err != nil {
 			return err
 		}
+		hr.SetBasicAuth(clientConf.ClientID, clientConf.ClientSecret)
 		hr.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 		resp, err := http.DefaultClient.Do(hr)
 		if err != nil {
@@ -203,25 +198,23 @@ func callbackHandler(w http.ResponseWriter, r *http.Request, req *CallbackReques
 		if err != nil {
 			return err
 		}
+		params["revoke"] = req.Revoke
 		params["revokeBody"] = string(b)
 		params["revokeRefreshTokenAfterProtectURL"] = "?refresh=" + url.QueryEscape(req.Revoke)
 		params["revokeAccessTokenAfterProtectURL"] = "/protected?token=" + url.QueryEscape(req.AccessToken)
 	}
 
 	if req.Refresh != "" {
-
 		vs := url.Values{
-			"client_id":     {clientConf.ClientID},
-			"client_secret": {clientConf.ClientSecret},
 			"grant_type":    {"refresh_token"},
 			"refresh_token": {req.Refresh},
 			"scope":         {"fosite"},
 		}
-
 		hr, err := http.NewRequest("POST", clientConf.Endpoint.TokenURL, strings.NewReader(vs.Encode()))
 		if err != nil {
 			return err
 		}
+		hr.SetBasicAuth(clientConf.ClientID, clientConf.ClientSecret)
 		hr.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 		resp, err := http.DefaultClient.Do(hr)
 		if err != nil {

@@ -86,19 +86,8 @@ func ProvideStore(dsCli datastore.Client) (dsstorage.Storage, error) {
 			ResponseTypes: []string{"id_token", "code", "token", "id_token token"}, // NOTE https://github.com/ory/fosite/issues/304
 			Scopes:        []string{"fosite", "openid", "photos", "offline"},
 		},
-		// TokenEndpointAuthMethod: "client_secret_basic",
-		TokenEndpointAuthMethod: "client_secret_post",
-	})
-	if err != nil {
-		return nil, err
-	}
-	err = store.CreateClient(ctx, &fosite.DefaultClient{
-		ID:            "encoded:client",
-		Secret:        []byte(`$2a$10$A7M8b65dSSKGHF0H2sNkn.9Z0hT8U1Nv6OWPV3teUUaczXkVkxuDS`), // = "encoded&password"
-		RedirectURIs:  []string{baseURL + "/callback"},
-		ResponseTypes: []string{"id_token", "code", "token"},
-		GrantTypes:    []string{"implicit", "refresh_token", "authorization_code", "password", "client_credentials"},
-		Scopes:        []string{"fosite", "openid", "photos", "offline"},
+		TokenEndpointAuthMethod: "client_secret_basic",
+		// TokenEndpointAuthMethod: "client_secret_post",
 	})
 	if err != nil {
 		return nil, err
@@ -108,7 +97,10 @@ func ProvideStore(dsCli datastore.Client) (dsstorage.Storage, error) {
 }
 
 func ProvideConfig() (*compose.Config, error) {
-	return &compose.Config{}, nil
+	config := &compose.Config{
+		SendDebugMessagesToClients: true,
+	}
+	return config, nil
 }
 
 func ProvideRSAPrivateKey() (*rsa.PrivateKey, error) {
