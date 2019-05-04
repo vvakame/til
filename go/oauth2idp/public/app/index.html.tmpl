@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>test</title>
+</head>
+<body>
+<p>You can obtain an access token using various methods</p>
+<ul>
+    <li>
+        <a href="{{.authLinkURL}}">Authorize code grant (with OpenID Connect)</a>
+    </li>
+    <li>
+        <a href="{{.implicitGrantURL}}">Implicit grant (with OpenID Connect)</a>
+    </li>
+    <li>
+        <a href="/client">Client credentials grant</a>
+    </li>
+    <li>
+        <a href="/owner">Resource owner password credentials grant</a>
+    </li>
+    <li>
+        <a href="{{.refreshGrantURL}}">Refresh grant</a>.
+        <small>You will first see the login screen which is required to obtain a valid refresh token.</small>
+    </li>
+    <li>
+        <a href="{{.invalidAccessURL}}">Make an invalid request</a>
+    </li>
+</ul>
+</body>
+</html>
