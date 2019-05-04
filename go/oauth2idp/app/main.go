@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/favclip/ucon"
-	"github.com/favclip/ucon/swagger"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/clientcredentials"
 )
@@ -50,12 +49,12 @@ func init() {
 	}
 }
 
-func SetupAppAPI(swPlugin *swagger.Plugin) {
-	ucon.HandleFunc("GET", "/", indexHandler)
-	ucon.HandleFunc("GET", "/client", clientHandler)
-	ucon.HandleFunc("GET,POST", "/owner", ownerHandler)
-	ucon.HandleFunc("GET", "/callback", callbackHandler)
-	ucon.HandleFunc("GET", "/protected", protectedHandler)
+func SetupAppAPI(mux *ucon.ServeMux) {
+	mux.HandleFunc("GET", "/", indexHandler)
+	mux.HandleFunc("GET", "/client", clientHandler)
+	mux.HandleFunc("GET,POST", "/owner", ownerHandler)
+	mux.HandleFunc("GET", "/callback", callbackHandler)
+	mux.HandleFunc("GET", "/protected", protectedHandler)
 }
 
 func indexHandler(w http.ResponseWriter, r *http.Request) error {

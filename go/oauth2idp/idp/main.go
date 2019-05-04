@@ -12,12 +12,11 @@ import (
 	"strings"
 
 	"github.com/favclip/ucon"
-	"github.com/favclip/ucon/swagger"
 	"github.com/ory/fosite"
 	"github.com/vvakame/til/go/oauth2idp-example/domains"
 )
 
-func SetupIDP(swPlugin *swagger.Plugin) {
+func SetupIDP(mux *ucon.ServeMux) {
 
 	idpProvider, err := InitializeProvider()
 	if err != nil {
@@ -28,11 +27,11 @@ func SetupIDP(swPlugin *swagger.Plugin) {
 		Provider: idpProvider,
 	}
 
-	ucon.HandleFunc("GET", "/oauth2/auth", h.AuthHTML)
-	ucon.HandleFunc("POST", "/oauth2/auth", h.AuthEndpoint)
-	ucon.HandleFunc("POST", "/oauth2/token", h.TokenEndpoint)
-	ucon.HandleFunc("POST", "/oauth2/revoke", h.RevokeEndpoint)
-	ucon.HandleFunc("POST", "/oauth2/introspect", h.IntrospectEndpoint)
+	mux.HandleFunc("GET", "/oauth2/auth", h.AuthHTML)
+	mux.HandleFunc("POST", "/oauth2/auth", h.AuthEndpoint)
+	mux.HandleFunc("POST", "/oauth2/token", h.TokenEndpoint)
+	mux.HandleFunc("POST", "/oauth2/revoke", h.RevokeEndpoint)
+	mux.HandleFunc("POST", "/oauth2/introspect", h.IntrospectEndpoint)
 }
 
 type handlers struct {
@@ -105,7 +104,7 @@ func (h *handlers) AuthEndpoint(ctx context.Context, r *http.Request, w http.Res
 }
 
 func (h *handlers) TokenEndpoint(ctx context.Context, r *http.Request, w http.ResponseWriter, req *AuthEndpointRequest, user *domains.User) {
-	sessionData, err := ProvideSession(ctx, nil)
+	sessionData, err := InitializeSession(ctx, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -139,7 +138,7 @@ func (h *handlers) RevokeEndpoint(ctx context.Context, r *http.Request, w http.R
 }
 
 func (h *handlers) IntrospectEndpoint(ctx context.Context, r *http.Request, w http.ResponseWriter) {
-	sessionData, err := ProvideSession(ctx, nil)
+	sessionData, err := InitializeSession(ctx, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
