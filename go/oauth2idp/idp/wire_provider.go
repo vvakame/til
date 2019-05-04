@@ -5,8 +5,12 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"fmt"
+	"go.mercari.io/datastore/dsmiddleware/dslog"
+	"log"
+	"os"
 	"time"
 
+	cloudds "cloud.google.com/go/datastore"
 	"github.com/ory/fosite"
 	"github.com/ory/fosite/compose"
 	"github.com/ory/fosite/handler/openid"
@@ -17,20 +21,34 @@ import (
 	"go.mercari.io/datastore/clouddatastore"
 )
 
+var baseURL string
 var dsCli datastore.Client
 var privateKey *rsa.PrivateKey
 
 func init() {
-	var err error
+	ctx := context.Background()
 
-	dsCli, err = clouddatastore.FromContext(context.Background())
-	if err != nil {
-		panic(err)
+	baseURL = os.Getenv("BASE_URL")
+	if baseURL == "" {
+		baseURL = "http://localhost:8080"
 	}
+
+	log.Printf("DATASTORE_PROJECT_ID: %s", os.Getenv("DATASTORE_PROJECT_ID"))
+	baseDsCli, err := cloudds.NewClient(ctx, "")
+	if err != nil {
+		log.Fatal(err)
+	}
+	dsCli, err = clouddatastore.FromClient(ctx, baseDsCli)
+	if err != nil {
+		log.Fatal(err)
+	}
+	dsCli.AppendMiddleware(dslog.NewLogger("datastore: ", func(ctx context.Context, format string, args ...interface{}) {
+		log.Printf(format, args...)
+	}))
 
 	privateKey, err = rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 }
 
@@ -55,12 +73,14 @@ func ProvideStore(dsCli datastore.Client) (dsstorage.Storage, error) {
 	}
 
 	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
 
 	err = store.CreateClient(ctx, &fosite.DefaultOpenIDConnectClient{
 		DefaultClient: &fosite.DefaultClient{
 			ID:            "my-client",
 			Secret:        []byte(`$2a$10$IxMdI6d.LIRZPpSfEwNoeu4rY3FhDREsxFJXikcgdRRAStxUlsuEO`), // = "foobar"
-			RedirectURIs:  []string{"http://localhost:8080/callback"},
+			RedirectURIs:  []string{baseURL + "/callback"},
 			GrantTypes:    []string{"implicit", "refresh_token", "authorization_code", "password", "client_credentials"},
 			ResponseTypes: []string{"id_token", "code", "token", "id_token token"}, // NOTE https://github.com/ory/fosite/issues/304
 			Scopes:        []string{"fosite", "openid", "photos", "offline"},
@@ -74,7 +94,7 @@ func ProvideStore(dsCli datastore.Client) (dsstorage.Storage, error) {
 	err = store.CreateClient(ctx, &fosite.DefaultClient{
 		ID:            "encoded:client",
 		Secret:        []byte(`$2a$10$A7M8b65dSSKGHF0H2sNkn.9Z0hT8U1Nv6OWPV3teUUaczXkVkxuDS`), // = "encoded&password"
-		RedirectURIs:  []string{"http://localhost:8080/callback"},
+		RedirectURIs:  []string{baseURL + "/callback"},
 		ResponseTypes: []string{"id_token", "code", "token"},
 		GrantTypes:    []string{"implicit", "refresh_token", "authorization_code", "password", "client_credentials"},
 		Scopes:        []string{"fosite", "openid", "photos", "offline"},

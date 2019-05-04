@@ -1,7 +1,9 @@
 package main
 
 import (
-	"context"
+	"fmt"
+	"log"
+	"os"
 	"reflect"
 	"strings"
 
@@ -11,12 +13,7 @@ import (
 	"github.com/vvakame/til/go/oauth2idp-example/app"
 	"github.com/vvakame/til/go/oauth2idp-example/domains"
 	"github.com/vvakame/til/go/oauth2idp-example/idp"
-	"go.mercari.io/datastore"
-	"go.mercari.io/datastore/clouddatastore"
 )
-
-var dsCli datastore.Client
-var errorType = reflect.TypeOf((*error)(nil)).Elem()
 
 var _ ucon.HTTPErrorResponse = (*fositeError)(nil)
 
@@ -33,15 +30,16 @@ func (fe *fositeError) ErrorMessage() interface{} {
 }
 
 func main() {
-	var err error
-	dsCli, err = clouddatastore.FromContext(context.Background())
-	if err != nil {
-		panic(err)
-	}
+	log.Println("main: 👀")
 
 	ucon.Middleware(UseUserDI)
 	ucon.Orthodox()
 	ucon.Middleware(swagger.RequestValidator())
+
+	ucon.Middleware(func(b *ucon.Bubble) error {
+		log.Printf("request url: %s %s", b.R.Method, b.R.URL.String())
+		return b.Next()
+	})
 
 	swPlugin := swagger.NewPlugin(&swagger.Options{
 		Object: &swagger.Object{
@@ -62,9 +60,16 @@ func main() {
 	idp.SetupIDP(swPlugin)
 	app.SetupAppAPI(swPlugin)
 
-	err = ucon.DefaultMux.ListenAndServe(":8080")
-	if err != nil {
-		panic(err)
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	addr := fmt.Sprintf(":%s", port)
+
+	log.Printf("listen: %s", addr)
+
+	if err := ucon.DefaultMux.ListenAndServe(addr); err != nil {
+		log.Fatal(err)
 	}
 }
 

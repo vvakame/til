@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 
 	"github.com/favclip/ucon"
@@ -17,24 +18,37 @@ import (
 
 // OAuth2のクライアント側になるアプリの世界…
 
-// アプリのClient アプリに対して固定値
-var clientConf = oauth2.Config{
-	ClientID:     "my-client",
-	ClientSecret: "foobar",
-	RedirectURL:  "http://localhost:8080/callback",
-	Scopes:       []string{"photos", "openid", "offline"},
-	Endpoint: oauth2.Endpoint{
-		AuthURL:   "http://localhost:8080/oauth2/auth",
-		TokenURL:  "http://localhost:8080/oauth2/token",
-		AuthStyle: oauth2.AuthStyleInParams, // client_secret_post
-	},
-}
+var baseURL string
 
-var appClientConf = clientcredentials.Config{
-	ClientID:     "my-client",
-	ClientSecret: "foobar",
-	Scopes:       []string{"fosite"},
-	TokenURL:     "http://localhost:8080/oauth2/token",
+// アプリのClient アプリに対して固定値
+var clientConf *oauth2.Config
+
+var appClientConf *clientcredentials.Config
+
+func init() {
+	baseURL = os.Getenv("BASE_URL")
+	if baseURL == "" {
+		baseURL = "http://localhost:8080"
+	}
+
+	clientConf = &oauth2.Config{
+		ClientID:     "my-client",
+		ClientSecret: "foobar",
+		RedirectURL:  baseURL + "/callback",
+		Scopes:       []string{"photos", "openid", "offline"},
+		Endpoint: oauth2.Endpoint{
+			AuthURL:   baseURL + "/oauth2/auth",
+			TokenURL:  baseURL + "/oauth2/token",
+			AuthStyle: oauth2.AuthStyleInParams, // client_secret_post
+		},
+	}
+
+	appClientConf = &clientcredentials.Config{
+		ClientID:     "my-client",
+		ClientSecret: "foobar",
+		Scopes:       []string{"fosite"},
+		TokenURL:     baseURL + "/oauth2/token",
+	}
 }
 
 func SetupAppAPI(swPlugin *swagger.Plugin) {
@@ -57,9 +71,9 @@ func indexHandler(w http.ResponseWriter, r *http.Request) error {
 
 	err = tmpl.Execute(w, map[string]interface{}{
 		"authLinkURL":      clientConf.AuthCodeURL("some-random-state-foobar") + "&nonce=some-random-nonce",
-		"implicitGrantURL": "/oauth2/auth?client_id=my-client&redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fcallback&response_type=token%20id_token&scope=fosite%20openid&state=some-random-state-foobar&nonce=some-random-nonce",
+		"implicitGrantURL": "/oauth2/auth?client_id=my-client&redirect_uri=" + url.QueryEscape(baseURL+"/callback") + "&response_type=token%20id_token&scope=fosite%20openid&state=some-random-state-foobar&nonce=some-random-nonce",
 		"refreshGrantURL":  clientConf.AuthCodeURL("some-random-state-foobar") + "&nonce=some-random-nonce",
-		"invalidAccessURL": "/oauth2/auth?client_id=my-client&scope=fosite&response_type=123&redirect_uri=http://localhost:8080/callback",
+		"invalidAccessURL": "/oauth2/auth?client_id=my-client&scope=fosite&response_type=123&redirect_uri=" + url.QueryEscape(baseURL+"/callback"),
 	})
 	if err != nil {
 		return err

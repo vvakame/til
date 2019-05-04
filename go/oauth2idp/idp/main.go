@@ -21,7 +21,7 @@ func SetupIDP(swPlugin *swagger.Plugin) {
 
 	idpProvider, err := InitializeProvider()
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	h := &handlers{
@@ -49,8 +49,6 @@ type AuthHTMLRequest struct {
 }
 
 func (h *handlers) AuthHTML(w http.ResponseWriter, req *AuthHTMLRequest) error {
-	log.Printf("%#v\n", req)
-
 	data, err := ioutil.ReadFile("./public/idp/auth.html.tmpl")
 	if err != nil {
 		return err
@@ -109,7 +107,7 @@ func (h *handlers) AuthEndpoint(ctx context.Context, r *http.Request, w http.Res
 func (h *handlers) TokenEndpoint(ctx context.Context, r *http.Request, w http.ResponseWriter, req *AuthEndpointRequest, user *domains.User) {
 	sessionData, err := ProvideSession(ctx, nil)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	accessRequest, err := h.Provider.NewAccessRequest(ctx, r, sessionData)
@@ -143,7 +141,7 @@ func (h *handlers) RevokeEndpoint(ctx context.Context, r *http.Request, w http.R
 func (h *handlers) IntrospectEndpoint(ctx context.Context, r *http.Request, w http.ResponseWriter) {
 	sessionData, err := ProvideSession(ctx, nil)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	ir, err := h.Provider.NewIntrospectionRequest(ctx, r, sessionData)
