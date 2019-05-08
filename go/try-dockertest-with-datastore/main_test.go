@@ -23,6 +23,9 @@ func TestDoSomething(t *testing.T) {
 }
 
 func TestMain(m *testing.M) {
+	// NOTE: execute `docker pull google/cloud-sdk:244.0.0` before running test.
+	//       because dockertest doesn't have indicator.
+
 	startAt := time.Now()
 	log.Println("start testing")
 
@@ -32,41 +35,37 @@ func TestMain(m *testing.M) {
 	}
 	pool.MaxWait = 10 * time.Second
 
-	// NOTE: execute `docker pull google/cloud-sdk:244.0.0` before running test.
-	//       because dockertest doesn't have indicator.
-
-	log.Println("before docker run", time.Now().Sub(startAt))
 	startAt = time.Now()
-	resource, err := pool.RunWithOptions(
-		&dockertest.RunOptions{
-			Repository: "google/cloud-sdk",
-			Tag:        "244.0.0",
-			Cmd: []string{
-				"gcloud",
-				"--project=" + os.Getenv("DATASTORE_PROJECT_ID"),
-				"beta",
-				"emulators",
-				"datastore",
-				"start",
-				"--host-port=0.0.0.0:8081",
-				"--no-store-on-disk",
-				"--consistency=1.0",
-			},
-			ExposedPorts: []string{
-				"8081",
-			},
+	runOptions := &dockertest.RunOptions{
+		Repository: "google/cloud-sdk",
+		Tag:        "244.0.0",
+		Cmd: []string{
+			"gcloud",
+			"--project=" + os.Getenv("DATASTORE_PROJECT_ID"),
+			"beta",
+			"emulators",
+			"datastore",
+			"start",
+			"--host-port=0.0.0.0:8081",
+			"--no-store-on-disk",
+			"--consistency=1.0",
 		},
-	)
+		ExposedPorts: []string{
+			"8081",
+		},
+	}
+	log.Printf("execute `docker pull %s:%s` in background...", runOptions.Repository, runOptions.Tag)
+	resource, err := pool.RunWithOptions(runOptions)
 	if err != nil {
 		log.Fatalf("Could not start resource: %s", err)
 	}
-	log.Println("after docker run", time.Now().Sub(startAt))
+	log.Println("after docker pull & run", time.Now().Sub(startAt))
 	startAt = time.Now()
 
 	retry := 0
 	err = pool.Retry(func() error {
 		retry++
-		log.Println("retry", retry)
+		log.Printf("checking... #%d", retry)
 
 		ctx := context.Background()
 		ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
