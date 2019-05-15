@@ -1,5 +1,8 @@
 workflow "post draft of blog" {
-  resolves = ["Slack notification"]
+  resolves = [
+    "Slack notification",
+    "cat",
+  ]
   on = "push"
 }
 
@@ -13,4 +16,9 @@ action "Slack notification" {
   secrets = ["SLACK_WEBHOOK"]
   args = "A new commit has been pushed."
   needs = ["filter PR merged"]
+}
+
+action "cat" {
+  uses = "actions/bin/sh@master"
+  args = ["cat $GITHUB_EVENT_PATH"]
 }
