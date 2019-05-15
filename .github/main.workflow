@@ -2,7 +2,7 @@ workflow "post draft of blog" {
   resolves = [
     "Slack notification",
   ]
-  on = "push"
+  on = "pull_request"
 }
 
 action "filter PR merged" {
