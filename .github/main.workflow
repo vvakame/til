@@ -1,7 +1,6 @@
 workflow "post draft of blog" {
   resolves = [
     "Slack notification",
-    "cat",
   ]
   on = "push"
 }
@@ -9,6 +8,7 @@ workflow "post draft of blog" {
 action "filter PR merged" {
   uses = "actions/bin/filter@3c0b4f0e63ea54ea5df2914b4fabf383368cd0da"
   args = "merged true"
+  needs = ["cat"]
 }
 
 action "Slack notification" {
