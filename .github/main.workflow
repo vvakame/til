@@ -8,7 +8,7 @@ workflow "post draft of blog" {
 action "filter PR merged" {
   uses = "actions/bin/filter@3c0b4f0e63ea54ea5df2914b4fabf383368cd0da"
   args = "merged true"
-  needs = ["pr2md"]
+  needs = ["cat pr2md"]
 }
 
 action "Slack notification" {
