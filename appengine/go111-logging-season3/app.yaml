@@ -1,0 +1,4 @@
+runtime: go111
+service: go111-logging-s3
+
+env_variables:
