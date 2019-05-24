@@ -2,9 +2,11 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
 	"path"
@@ -17,10 +19,13 @@ import (
 )
 
 var (
-	githubToken  = kingpin.Flag("github_token", "GitHub token for GitHub endpoint request.").Default(os.Getenv("GITHUB_TOKEN")).String()
-	owner        = kingpin.Flag("owner", "name of repository owner.").Required().String()
-	name         = kingpin.Flag("name", "name of repository.").Required().String()
-	prNumber     = kingpin.Flag("pr_number", "number of pull request.").Required().Int()
+	githubToken = kingpin.Flag("github_token", "GitHub token for GitHub endpoint request.").Default(os.Getenv("GITHUB_TOKEN")).String()
+
+	githubEventPath = kingpin.Flag("github_event_path", "GitHub event data json path.").Default(os.Getenv("GITHUB_EVENT_PATH")).String()
+
+	owner        = kingpin.Flag("owner", "name of repository owner.").String()
+	name         = kingpin.Flag("name", "name of repository.").String()
+	prNumber     = kingpin.Flag("pr_number", "number of pull request.").Int()
 	templatePath = kingpin.Flag("template_path", "markdown template path. it uses with html/template").String()
 	outputPath   = kingpin.Arg("output_path", "result output path").Default("result.md").String()
 )
@@ -32,6 +37,31 @@ func main() {
 
 	if *githubToken == "" {
 		log.Fatal("--github_token or $GITHUB_TOKEN is required")
+	}
+
+	eventData := &GitHubEvent{}
+	{
+		b, err := ioutil.ReadFile(*githubEventPath)
+		if os.IsNotExist(err) {
+			// ok
+		} else if err != nil {
+			log.Fatal(err)
+		} else {
+			err = json.Unmarshal(b, eventData)
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
+	}
+
+	if *owner == "" {
+		*owner = eventData.Repository.Owner.Login
+	}
+	if *name == "" {
+		*name = eventData.Repository.Name
+	}
+	if *prNumber == 0 {
+		*prNumber = eventData.Number
 	}
 
 	src := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: *githubToken})
@@ -51,6 +81,16 @@ func main() {
 	err = generateMarkdown(ctx, f, *templatePath, resp)
 	if err != nil {
 		log.Fatal(err)
+	}
+}
+
+type GitHubEvent struct {
+	Number     int
+	Repository struct {
+		Name  string
+		Owner struct {
+			Login string
+		}
 	}
 }
 

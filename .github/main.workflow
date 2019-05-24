@@ -31,7 +31,12 @@ action "ls" {
 
 action "pr2md" {
   uses = "./github-actions/pr-to-md"
-  args = ["cat $GITHUB_EVENT_PATH"]
   needs = ["ls"]
   secrets = ["GITHUB_TOKEN"]
+}
+
+action "cat pr2md" {
+  uses = "actions/bin/sh@master"
+  args = ["cat result.md"]
+  needs = ["pr2md"]
 }
