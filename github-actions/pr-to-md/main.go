@@ -1,3 +1,5 @@
+//go:generate statik -src=./misc
+
 package main
 
 import (
@@ -9,13 +11,15 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"path"
 	"time"
 
+	"github.com/rakyll/statik/fs"
 	"github.com/shurcooL/githubv4"
 	"golang.org/x/oauth2"
 	"gopkg.in/alecthomas/kingpin.v2"
 	"gopkg.in/yaml.v2"
+
+	_ "github.com/vvakame/til/github-actions/pr-to-md/statik"
 )
 
 var (
@@ -96,12 +100,23 @@ type GitHubEvent struct {
 
 func generateMarkdown(ctx context.Context, w io.Writer, templatePath string, resp *PRInfo) error {
 
-	var templateName string
+	var templateText string
 	if templatePath == "" {
-		templatePath = "./markdown.tmpl.md"
-		templateName = "markdown.tmpl.md"
+		staticFS, err := fs.New()
+		if err != nil {
+			return err
+		}
+		b, err := fs.ReadFile(staticFS, "/markdown.tmpl.md")
+		if err != nil {
+			return err
+		}
+		templateText = string(b)
 	} else {
-		templateName = path.Base(templatePath)
+		b, err := ioutil.ReadFile(templatePath)
+		if err != nil {
+			return err
+		}
+		templateText = string(b)
 	}
 
 	pr := resp.Repository.PullRequest
@@ -123,7 +138,7 @@ func generateMarkdown(ctx context.Context, w io.Writer, templatePath string, res
 
 	samePrevStock := make(map[string]string)
 	tmpl, err := template.
-		New(templateName).
+		New("pr2md").
 		Funcs(map[string]interface{}{
 			"date": func(t githubv4.DateTime) string {
 				return t.Format("2006-01-02 15:04:05") // TODO Timezone
@@ -136,7 +151,7 @@ func generateMarkdown(ctx context.Context, w io.Writer, templatePath string, res
 				return false
 			},
 		}).
-		ParseFiles(templatePath)
+		Parse(templateText)
 	if err != nil {
 		return err
 	}

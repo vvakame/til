@@ -7,6 +7,7 @@ require (
 	github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/kr/pretty v0.1.0 // indirect
+	github.com/rakyll/statik v0.1.6
 	github.com/shurcooL/githubv4 v0.0.0-20190119021625-d9689b595017
 	github.com/shurcooL/graphql v0.0.0-20181231061246-d48a9a75455f // indirect
 	github.com/stretchr/testify v1.3.0 // indirect

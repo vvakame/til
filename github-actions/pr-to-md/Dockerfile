@@ -12,11 +12,10 @@ LABEL "com.github.actions.color"="orange"
 WORKDIR /project/
 ENV GO111MODULE=on
 
-COPY go.mod ./
-COPY go.sum ./
-COPY *.go ./
-COPY markdown.tmpl.md /
+COPY ./ ./
 
-RUN go build -o /pr2md main.go
+RUN go install github.com/rakyll/statik && \
+    go generate . && \
+    go build -o /pr2md main.go
 
 ENTRYPOINT ["/pr2md"]
