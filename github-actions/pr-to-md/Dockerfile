@@ -6,15 +6,16 @@ LABEL "version"="1.0.0"
 
 LABEL "com.github.actions.name"="Pull Request to Markdown"
 LABEL "com.github.actions.description"="Convert PR to Markdown"
-LABEL "com.github.actions.icon"="user-plus"
-LABEL "com.github.actions.color"="green"
+LABEL "com.github.actions.icon"="edit-2"
+LABEL "com.github.actions.color"="orange"
 
 WORKDIR /project/
 ENV GO111MODULE=on
 
-COPY go.* ./
-COPY *.go ./
+COPY ./ ./
 
-RUN go build -o /pr2md main.go
+RUN go install github.com/rakyll/statik && \
+    go generate . && \
+    go build -o /pr2md main.go
 
 ENTRYPOINT ["/pr2md"]
