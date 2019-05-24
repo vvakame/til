@@ -8,7 +8,7 @@ workflow "post draft of blog" {
 action "filter PR merged" {
   uses = "actions/bin/filter@3c0b4f0e63ea54ea5df2914b4fabf383368cd0da"
   args = "merged true"
-  needs = ["cat"]
+  needs = ["pr2md"]
 }
 
 action "Slack notification" {
@@ -21,4 +21,10 @@ action "Slack notification" {
 action "cat" {
   uses = "actions/bin/sh@master"
   args = ["cat $GITHUB_EVENT_PATH"]
+}
+
+action "pr2md" {
+  uses = "vvakame/til/github-actions/pr-to-md@kick-actions-r4"
+  args = ["cat $GITHUB_EVENT_PATH"]
+  needs = ["cat"]
 }
