@@ -23,8 +23,15 @@ action "cat" {
   args = ["cat $GITHUB_EVENT_PATH"]
 }
 
+action "ls" {
+  uses = "actions/bin/sh@master"
+  args = ["ls -ltr"]
+  needs = ["cat"]
+}
+
 action "pr2md" {
   uses = "./github-actions/pr-to-md"
   args = ["cat $GITHUB_EVENT_PATH"]
-  needs = ["cat"]
+  needs = ["ls"]
+  secrets = ["GITHUB_TOKEN"]
 }
