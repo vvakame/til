@@ -24,7 +24,7 @@ action "cat" {
 }
 
 action "pr2md" {
-  uses = "vvakame/til/github-actions/pr-to-md@kick-actions-r4"
+  uses = "./github-actions/pr-to-md"
   args = ["cat $GITHUB_EVENT_PATH"]
   needs = ["cat"]
 }
