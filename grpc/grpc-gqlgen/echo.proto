@@ -11,12 +11,12 @@ option go_package = "github.com/vvakame/til/grpc/grpc-gqlgen/echopb";
 
 option (gqlgen.api.resolver) = {
     type_inference: {
-        src: "(.*)Request"
+        src: "^(.*)Request$"
         dest: "$1Input"
         type: INPUT
     }
     type_inference: {
-        src: "(.*)Response"
+        src: "^(.*)Response$"
         dest: "$1Payload"
         type: TYPE
     }
@@ -36,13 +36,27 @@ service Echo {
 
 message SayRequest {
   option (gqlgen.api.type) = {alias: "SayInput" type: INPUT};
-  string message_id = 1 [(gqlgen.api.field) = {alias: "clientMutationId"}];
+  string message_id = 1 [(gqlgen.api.field) = {alias: "clientMutationId" optional: true}];
   string message_body = 2;
 }
 
 message SayResponse {
   option (gqlgen.api.type) = {alias: "SayPayload"};
-  string message_id = 1 [(gqlgen.api.field) = {alias: "clientMutationId"}];
+  string message_id = 1 [(gqlgen.api.field) = {alias: "clientMutationId" optional: true}];
   string message_body = 2;
   google.protobuf.Timestamp received = 3;
+}
+
+message Example1 {
+  InMessage foo = 1;
+  message InMessage {
+    string bar = 1;
+  }
+}
+
+message Example2 {
+  InMessage hoge = 1;
+  message InMessage {
+    string fuga = 1;
+  }
 }

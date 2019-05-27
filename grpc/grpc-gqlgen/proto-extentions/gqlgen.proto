@@ -44,7 +44,6 @@ message SchemaRule {
 message MessageRule {
     string alias = 1;
     MessageType type = 2;
-
 }
 
 enum MessageType {
@@ -55,4 +54,5 @@ enum MessageType {
 
 message FieldRule {
     string alias = 1;
+    bool optional = 2;
 }

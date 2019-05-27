@@ -12,6 +12,8 @@ import (
 	"log"
 	"os"
 	"path"
+
+	_ "github.com/golang/protobuf/ptypes/timestamp"
 )
 
 func main() {
@@ -104,57 +106,77 @@ func walkFileDescriptor(w io.Writer, f *descriptor.FileDescriptorProto) {
 	}
 
 	for _, srv := range f.GetService() {
-		_, _ = fmt.Fprintf(w, "service: %s\n", srv.GetName())
-
-		for _, mt := range srv.GetMethod() {
-			_, _ = fmt.Fprintf(w, "method: %s\n", mt.GetName())
-
-			opts := mt.GetOptions()
-			if opts != nil {
-				ext, err := proto.GetExtension(opts, proto_extentions.E_Schema)
-				if err == proto.ErrMissingExtension {
-					// ok
-				} else if err != nil {
-					log.Fatal(err)
-				} else {
-					v := ext.(*proto_extentions.SchemaRule)
-					_, _ = fmt.Fprintf(w, "schemaRule: %s %s %s %s\n", v.GetPattern(), v.GetQuery(), v.GetMutation(), v.GetSubscription())
-				}
-			}
-		}
+		walkService(w, srv)
 	}
 
 	for _, msg := range f.GetMessageType() {
-		_, _ = fmt.Fprintf(w, "message: %s\n", msg.GetName())
+		walkMessage(w, msg)
+	}
+}
 
-		opts := msg.GetOptions()
-		if opts != nil {
-			ext, err := proto.GetExtension(opts, proto_extentions.E_Type)
-			if err == proto.ErrMissingExtension {
-				// ok
-			} else if err != nil {
-				log.Fatal(err)
-			} else {
-				v := ext.(*proto_extentions.MessageRule)
-				_, _ = fmt.Fprintf(w, "messageRule: %s %s\n", v.GetType(), v.GetAlias())
-			}
+func walkService(w io.Writer, srv *descriptor.ServiceDescriptorProto) {
+	_, _ = fmt.Fprintf(w, "service: %s\n", srv.GetName())
+
+	for _, mt := range srv.GetMethod() {
+		walkMethod(w, mt)
+	}
+}
+
+func walkMethod(w io.Writer, mt *descriptor.MethodDescriptorProto) {
+	_, _ = fmt.Fprintf(w, "method: %s\n", mt.GetName())
+
+	opts := mt.GetOptions()
+	if opts != nil {
+		ext, err := proto.GetExtension(opts, proto_extentions.E_Schema)
+		if err == proto.ErrMissingExtension {
+			// ok
+		} else if err != nil {
+			log.Fatal(err)
+		} else {
+			v := ext.(*proto_extentions.SchemaRule)
+			_, _ = fmt.Fprintf(w, "schemaRule: %s %s %s %s\n", v.GetPattern(), v.GetQuery(), v.GetMutation(), v.GetSubscription())
 		}
+	}
+}
 
-		for _, f := range msg.GetField() {
-			_, _ = fmt.Fprintf(w, "field: %s\n", f.GetName())
+func walkMessage(w io.Writer, msg *descriptor.DescriptorProto) {
+	_, _ = fmt.Fprintf(w, "message: %s\n", msg.GetName())
 
-			opts := f.GetOptions()
-			if opts != nil {
-				ext, err := proto.GetExtension(opts, proto_extentions.E_Field)
-				if err == proto.ErrMissingExtension {
-					// ok
-				} else if err != nil {
-					log.Fatal(err)
-				} else {
-					v := ext.(*proto_extentions.FieldRule)
-					_, _ = fmt.Fprintf(w, "fieldRule: %s\n", v.GetAlias())
-				}
-			}
+	opts := msg.GetOptions()
+	if opts != nil {
+		ext, err := proto.GetExtension(opts, proto_extentions.E_Type)
+		if err == proto.ErrMissingExtension {
+			// ok
+		} else if err != nil {
+			log.Fatal(err)
+		} else {
+			v := ext.(*proto_extentions.MessageRule)
+			_, _ = fmt.Fprintf(w, "messageRule: %s %s\n", v.GetType(), v.GetAlias())
+		}
+	}
+
+	for _, f := range msg.GetField() {
+		walkField(w, f)
+	}
+
+	for _, msg := range msg.GetNestedType() {
+		walkMessage(w, msg)
+	}
+}
+
+func walkField(w io.Writer, fd *descriptor.FieldDescriptorProto) {
+	_, _ = fmt.Fprintf(w, "field: %s %s %s\n", fd.GetName(), fd.GetTypeName(), fd.GetType())
+
+	opts := fd.GetOptions()
+	if opts != nil {
+		ext, err := proto.GetExtension(opts, proto_extentions.E_Field)
+		if err == proto.ErrMissingExtension {
+			// ok
+		} else if err != nil {
+			log.Fatal(err)
+		} else {
+			v := ext.(*proto_extentions.FieldRule)
+			_, _ = fmt.Fprintf(w, "fieldRule: %s %v\n", v.GetAlias(), v.GetOptional())
 		}
 	}
 }
