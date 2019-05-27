@@ -1,0 +1,5 @@
+#!/bin/bash -eu
+
+cd $(dirname $0)
+
+go run cmd/protoc-gen-gqlgen/main.go -

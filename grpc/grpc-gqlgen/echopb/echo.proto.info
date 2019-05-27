@@ -1,0 +1,17 @@
+file: echo.proto
+fileRule: (.*)Request $1Input INPUT
+fileRule: (.*)Response $1Payload TYPE
+service: Echo
+method: Say
+schemaRule: &{foobar}  foobar 
+message: SayRequest
+messageRule: INPUT SayInput
+field: message_id
+fieldRule: clientMutationId
+field: message_body
+message: SayResponse
+messageRule: UNKNOWN SayPayload
+field: message_id
+fieldRule: clientMutationId
+field: message_body
+field: received

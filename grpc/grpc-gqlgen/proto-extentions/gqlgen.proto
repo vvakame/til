@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+package gqlgen.api;
+
+import "google/api/http.proto";
+import "google/protobuf/descriptor.proto";
+
+option go_package = "github.com/vvakame/til/grpc/grpc-gqlgen/proto-extentions;proto_extentions";
+
+extend google.protobuf.FileOptions {
+    FileRule resolver = 50000;
+}
+
+extend google.protobuf.MethodOptions {
+    SchemaRule schema = 50001;
+}
+
+extend google.protobuf.MessageOptions {
+    MessageRule type = 50002;
+}
+
+extend google.protobuf.FieldOptions {
+    FieldRule field = 50003;
+}
+
+message FileRule {
+    repeated InferrenceRule type_inference = 1;
+}
+
+message InferrenceRule {
+    string src = 1;
+    string dest = 2;
+    MessageType type = 3;
+}
+
+message SchemaRule {
+    oneof pattern {
+        string query = 1;
+        string mutation = 2;
+        string subscription = 3;
+    }
+}
+
+message MessageRule {
+    string alias = 1;
+    MessageType type = 2;
+
+}
+
+enum MessageType {
+    UNKNOWN = 0;
+    TYPE = 1;
+    INPUT = 2;
+}
+
+message FieldRule {
+    string alias = 1;
+}

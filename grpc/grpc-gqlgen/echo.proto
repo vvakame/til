@@ -1,0 +1,48 @@
+syntax = "proto3";
+
+package echo;
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+
+import "proto-extentions/gqlgen.proto";
+
+option go_package = "github.com/vvakame/til/grpc/grpc-gqlgen/echopb";
+
+option (gqlgen.api.resolver) = {
+    type_inference: {
+        src: "(.*)Request"
+        dest: "$1Input"
+        type: INPUT
+    }
+    type_inference: {
+        src: "(.*)Response"
+        dest: "$1Payload"
+        type: TYPE
+    }
+};
+
+service Echo {
+  rpc Say(SayRequest) returns (SayResponse) {
+    option (google.api.http) = {
+      post : "/v1/echo/say"
+      body : "*"
+    };
+    option (gqlgen.api.schema) = {
+        mutation: "foobar"
+    };
+  };
+}
+
+message SayRequest {
+  option (gqlgen.api.type) = {alias: "SayInput" type: INPUT};
+  string message_id = 1 [(gqlgen.api.field) = {alias: "clientMutationId"}];
+  string message_body = 2;
+}
+
+message SayResponse {
+  option (gqlgen.api.type) = {alias: "SayPayload"};
+  string message_id = 1 [(gqlgen.api.field) = {alias: "clientMutationId"}];
+  string message_body = 2;
+  google.protobuf.Timestamp received = 3;
+}

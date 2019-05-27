@@ -1,0 +1,6 @@
+.idea/
+
+bin/
+vendor/
+
+protoc-gen-gqlgen.input.dump
