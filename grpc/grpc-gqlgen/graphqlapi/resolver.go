@@ -22,8 +22,8 @@ func (r *resolver) Mutation() MutationResolver {
 var _ QueryResolver = (*queryResolver)(nil)
 
 type queryResolver struct {
-	*todoServiceHandler
-	*echoHandler
+	todoServiceGraphQLInterface
+	echoGraphQLInterface
 }
 
 func (r *queryResolver) Tmp(ctx context.Context) (*string, error) {
@@ -33,8 +33,8 @@ func (r *queryResolver) Tmp(ctx context.Context) (*string, error) {
 var _ MutationResolver = (*mutationResolver)(nil)
 
 type mutationResolver struct {
-	*todoServiceHandler
-	*echoHandler
+	todoServiceGraphQLInterface
+	echoGraphQLInterface
 }
 
 func (r *mutationResolver) Tmp(ctx context.Context) (*string, error) {

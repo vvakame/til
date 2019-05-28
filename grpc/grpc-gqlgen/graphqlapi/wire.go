@@ -26,14 +26,16 @@ func InitializeGraphQLConfig(ctx context.Context) (Config, error) {
 
 func initializeResolvers(ctx context.Context) (ResolverRoot, error) {
 	wire.Build(
-		resolver{},
+		grpcClientSet,
+
+		todoServiceHandler{},
+		wire.Bind(new(todoServiceGraphQLInterface), new(todoServiceHandler)),
+		echoHandler{},
+		wire.Bind(new(echoGraphQLInterface), new(echoHandler)),
+
 		queryResolver{},
 		mutationResolver{},
-
-		grpcClientSet,
-		todoServiceHandler{},
-		echoHandler{},
-
+		resolver{},
 		wire.Bind(new(ResolverRoot), new(resolver)),
 	)
 

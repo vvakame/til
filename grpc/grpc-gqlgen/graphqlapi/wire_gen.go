@@ -48,12 +48,12 @@ func initializeResolvers(ctx context.Context) (ResolverRoot, error) {
 		echo: echoClient,
 	}
 	graphqlapiQueryResolver := &queryResolver{
-		todoServiceHandler: graphqlapiTodoServiceHandler,
-		echoHandler:        graphqlapiEchoHandler,
+		todoServiceGraphQLInterface: graphqlapiTodoServiceHandler,
+		echoGraphQLInterface:        graphqlapiEchoHandler,
 	}
 	graphqlapiMutationResolver := &mutationResolver{
-		todoServiceHandler: graphqlapiTodoServiceHandler,
-		echoHandler:        graphqlapiEchoHandler,
+		todoServiceGraphQLInterface: graphqlapiTodoServiceHandler,
+		echoGraphQLInterface:        graphqlapiEchoHandler,
 	}
 	graphqlapiResolver := &resolver{
 		queryResolver:    graphqlapiQueryResolver,

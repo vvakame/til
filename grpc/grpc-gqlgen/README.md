@@ -1,4 +1,32 @@
-# start gRPC server and client access in localhost on go111 runtime
+# gqlgen+gRPC integration
+
+## やった&やりたい
+
+1. 手でgRPC向けの.proto書く
+1. 手で.protoにgqlgen向けのoptionsを付与する
+1. .protoを元に *.graphql を自動生成する(今は手)
+1. 通常のgqlgenに色々生成させる
+1. .protoを元に *glue.go を自動生成する(今は手)
+1. ResolverRootを組み立てる
+    * めんどいのでwireを使った
+
+### 課題メモ
+
+* 複数のgRPC Serverの結果の組み合わせ
+* 手で書いたほうがよい部分を自動生成部分から切り離し上書き可能にする
+* gRPCから帰ってきたエラーのハンドリング
+* optionsの充実
+    * 特定のフィールドを隠すとか
+* directiveの対応
+* 共通定義の扱い
+* gqlgen.yml の更新など？
+* message in message とか .protoの仕様がわりと沼
+* Relay Connection Spec周りの自動生成がかなり厳しそう
+* Relay Global Object Identification Spec周りのかみ合わせ大変そう
+    * .proto の package + ServiceName + ID をデフォにする…？
+
+## 作業メモ
+
 
 ```
 $ ./setup.sh
