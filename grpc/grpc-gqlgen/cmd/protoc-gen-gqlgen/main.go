@@ -3,15 +3,16 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/protoc-gen-go/descriptor"
-	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
-	proto_extentions "github.com/vvakame/til/grpc/grpc-gqlgen/proto-extentions"
 	"io"
 	"io/ioutil"
 	"log"
 	"os"
 	"path"
+
+	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/protoc-gen-go/descriptor"
+	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
+	proto_extentions "github.com/vvakame/til/grpc/grpc-gqlgen/proto-extentions"
 
 	_ "github.com/golang/protobuf/ptypes/timestamp"
 )

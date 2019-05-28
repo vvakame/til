@@ -3,8 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/vvakame/til/grpc/grpc-gqlgen/echopb"
-	"github.com/vvakame/til/grpc/grpc-gqlgen/log"
 	rlog "log"
 	"net"
 	"net/http"
@@ -12,11 +10,14 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+
 	"contrib.go.opencensus.io/exporter/stackdriver"
 	"contrib.go.opencensus.io/exporter/stackdriver/propagation"
 	"github.com/akutz/memconn"
 	"github.com/favclip/ucon"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/vvakame/til/grpc/grpc-gqlgen/echopb"
+	"github.com/vvakame/til/grpc/grpc-gqlgen/log"
 	"go.opencensus.io/plugin/ocgrpc"
 	"go.opencensus.io/plugin/ochttp"
 	"go.opencensus.io/stats/view"

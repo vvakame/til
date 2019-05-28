@@ -20,3 +20,11 @@ protoc -I. -I./vendor -I$GATEWAY_PACKAGE_PATH/third_party/googleapis \
     --grpc-gateway_out=logtostderr=true,paths=source_relative:./echopb \
     --gqlgen_out=:./echopb \
     echo.proto
+
+protoc -I. -I./vendor -I$GATEWAY_PACKAGE_PATH/third_party/googleapis \
+    --go_out=plugins=grpc,paths=source_relative:./todopb \
+    --grpc-gateway_out=logtostderr=true,paths=source_relative:./todopb \
+    --gqlgen_out=:./todopb \
+    todo.proto
+
+go generate ./...

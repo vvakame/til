@@ -39,6 +39,7 @@ message SchemaRule {
         string mutation = 2;
         string subscription = 3;
     }
+    // TODO paging, offset
 }
 
 message MessageRule {
@@ -55,4 +56,5 @@ enum MessageType {
 message FieldRule {
     string alias = 1;
     bool optional = 2;
+    bool id = 3;
 }

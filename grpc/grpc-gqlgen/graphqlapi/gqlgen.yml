@@ -1,0 +1,21 @@
+# .gqlgen.yml example
+#
+# Refer to https://gqlgen.com/config/
+# for detailed .gqlgen.yml documentation.
+
+schema:
+- schema.graphql
+exec:
+  filename: generated.go
+model:
+  filename: models_gen.go
+resolver:
+  filename: resolver.go
+  type: Resolver
+
+models:
+  Time:
+    model: github.com/vvakame/til/grpc/grpc-gqlgen/graphqlapi.GraphQLTimeScalar
+
+  Todo:
+    model: github.com/vvakame/til/grpc/grpc-gqlgen/todopb.Todo
