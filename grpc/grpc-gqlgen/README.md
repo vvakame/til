@@ -25,6 +25,12 @@
 * Relay Global Object Identification Spec周りのかみ合わせ大変そう
     * .proto の package + ServiceName + ID をデフォにする…？
 
+### 所感
+
+* gqlgenのPlugin使おうかと思ったけど使う必要があまりなさそう
+* gqlgenのAST組んだらschemaにdumpしてくれる機能ほしい…
+    * introspection schema経由するとdirectiveの情報が落ちてしまう…
+
 ## 作業メモ
 
 

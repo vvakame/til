@@ -1,4 +1,0 @@
-runtime: go111
-service: go111-internal-grpc
-
-env_variables:
