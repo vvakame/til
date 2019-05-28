@@ -1,9 +1,8 @@
 //go:generate gqlgen
-//go:generate wire .
 
 package graphqlapi
 
-// THIS CODE IS A STARTING POINT ONLY. IT WILL NOT BE UPDATED WITH SCHEMA CHANGES.
+import "context"
 
 var _ ResolverRoot = (*resolver)(nil)
 
@@ -24,10 +23,20 @@ var _ QueryResolver = (*queryResolver)(nil)
 
 type queryResolver struct {
 	*todoServiceHandler
+	*echoHandler
+}
+
+func (r *queryResolver) Tmp(ctx context.Context) (*string, error) {
+	return nil, nil
 }
 
 var _ MutationResolver = (*mutationResolver)(nil)
 
 type mutationResolver struct {
 	*todoServiceHandler
+	*echoHandler
+}
+
+func (r *mutationResolver) Tmp(ctx context.Context) (*string, error) {
+	return nil, nil
 }

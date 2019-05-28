@@ -11,13 +11,17 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/99designs/gqlgen/handler"
+	"github.com/vvakame/til/grpc/grpc-gqlgen/graphqlapi"
+	"github.com/vvakame/til/grpc/grpc-gqlgen/grpcapi"
+
 	"contrib.go.opencensus.io/exporter/stackdriver"
 	"contrib.go.opencensus.io/exporter/stackdriver/propagation"
 	"github.com/akutz/memconn"
 	"github.com/favclip/ucon"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	log "github.com/vvakame/sdlog/aelog"
 	"github.com/vvakame/til/grpc/grpc-gqlgen/echopb"
-	"github.com/vvakame/til/grpc/grpc-gqlgen/log"
 	"go.opencensus.io/plugin/ocgrpc"
 	"go.opencensus.io/plugin/ochttp"
 	"go.opencensus.io/stats/view"
@@ -30,36 +34,37 @@ import (
 var echoCli echopb.EchoClient
 
 func main() {
-	close, err := log.Init()
-	if err != nil {
-		rlog.Fatalf("Failed to create logger: %v", err)
-	}
-	defer close()
 
 	ctx := context.Background()
 
-	exporter, err := stackdriver.NewExporter(stackdriver.Options{
-		ProjectID: os.Getenv("GOOGLE_CLOUD_PROJECT"),
-	})
-	if err != nil {
-		rlog.Fatalf("Failed to create stackdriver exporter: %v", err)
+	if os.Getenv("GOOGLE_CLOUD_PROJECT") != "" {
+		exporter, err := stackdriver.NewExporter(stackdriver.Options{
+			ProjectID: os.Getenv("GOOGLE_CLOUD_PROJECT"),
+		})
+		if err != nil {
+			rlog.Fatalf("Failed to create stackdriver exporter: %v", err)
+		}
+		trace.RegisterExporter(exporter)
+		view.RegisterExporter(exporter)
+		trace.ApplyConfig(trace.Config{
+			DefaultSampler: trace.AlwaysSample(),
+		})
+		defer exporter.Flush()
 	}
-	trace.RegisterExporter(exporter)
-	view.RegisterExporter(exporter)
-	trace.ApplyConfig(trace.Config{
-		DefaultSampler: trace.AlwaysSample(),
-	})
-	defer exporter.Flush()
 
-	ucon.Middleware(func(b *ucon.Bubble) error {
-		b.Context = log.WithContext(b.Context, b.R)
-		b.R = b.R.WithContext(b.Context)
-		return b.Next()
-	})
 	ucon.Orthodox()
 
 	ucon.HandleFunc("POST", "/echo", echoHandler)
-	ucon.HandleFunc("GET", "/", indexHandler)
+
+	config, err := graphqlapi.InitializeGraphQLConfig(context.Background())
+	if err != nil {
+		rlog.Fatal(err)
+	}
+
+	ucon.HandleFunc("GET", "/", handler.Playground("GraphQL playground", "/api/query"))
+	ucon.HandleFunc("*", "/api/query", handler.GraphQL(
+		graphqlapi.NewExecutableSchema(config),
+	))
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -92,7 +97,11 @@ func main() {
 	}
 
 	grpcServer := grpc.NewServer(grpc.StatsHandler(&ocgrpc.ServerHandler{}))
-	echopb.RegisterEchoServer(grpcServer, &echoServiceImpl{})
+	echoServer, err := grpcapi.NewEchoServer()
+	if err != nil {
+		rlog.Fatal(err)
+	}
+	echopb.RegisterEchoServer(grpcServer, echoServer)
 	reflection.Register(grpcServer)
 
 	listener, err := memconn.Listen("memu", "grpc")
@@ -145,24 +154,6 @@ func main() {
 	}
 	grpcServer.GracefulStop()
 	rlog.Printf("graceful shutdown successfully")
-}
-
-// indexHandler responds to requests with our greeting.
-func indexHandler(w http.ResponseWriter, r *http.Request) {
-	if r.URL.Path != "/" {
-		http.NotFound(w, r)
-		return
-	}
-
-	ctx := r.Context()
-
-	ctx, span := trace.StartSpan(ctx, "indexHandler")
-	defer span.End()
-
-	log.Debugf(ctx, "Hi, 1")
-	log.Infof(ctx, "Hi, 2")
-
-	fmt.Fprint(w, "Hello, World!")
 }
 
 func echoHandler(ctx context.Context, req *echopb.SayRequest) (*echopb.SayResponse, error) {

@@ -5,7 +5,7 @@ package gqlgen.api;
 import "google/api/http.proto";
 import "google/protobuf/descriptor.proto";
 
-option go_package = "github.com/vvakame/til/grpc/grpc-gqlgen/proto-extentions;proto_extentions";
+option go_package = "github.com/vvakame/til/grpc/grpc-gqlgen/gqlgen-proto;gqlgen_proto";
 
 extend google.protobuf.FileOptions {
     FileRule resolver = 50000;

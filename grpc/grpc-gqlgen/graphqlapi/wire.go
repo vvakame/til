@@ -10,6 +10,7 @@ import (
 
 var grpcClientSet = wire.NewSet(
 	ProvideTodoServiceClient,
+	ProvideEchoClient,
 )
 
 func InitializeGraphQLConfig(ctx context.Context) (Config, error) {
@@ -31,6 +32,7 @@ func initializeResolvers(ctx context.Context) (ResolverRoot, error) {
 
 		grpcClientSet,
 		todoServiceHandler{},
+		echoHandler{},
 
 		wire.Bind(new(ResolverRoot), new(resolver)),
 	)

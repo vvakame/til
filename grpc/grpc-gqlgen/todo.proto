@@ -5,7 +5,7 @@ package todo;
 import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
 
-import "proto-extentions/gqlgen.proto";
+import "gqlgen-proto/options.proto";
 
 option go_package = "github.com/vvakame/til/grpc/grpc-gqlgen/todopb";
 

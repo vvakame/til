@@ -48,8 +48,26 @@ type ComplexityRoot struct {
 		Todo func(childComplexity int) int
 	}
 
+	Example1 struct {
+		Foo func(childComplexity int) int
+	}
+
+	Example1InMessage struct {
+		Bar func(childComplexity int) int
+	}
+
+	Example2 struct {
+		Hoge func(childComplexity int) int
+	}
+
+	Example2InMessage struct {
+		Fuga func(childComplexity int) int
+	}
+
 	Mutation struct {
 		CreateTodo func(childComplexity int, input CreateTodoInput) int
+		Say        func(childComplexity int, input SayInput) int
+		Tmp        func(childComplexity int) int
 		UpdateTodo func(childComplexity int, input UpdateTodoInput) int
 	}
 
@@ -61,8 +79,15 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
+		Tmp    func(childComplexity int) int
 		TodosA func(childComplexity int, first *int, after *string, input TodoListAInput) int
 		TodosB func(childComplexity int, first *int, after *string, input TodoListBInput) int
+	}
+
+	SayPayload struct {
+		ClientMutationID func(childComplexity int) int
+		MessageBody      func(childComplexity int) int
+		Received         func(childComplexity int) int
 	}
 
 	Todo struct {
@@ -91,10 +116,13 @@ type ComplexityRoot struct {
 }
 
 type MutationResolver interface {
+	Tmp(ctx context.Context) (*string, error)
 	CreateTodo(ctx context.Context, input CreateTodoInput) (*CreateTodoPayload, error)
 	UpdateTodo(ctx context.Context, input UpdateTodoInput) (*UpdateTodoPayload, error)
+	Say(ctx context.Context, input SayInput) (*SayPayload, error)
 }
 type QueryResolver interface {
+	Tmp(ctx context.Context) (*string, error)
 	TodosA(ctx context.Context, first *int, after *string, input TodoListAInput) (*TodoConnection, error)
 	TodosB(ctx context.Context, first *int, after *string, input TodoListBInput) (*TodoConnection, error)
 }
@@ -121,6 +149,34 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.CreateTodoPayload.Todo(childComplexity), true
 
+	case "Example1.foo":
+		if e.complexity.Example1.Foo == nil {
+			break
+		}
+
+		return e.complexity.Example1.Foo(childComplexity), true
+
+	case "Example1InMessage.bar":
+		if e.complexity.Example1InMessage.Bar == nil {
+			break
+		}
+
+		return e.complexity.Example1InMessage.Bar(childComplexity), true
+
+	case "Example2.hoge":
+		if e.complexity.Example2.Hoge == nil {
+			break
+		}
+
+		return e.complexity.Example2.Hoge(childComplexity), true
+
+	case "Example2InMessage.fuga":
+		if e.complexity.Example2InMessage.Fuga == nil {
+			break
+		}
+
+		return e.complexity.Example2InMessage.Fuga(childComplexity), true
+
 	case "Mutation.createTodo":
 		if e.complexity.Mutation.CreateTodo == nil {
 			break
@@ -132,6 +188,25 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.CreateTodo(childComplexity, args["input"].(CreateTodoInput)), true
+
+	case "Mutation.say":
+		if e.complexity.Mutation.Say == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_say_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.Say(childComplexity, args["input"].(SayInput)), true
+
+	case "Mutation.tmp":
+		if e.complexity.Mutation.Tmp == nil {
+			break
+		}
+
+		return e.complexity.Mutation.Tmp(childComplexity), true
 
 	case "Mutation.updateTodo":
 		if e.complexity.Mutation.UpdateTodo == nil {
@@ -173,6 +248,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.PageInfo.StartCursor(childComplexity), true
 
+	case "Query.tmp":
+		if e.complexity.Query.Tmp == nil {
+			break
+		}
+
+		return e.complexity.Query.Tmp(childComplexity), true
+
 	case "Query.todosA":
 		if e.complexity.Query.TodosA == nil {
 			break
@@ -196,6 +278,27 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.TodosB(childComplexity, args["first"].(*int), args["after"].(*string), args["input"].(TodoListBInput)), true
+
+	case "SayPayload.clientMutationId":
+		if e.complexity.SayPayload.ClientMutationID == nil {
+			break
+		}
+
+		return e.complexity.SayPayload.ClientMutationID(childComplexity), true
+
+	case "SayPayload.messageBody":
+		if e.complexity.SayPayload.MessageBody == nil {
+			break
+		}
+
+		return e.complexity.SayPayload.MessageBody(childComplexity), true
+
+	case "SayPayload.received":
+		if e.complexity.SayPayload.Received == nil {
+			break
+		}
+
+		return e.complexity.SayPayload.Received(childComplexity), true
 
 	case "Todo.createdAt":
 		if e.complexity.Todo.CreatedAt == nil {
@@ -358,12 +461,60 @@ func (ec *executionContext) introspectType(name string) (*introspection.Type, er
 }
 
 var parsedSchema = gqlparser.MustLoadSchema(
+	&ast.Source{Name: "echo.graphql", Input: `extend type Mutation {
+  say(input: SayInput!): SayPayload!
+}
+
+input SayInput {
+  clientMutationId: String
+  messageBody: String!
+}
+
+type SayPayload {
+  clientMutationId: String
+  messageBody: String!
+  received: Time!
+}
+
+type Example1 {
+  foo: Example1InMessage!
+}
+
+type Example1InMessage {
+  bar: String!
+}
+
+type Example2 {
+  hoge: Example2InMessage!
+}
+
+type Example2InMessage {
+  fuga: String!
+}
+`},
 	&ast.Source{Name: "schema.graphql", Input: `type Query {
+    tmp: String
+}
+
+type Mutation {
+    tmp: String
+}
+
+type PageInfo {
+  startCursor: String
+  endCursor: String
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+}
+
+scalar Time
+`},
+	&ast.Source{Name: "todo_service.graphql", Input: `extend type Query {
   todosA(first: Int, after: String, input: TodoListAInput!): TodoConnection!
   todosB(first: Int, after: String, input: TodoListBInput!): TodoConnection!
 }
 
-type Mutation {
+extend type Mutation {
   createTodo(input: CreateTodoInput!): CreateTodoPayload!
   updateTodo(input: UpdateTodoInput!): UpdateTodoPayload!
 }
@@ -413,15 +564,6 @@ type TodoEdge {
   cursor: String
   node: Todo!
 }
-
-type PageInfo {
-  startCursor: String
-  endCursor: String
-  hasNextPage: Boolean!
-  hasPreviousPage: Boolean!
-}
-
-scalar Time
 `},
 )
 
@@ -435,6 +577,20 @@ func (ec *executionContext) field_Mutation_createTodo_args(ctx context.Context, 
 	var arg0 CreateTodoInput
 	if tmp, ok := rawArgs["input"]; ok {
 		arg0, err = ec.unmarshalNCreateTodoInput2githubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋgraphqlapiᚐCreateTodoInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_say_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 SayInput
+	if tmp, ok := rawArgs["input"]; ok {
+		arg0, err = ec.unmarshalNSayInput2githubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋgraphqlapiᚐSayInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -590,6 +746,138 @@ func (ec *executionContext) _CreateTodoPayload_todo(ctx context.Context, field g
 	return ec.marshalNTodo2ᚖgithubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋtodopbᚐTodo(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Example1_foo(ctx context.Context, field graphql.CollectedField, obj *Example1) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object:   "Example1",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Foo, nil
+	})
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*Example1InMessage)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalNExample1InMessage2ᚖgithubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋgraphqlapiᚐExample1InMessage(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Example1InMessage_bar(ctx context.Context, field graphql.CollectedField, obj *Example1InMessage) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object:   "Example1InMessage",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Bar, nil
+	})
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Example2_hoge(ctx context.Context, field graphql.CollectedField, obj *Example2) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object:   "Example2",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Hoge, nil
+	})
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*Example2InMessage)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalNExample2InMessage2ᚖgithubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋgraphqlapiᚐExample2InMessage(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Example2InMessage_fuga(ctx context.Context, field graphql.CollectedField, obj *Example2InMessage) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object:   "Example2InMessage",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Fuga, nil
+	})
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_tmp(ctx context.Context, field graphql.CollectedField) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, nil, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().Tmp(rctx)
+	})
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Mutation_createTodo(ctx context.Context, field graphql.CollectedField) graphql.Marshaler {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
@@ -656,6 +944,40 @@ func (ec *executionContext) _Mutation_updateTodo(ctx context.Context, field grap
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
 	return ec.marshalNUpdateTodoPayload2ᚖgithubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋgraphqlapiᚐUpdateTodoPayload(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_say(ctx context.Context, field graphql.CollectedField) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_say_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	rctx.Args = args
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, nil, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().Say(rctx, args["input"].(SayInput))
+	})
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*SayPayload)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalNSayPayload2ᚖgithubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋgraphqlapiᚐSayPayload(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _PageInfo_startCursor(ctx context.Context, field graphql.CollectedField, obj *PageInfo) graphql.Marshaler {
@@ -758,6 +1080,30 @@ func (ec *executionContext) _PageInfo_hasPreviousPage(ctx context.Context, field
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
 	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_tmp(ctx context.Context, field graphql.CollectedField) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object:   "Query",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, nil, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Tmp(rctx)
+	})
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_todosA(ctx context.Context, field graphql.CollectedField) graphql.Marshaler {
@@ -881,6 +1227,84 @@ func (ec *executionContext) _Query___schema(ctx context.Context, field graphql.C
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
 	return ec.marshalO__Schema2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐSchema(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _SayPayload_clientMutationId(ctx context.Context, field graphql.CollectedField, obj *SayPayload) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object:   "SayPayload",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ClientMutationID, nil
+	})
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _SayPayload_messageBody(ctx context.Context, field graphql.CollectedField, obj *SayPayload) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object:   "SayPayload",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.MessageBody, nil
+	})
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _SayPayload_received(ctx context.Context, field graphql.CollectedField, obj *SayPayload) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object:   "SayPayload",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Received, nil
+	})
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(timestamp.Timestamp)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalNTime2githubᚗcomᚋgolangᚋprotobufᚋptypesᚋtimestampᚐTimestamp(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Todo_id(ctx context.Context, field graphql.CollectedField, obj *todopb.Todo) graphql.Marshaler {
@@ -2044,6 +2468,30 @@ func (ec *executionContext) unmarshalInputCreateTodoInput(ctx context.Context, v
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputSayInput(ctx context.Context, v interface{}) (SayInput, error) {
+	var it SayInput
+	var asMap = v.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "clientMutationId":
+			var err error
+			it.ClientMutationID, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "messageBody":
+			var err error
+			it.MessageBody, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputTodoListAInput(ctx context.Context, v interface{}) (TodoListAInput, error) {
 	var it TodoListAInput
 	var asMap = v.(map[string]interface{})
@@ -2145,6 +2593,114 @@ func (ec *executionContext) _CreateTodoPayload(ctx context.Context, sel ast.Sele
 	return out
 }
 
+var example1Implementors = []string{"Example1"}
+
+func (ec *executionContext) _Example1(ctx context.Context, sel ast.SelectionSet, obj *Example1) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.RequestContext, sel, example1Implementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Example1")
+		case "foo":
+			out.Values[i] = ec._Example1_foo(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var example1InMessageImplementors = []string{"Example1InMessage"}
+
+func (ec *executionContext) _Example1InMessage(ctx context.Context, sel ast.SelectionSet, obj *Example1InMessage) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.RequestContext, sel, example1InMessageImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Example1InMessage")
+		case "bar":
+			out.Values[i] = ec._Example1InMessage_bar(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var example2Implementors = []string{"Example2"}
+
+func (ec *executionContext) _Example2(ctx context.Context, sel ast.SelectionSet, obj *Example2) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.RequestContext, sel, example2Implementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Example2")
+		case "hoge":
+			out.Values[i] = ec._Example2_hoge(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var example2InMessageImplementors = []string{"Example2InMessage"}
+
+func (ec *executionContext) _Example2InMessage(ctx context.Context, sel ast.SelectionSet, obj *Example2InMessage) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.RequestContext, sel, example2InMessageImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Example2InMessage")
+		case "fuga":
+			out.Values[i] = ec._Example2InMessage_fuga(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var mutationImplementors = []string{"Mutation"}
 
 func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
@@ -2160,6 +2716,8 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Mutation")
+		case "tmp":
+			out.Values[i] = ec._Mutation_tmp(ctx, field)
 		case "createTodo":
 			out.Values[i] = ec._Mutation_createTodo(ctx, field)
 			if out.Values[i] == graphql.Null {
@@ -2167,6 +2725,11 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			}
 		case "updateTodo":
 			out.Values[i] = ec._Mutation_updateTodo(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "say":
+			out.Values[i] = ec._Mutation_say(ctx, field)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -2232,6 +2795,17 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Query")
+		case "tmp":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_tmp(ctx, field)
+				return res
+			})
 		case "todosA":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -2264,6 +2838,40 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			out.Values[i] = ec._Query___type(ctx, field)
 		case "__schema":
 			out.Values[i] = ec._Query___schema(ctx, field)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var sayPayloadImplementors = []string{"SayPayload"}
+
+func (ec *executionContext) _SayPayload(ctx context.Context, sel ast.SelectionSet, obj *SayPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.RequestContext, sel, sayPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SayPayload")
+		case "clientMutationId":
+			out.Values[i] = ec._SayPayload_clientMutationId(ctx, field, obj)
+		case "messageBody":
+			out.Values[i] = ec._SayPayload_messageBody(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "received":
+			out.Values[i] = ec._SayPayload_received(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -2688,6 +3296,34 @@ func (ec *executionContext) marshalNCreateTodoPayload2ᚖgithubᚗcomᚋvvakame�
 	return ec._CreateTodoPayload(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNExample1InMessage2githubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋgraphqlapiᚐExample1InMessage(ctx context.Context, sel ast.SelectionSet, v Example1InMessage) graphql.Marshaler {
+	return ec._Example1InMessage(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNExample1InMessage2ᚖgithubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋgraphqlapiᚐExample1InMessage(ctx context.Context, sel ast.SelectionSet, v *Example1InMessage) graphql.Marshaler {
+	if v == nil {
+		if !ec.HasError(graphql.GetResolverContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._Example1InMessage(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNExample2InMessage2githubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋgraphqlapiᚐExample2InMessage(ctx context.Context, sel ast.SelectionSet, v Example2InMessage) graphql.Marshaler {
+	return ec._Example2InMessage(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNExample2InMessage2ᚖgithubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋgraphqlapiᚐExample2InMessage(ctx context.Context, sel ast.SelectionSet, v *Example2InMessage) graphql.Marshaler {
+	if v == nil {
+		if !ec.HasError(graphql.GetResolverContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._Example2InMessage(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNID2string(ctx context.Context, v interface{}) (string, error) {
 	return graphql.UnmarshalID(v)
 }
@@ -2716,12 +3352,44 @@ func (ec *executionContext) marshalNPageInfo2ᚖgithubᚗcomᚋvvakameᚋtilᚋg
 	return ec._PageInfo(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNSayInput2githubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋgraphqlapiᚐSayInput(ctx context.Context, v interface{}) (SayInput, error) {
+	return ec.unmarshalInputSayInput(ctx, v)
+}
+
+func (ec *executionContext) marshalNSayPayload2githubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋgraphqlapiᚐSayPayload(ctx context.Context, sel ast.SelectionSet, v SayPayload) graphql.Marshaler {
+	return ec._SayPayload(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNSayPayload2ᚖgithubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋgraphqlapiᚐSayPayload(ctx context.Context, sel ast.SelectionSet, v *SayPayload) graphql.Marshaler {
+	if v == nil {
+		if !ec.HasError(graphql.GetResolverContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._SayPayload(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v interface{}) (string, error) {
 	return graphql.UnmarshalString(v)
 }
 
 func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
 	res := graphql.MarshalString(v)
+	if res == graphql.Null {
+		if !ec.HasError(graphql.GetResolverContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+	}
+	return res
+}
+
+func (ec *executionContext) unmarshalNTime2githubᚗcomᚋgolangᚋprotobufᚋptypesᚋtimestampᚐTimestamp(ctx context.Context, v interface{}) (timestamp.Timestamp, error) {
+	return UnmarshalGraphQLTimeScalar(v)
+}
+
+func (ec *executionContext) marshalNTime2githubᚗcomᚋgolangᚋprotobufᚋptypesᚋtimestampᚐTimestamp(ctx context.Context, sel ast.SelectionSet, v timestamp.Timestamp) graphql.Marshaler {
+	res := MarshalGraphQLTimeScalar(v)
 	if res == graphql.Null {
 		if !ec.HasError(graphql.GetResolverContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")

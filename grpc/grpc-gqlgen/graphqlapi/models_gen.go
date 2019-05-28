@@ -3,6 +3,7 @@
 package graphqlapi
 
 import (
+	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/vvakame/til/grpc/grpc-gqlgen/todopb"
 )
 
@@ -14,11 +15,38 @@ type CreateTodoPayload struct {
 	Todo *todopb.Todo `json:"todo"`
 }
 
+type Example1 struct {
+	Foo *Example1InMessage `json:"foo"`
+}
+
+type Example1InMessage struct {
+	Bar string `json:"bar"`
+}
+
+type Example2 struct {
+	Hoge *Example2InMessage `json:"hoge"`
+}
+
+type Example2InMessage struct {
+	Fuga string `json:"fuga"`
+}
+
 type PageInfo struct {
 	StartCursor     *string `json:"startCursor"`
 	EndCursor       *string `json:"endCursor"`
 	HasNextPage     bool    `json:"hasNextPage"`
 	HasPreviousPage bool    `json:"hasPreviousPage"`
+}
+
+type SayInput struct {
+	ClientMutationID *string `json:"clientMutationId"`
+	MessageBody      string  `json:"messageBody"`
+}
+
+type SayPayload struct {
+	ClientMutationID *string             `json:"clientMutationId"`
+	MessageBody      string              `json:"messageBody"`
+	Received         timestamp.Timestamp `json:"received"`
 }
 
 type TodoConnection struct {

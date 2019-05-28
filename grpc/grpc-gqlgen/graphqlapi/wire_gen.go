@@ -40,11 +40,20 @@ func initializeResolvers(ctx context.Context) (ResolverRoot, error) {
 	graphqlapiTodoServiceHandler := &todoServiceHandler{
 		todoService: todoServiceClient,
 	}
+	echoClient, err := ProvideEchoClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	graphqlapiEchoHandler := &echoHandler{
+		echo: echoClient,
+	}
 	graphqlapiQueryResolver := &queryResolver{
 		todoServiceHandler: graphqlapiTodoServiceHandler,
+		echoHandler:        graphqlapiEchoHandler,
 	}
 	graphqlapiMutationResolver := &mutationResolver{
 		todoServiceHandler: graphqlapiTodoServiceHandler,
+		echoHandler:        graphqlapiEchoHandler,
 	}
 	graphqlapiResolver := &resolver{
 		queryResolver:    graphqlapiQueryResolver,
@@ -57,4 +66,5 @@ func initializeResolvers(ctx context.Context) (ResolverRoot, error) {
 
 var grpcClientSet = wire.NewSet(
 	ProvideTodoServiceClient,
+	ProvideEchoClient,
 )

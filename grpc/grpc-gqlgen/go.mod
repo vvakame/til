@@ -1,7 +1,7 @@
 module github.com/vvakame/til/grpc/grpc-gqlgen
 
 require (
-	cloud.google.com/go v0.39.0
+	cloud.google.com/go v0.39.0 // indirect
 	contrib.go.opencensus.io/exporter/stackdriver v0.11.1
 	github.com/99designs/gqlgen v0.9.0
 	github.com/akutz/memconn v0.1.0
@@ -15,10 +15,11 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway v1.9.0
 	github.com/hashicorp/golang-lru v0.5.1 // indirect
 	github.com/vektah/gqlparser v1.1.2
+	github.com/vvakame/sdlog v0.0.0-20190523062053-be70263e9c6c
 	go.opencensus.io v0.21.0
 	golang.org/x/net v0.0.0-20190522155817-f3200d17e092 // indirect
 	golang.org/x/oauth2 v0.0.0-20190523182746-aaccbc9213b0 // indirect
-	golang.org/x/sys v0.0.0-20190526052359-791d8a0f4d09 // indirect
+	golang.org/x/sys v0.0.0-20190528012530-adf421d2caf4 // indirect
 	golang.org/x/text v0.3.2 // indirect
 	google.golang.org/appengine v1.6.0 // indirect
 	google.golang.org/genproto v0.0.0-20190522204451-c2c4e71fbf69

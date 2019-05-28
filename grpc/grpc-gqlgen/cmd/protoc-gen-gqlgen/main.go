@@ -12,7 +12,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
-	proto_extentions "github.com/vvakame/til/grpc/grpc-gqlgen/proto-extentions"
+	proto_extentions "github.com/vvakame/til/grpc/grpc-gqlgen/gqlgen-proto"
 
 	_ "github.com/golang/protobuf/ptypes/timestamp"
 )

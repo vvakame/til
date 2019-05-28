@@ -11,17 +11,20 @@ set -x
 export PATH=$(pwd)/bin:$(pwd):$PATH
 command -v protoc-gen-go protoc-gen-grpc-gateway protoc-gen-gqlgen
 
-protoc -I. -I./vendor -I$GATEWAY_PACKAGE_PATH/third_party/googleapis \
-    --go_out=paths=source_relative:./ \
-    proto-extentions/gqlgen.proto
+rm -rf ./echopb ./todopb
+mkdir -p ./echopb ./todopb
 
-protoc -I. -I./vendor -I$GATEWAY_PACKAGE_PATH/third_party/googleapis \
+protoc -I. -I$GATEWAY_PACKAGE_PATH/third_party/googleapis \
+    --go_out=paths=source_relative:./ \
+    gqlgen-proto/options.proto
+
+protoc -I. -I$GATEWAY_PACKAGE_PATH/third_party/googleapis \
     --go_out=plugins=grpc,paths=source_relative:./echopb \
     --grpc-gateway_out=logtostderr=true,paths=source_relative:./echopb \
     --gqlgen_out=:./echopb \
     echo.proto
 
-protoc -I. -I./vendor -I$GATEWAY_PACKAGE_PATH/third_party/googleapis \
+protoc -I. -I$GATEWAY_PACKAGE_PATH/third_party/googleapis \
     --go_out=plugins=grpc,paths=source_relative:./todopb \
     --grpc-gateway_out=logtostderr=true,paths=source_relative:./todopb \
     --gqlgen_out=:./todopb \

@@ -3,7 +3,7 @@ fileRule: ^(.*)Request$ $1Input INPUT
 fileRule: ^(.*)Response$ $1Payload TYPE
 service: Echo
 method: Say
-schemaRule: &{foobar}  foobar 
+schemaRule: &{say}  say 
 message: SayRequest
 messageRule: INPUT SayInput
 field: message_id  TYPE_STRING

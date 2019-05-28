@@ -1,4 +1,4 @@
-package main
+package grpcapi
 
 import (
 	"context"
@@ -12,6 +12,10 @@ import (
 )
 
 var _ echopb.EchoServer = (*echoServiceImpl)(nil)
+
+func NewEchoServer() (echopb.EchoServer, error) {
+	return &echoServiceImpl{}, nil
+}
 
 type echoServiceImpl struct {
 }
