@@ -20,3 +20,8 @@ $ curl -X POST http://localhost:8080/v1/echo/say -H "Content-Type: application/j
 $ curl -X POST http://localhost:8080/api/query -H "Content-Type: application/json" -H "Accept: application/json" --data '{"query":"mutation { say(input: { clientMutationId: \"foobar\", messageBody: \"hello\" }) { clientMutationId messageBody received } }"}'
 {"data":{"say":{"clientMutationId":"foobar","messageBody":"hello","received":"2019-05-28T04:29:03.92021Z"}}}
 ```
+
+```
+$ gcloud --project ${PROJECT_ID} builds submit --tag gcr.io/${PROJECT_ID}/grpc-gqlgen
+$ gcloud --project ${PROJECT_ID} beta run deploy grpc-gqlgen --image gcr.io/${PROJECT_ID}/grpc-gqlgen --region us-central1 --allow-unauthenticated
+```
