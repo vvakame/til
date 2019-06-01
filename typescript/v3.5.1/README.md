@@ -1,6 +1,6 @@
 # TypeScript v3.5.1 変更点
 
-こんにちは[メルペイ社](https://www.merpay.com/jp/)な[@vvakame](https://twitter.com/vvakame)です。
+こんにちは[メルペイ社](https://www.merpay.com/)な[@vvakame](https://twitter.com/vvakame)です。
 
 [TypeScript 3.5](https://devblogs.microsoft.com/typescript/announcing-typescript-3-5/)がアナウンスされました。
 [RC](https://devblogs.microsoft.com/typescript/announcing-typescript-3-5-rc/)のときのアナウンスはこちら。
