@@ -140,6 +140,9 @@ func generateMarkdown(ctx context.Context, w io.Writer, templatePath string, res
 	tmpl, err := template.
 		New("pr2md").
 		Funcs(map[string]interface{}{
+			"avatarURL": func(login githubv4.String) string {
+				return fmt.Sprintf("https://github.com/%s.png?size=64", login)
+			},
 			"date": func(t githubv4.DateTime) string {
 				return t.Format("2006-01-02 15:04:05") // TODO Timezone
 			},
@@ -166,8 +169,7 @@ type PRInfo struct {
 			URL    githubv4.String
 			Body   githubv4.String
 			Author struct {
-				Login     githubv4.String
-				AvatarURL githubv4.String `graphql:"avatarUrl(size: $avatarImageSize)"`
+				Login githubv4.String
 			}
 			CreatedAt githubv4.DateTime
 			Files     struct {
@@ -190,8 +192,7 @@ type PRInfo struct {
 				TotalCount githubv4.Int
 				Nodes      []struct {
 					Author struct {
-						Login     githubv4.String
-						AvatarURL githubv4.String `graphql:"avatarUrl(size: $avatarImageSize)"`
+						Login githubv4.String
 					}
 					Body      githubv4.String
 					CreatedAt githubv4.DateTime
@@ -204,10 +205,9 @@ type PRInfo struct {
 func getPRInfo(ctx context.Context, cli *githubv4.Client, owner, name string, prNumber int) (*PRInfo, error) {
 	var query PRInfo
 	variables := map[string]interface{}{
-		"owner":           githubv4.String(owner),
-		"name":            githubv4.String(name),
-		"prNumber":        githubv4.Int(prNumber),
-		"avatarImageSize": githubv4.Int(64),
+		"owner":    githubv4.String(owner),
+		"name":     githubv4.String(name),
+		"prNumber": githubv4.Int(prNumber),
 	}
 
 	err := cli.Query(ctx, &query, variables)
