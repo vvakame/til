@@ -215,9 +215,19 @@ func createContent(ctx context.Context, req *CreateContentReq) (map[string][]byt
 	tail := 0
 	for _, submatches := range re.FindAllSubmatchIndex(b, -1) {
 		alt := string(b[submatches[2]:submatches[3]])
-		imageURL := string(b[submatches[4]:submatches[5]])
+		imageURLStr := string(b[submatches[4]:submatches[5]])
+		imageURL, err := url.Parse(imageURLStr)
+		if err != nil {
+			return nil, err
+		}
+		shouldCopy := true
+		if imageURL.Host == "github.com" {
+			// GitHubのユーザアイコン部分はコピーせず直リンクにする
+			// https://github.com/vvakame.png?size=64 など
+			shouldCopy = false
+		}
 
-		imageBlob, err := getContent(imageURL)
+		imageBlob, err := getContent(imageURLStr)
 		if err != nil {
 			return nil, err
 		}
@@ -234,13 +244,19 @@ func createContent(ctx context.Context, req *CreateContentReq) (map[string][]byt
 		// ](
 		buf.Write(b[submatches[3]:submatches[4]])
 		// imageURL
-		buf.WriteString(path.Join(baseImageURL, fileName))
+		if shouldCopy {
+			buf.WriteString(path.Join(baseImageURL, fileName))
+		} else {
+			buf.WriteString(imageURLStr)
+		}
 		// )
 		buf.Write(b[submatches[5]:submatches[1]])
 
 		tail = submatches[1]
 
-		contentMap[path.Join(imagePath, fileName)] = imageBlob
+		if shouldCopy {
+			contentMap[path.Join(imagePath, fileName)] = imageBlob
+		}
 	}
 	buf.Write(b[tail:])
 

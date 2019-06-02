@@ -8,7 +8,7 @@ Files changes: {{ .Files.TotalCount }}
 {{- if .Files.PageInfo.HasNextPage -}}TODO! files has next!{{- end }}
 
 {{ if not ( isSamePrev "user" .Author.Login ) -}}
-![{{ .Author.Login }}]({{ .Author.AvatarURL }}) {{ .Author.Login }} - 
+![{{ .Author.Login }}]({{ avatarURL .Author.Login }}) {{ .Author.Login }} - 
 {{- end -}}
 {{ .CreatedAt | date }}
 
@@ -19,7 +19,7 @@ Files changes: {{ .Files.TotalCount }}
 ---
 
 {{ if not ( isSamePrev "user" .Author.Login ) -}}
-![{{ .Author.Login }}]({{ .Author.AvatarURL }}) {{ .Author.Login }} - 
+![{{ .Author.Login }}]({{ avatarURL .Author.Login }}) {{ .Author.Login }} - 
 {{- end -}}
 {{ .CreatedAt | date }}
 
