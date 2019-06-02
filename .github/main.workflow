@@ -32,7 +32,7 @@ action "ls" {
 action "pr2md" {
   uses = "./github-actions/pr-to-md"
   needs = ["ls"]
-  secrets = ["GITHUB_TOKEN"]
+  secrets = ["BLOG_REPO_GITHUB_TOKEN"]
 }
 
 action "md2blog" {
