@@ -25,7 +25,7 @@ import (
 )
 
 var (
-	githubToken = kingpin.Flag("github_token", "GitHub token for GitHub endpoint request.").Default(os.Getenv("GITHUB_TOKEN")).String()
+	githubToken = kingpin.Flag("github_token", "GitHub token for GitHub endpoint request.").Default(os.Getenv("BLOG_REPO_GITHUB_TOKEN")).String()
 
 	githubEventPath = kingpin.Flag("github_event_path", "GitHub event data json path.").Default(os.Getenv("GITHUB_EVENT_PATH")).String()
 

@@ -32,14 +32,14 @@ action "ls" {
 action "pr2md" {
   uses = "./github-actions/pr-to-md"
   needs = ["ls"]
-  secrets = ["BLOG_REPO_GITHUB_TOKEN"]
+  secrets = ["GITHUB_TOKEN"]
 }
 
 action "md2blog" {
   uses = "./github-actions/md-to-blogpost"
   args = ["--owner", "vvakame", "--name", "vvakame-blog", "--timezone", "Asia/Tokyo", "result.md"]
   needs = ["pr2md"]
-  secrets = ["GITHUB_TOKEN"]
+  secrets = ["BLOG_REPO_GITHUB_TOKEN"]
 }
 
 action "cat pr2md" {
