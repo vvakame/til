@@ -1,49 +1,38 @@
-workflow "post draft of blog" {
+workflow "make blog post" {
   resolves = [
-    "Slack notification",
+    "cat GITHUB_EVENT_PATH",
+    "blog to slack",
   ]
   on = "pull_request"
 }
 
-action "filter PR merged" {
-  uses = "actions/bin/filter@3c0b4f0e63ea54ea5df2914b4fabf383368cd0da"
-  args = "merged true"
-  needs = ["cat pr2md"]
-}
-
-action "Slack notification" {
-  uses = "Ilshidur/action-slack@master"
-  secrets = ["SLACK_WEBHOOK"]
-  args = "A new commit has been pushed."
-  needs = ["filter PR merged"]
-}
-
-action "cat" {
+action "cat GITHUB_EVENT_PATH" {
   uses = "actions/bin/sh@master"
   args = ["cat $GITHUB_EVENT_PATH"]
 }
 
-action "ls" {
-  uses = "actions/bin/sh@master"
-  args = ["ls -ltr"]
-  needs = ["cat"]
+
+action "filter PR merged" {
+  uses = "actions/bin/filter@master"
+  args = "merged true"
 }
 
 action "pr2md" {
   uses = "./github-actions/pr-to-md"
-  needs = ["ls"]
   secrets = ["GITHUB_TOKEN"]
+  needs = ["cat"]
 }
 
 action "md2blog" {
   uses = "./github-actions/md-to-blogpost"
   args = ["--owner", "vvakame", "--name", "vvakame-blog", "--timezone", "Asia/Tokyo", "result.md"]
-  needs = ["pr2md"]
   secrets = ["BLOG_REPO_GITHUB_TOKEN"]
+  needs = ["pr2md"]
 }
 
-action "cat pr2md" {
-  uses = "actions/bin/sh@master"
-  args = ["cat result.md"]
+action "blog to slack" {
+  uses = "Ilshidur/action-slack@master"
+  args = "PR merged!: {{ EVENT_PAYLOAD.pull_request.html_url }}"
+  secrets = ["SLACK_WEBHOOK"]
   needs = ["md2blog"]
 }
