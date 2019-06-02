@@ -35,8 +35,15 @@ action "pr2md" {
   secrets = ["GITHUB_TOKEN"]
 }
 
+action "md2blog" {
+  uses = "./github-actions/md-to-blogpost"
+  args = ["--owner", "vvakame", "--name", "vvakame-blog", "--timezone", "Asia/Tokyo", "result.md"]
+  needs = ["pr2md"]
+  secrets = ["GITHUB_TOKEN"]
+}
+
 action "cat pr2md" {
   uses = "actions/bin/sh@master"
   args = ["cat result.md"]
-  needs = ["pr2md"]
+  needs = ["md2blog"]
 }
