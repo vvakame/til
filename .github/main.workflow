@@ -20,7 +20,7 @@ action "filter PR merged" {
 action "pr2md" {
   uses = "./github-actions/pr-to-md"
   secrets = ["GITHUB_TOKEN"]
-  needs = ["cat"]
+  needs = ["filter PR merged"]
 }
 
 action "md2blog" {
