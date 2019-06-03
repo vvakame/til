@@ -18,13 +18,13 @@ action "filter PR merged" {
 }
 
 action "pr2md" {
-  uses = "./github-actions/pr-to-md"
+  uses = "vvakame/github-actions/pr-to-md@master"
   secrets = ["GITHUB_TOKEN"]
   needs = ["filter PR merged"]
 }
 
 action "md2blog" {
-  uses = "./github-actions/md-to-blogpost"
+  uses = "vvakame/github-actions/md-to-blogpost@master"
   args = ["--owner", "vvakame", "--name", "vvakame-blog", "--timezone", "Asia/Tokyo", "result.md"]
   secrets = ["BLOG_REPO_GITHUB_TOKEN"]
   needs = ["pr2md"]
