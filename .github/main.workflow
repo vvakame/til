@@ -19,6 +19,7 @@ action "filter PR merged" {
 
 action "pr2md" {
   uses = "vvakame/github-actions/pr-to-md@master"
+  args = ["--timezone", "Asia/Tokyo"]
   secrets = ["GITHUB_TOKEN"]
   needs = ["filter PR merged"]
 }
