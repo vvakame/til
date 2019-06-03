@@ -12,15 +12,9 @@ action "cat GITHUB_EVENT_PATH" {
 }
 
 
-action "filter PR merged" {
-  uses = "actions/bin/filter@master"
-  args = "merged true"
-}
-
 action "pr2md" {
   uses = "vvakame/github-actions/pr-to-md@master"
   secrets = ["GITHUB_TOKEN"]
-  needs = ["filter PR merged"]
 }
 
 action "md2blog" {
