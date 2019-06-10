@@ -97,7 +97,6 @@ github.com/vektah/gqlparser v1.1.2 h1:ZsyLGn7/7jDNI+y4SEhI4yAxRChlv15pUHMjijT+e6
 github.com/vektah/gqlparser v1.1.2/go.mod h1:1ycwN7Ij5njmMkPPAOaRFY4rET2Enx7IkVv3vaXspKw=
 github.com/vvakame/sdlog v0.0.0-20190523062053-be70263e9c6c h1:Ko7usVIbIm63ODUpaPQtl1Uk0IMvGKl0vAtStoiYnUk=
 github.com/vvakame/sdlog v0.0.0-20190523062053-be70263e9c6c/go.mod h1:ZarLTvvUR1PZ6kSrQgLUYQeeNBjV1FeL2nbHfXFEeC0=
-github.com/vvakame/til v0.0.0-20190524102445-459dcc2191b4 h1:WMpyVs26AhKlcFLvRFLB3InmUvcc4IrapLtloAj/ZtM=
 go.opencensus.io v0.21.0 h1:mU6zScU4U1YAFPHEHYk+3JC4SY7JxgkqS10ZOSyksNg=
 go.opencensus.io v0.21.0/go.mod h1:mSImk1erAIZhrmZN+AvHh14ztQfjbGwt4TtuofqLduU=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=
