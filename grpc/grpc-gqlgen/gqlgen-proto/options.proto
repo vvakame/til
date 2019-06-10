@@ -2,7 +2,6 @@ syntax = "proto3";
 
 package gqlgen.api;
 
-import "google/api/http.proto";
 import "google/protobuf/descriptor.proto";
 
 option go_package = "github.com/vvakame/til/grpc/grpc-gqlgen/gqlgen-proto;gqlgen_proto";
