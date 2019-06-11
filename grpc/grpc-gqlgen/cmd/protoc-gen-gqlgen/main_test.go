@@ -21,8 +21,13 @@ func Test(t *testing.T) {
 	ctx := context.Background()
 
 	bldr := &Builder{}
-	_, err = bldr.Process(ctx, req)
+	resp, err := bldr.Process(ctx, req)
 	if err != nil {
 		t.Fatal(err)
+	}
+
+	for _, f := range resp.GetFile() {
+		t.Log(*f.Name)
+		t.Log(*f.Content)
 	}
 }

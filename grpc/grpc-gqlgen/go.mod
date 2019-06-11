@@ -16,8 +16,9 @@ require (
 	github.com/hashicorp/golang-lru v0.5.1 // indirect
 	github.com/jhump/protoreflect v1.4.1
 	github.com/k0kubun/colorstring v0.0.0-20150214042306-9440f1994b88 // indirect
-	github.com/k0kubun/pp v3.0.1+incompatible
+	github.com/k0kubun/pp v3.0.1+incompatible // indirect
 	github.com/mattn/go-colorable v0.1.2 // indirect
+	github.com/rakyll/statik v0.1.6
 	github.com/vektah/gqlparser v1.1.2
 	github.com/vvakame/sdlog v0.0.0-20190523062053-be70263e9c6c
 	go.opencensus.io v0.21.0

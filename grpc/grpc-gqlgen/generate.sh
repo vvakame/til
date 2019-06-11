@@ -14,6 +14,8 @@ command -v protoc-gen-go protoc-gen-grpc-gateway protoc-gen-gqlgen
 rm -rf ./echopb ./todopb
 mkdir -p ./echopb ./todopb
 
+go generate ./cmd/protoc-gen-gqlgen
+
 protoc -I=. -I="$GATEWAY_PACKAGE_PATH/third_party/googleapis" \
     --go_out=paths=source_relative:./ \
     gqlgen-proto/options.proto
@@ -31,3 +33,4 @@ protoc -I=. -I="$GATEWAY_PACKAGE_PATH/third_party/googleapis" \
     todo.proto
 
 go generate ./...
+goimports -w ./**/*.gql.go

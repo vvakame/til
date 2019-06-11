@@ -1,0 +1,39 @@
+{{- /*gotype: github.com/vvakame/til/grpc/grpc-gqlgen/cmd/protoc-gen-gqlgen.FileInfo*/ -}}
+package {{ .GoPackageName }}
+
+import (
+    "context"
+)
+
+{{ range $service := .Services }}
+
+var _ {{ $service.Name }}GraphQLInterface = (*{{ goNamePrivate $service.Name }}Handler)(nil)
+
+type {{ $service.Name }}GraphQLInterface interface {
+    {{- range $method := $service.Methods }}
+        {{ goName $method.GraphQLName -}}
+            (ctx context.Context, input *{{ $method.RequestMessage.Name }}) (*{{ $method.ResponseMessage.Name }}, error)
+            {{- /* rm newline */ -}}
+    {{ end }}
+}
+
+type {{ goNamePrivate $service.Name }}Handler struct {
+    {{ goNamePrivate $service.Name }} {{ $service.Name }}Client
+}
+
+{{- range $method := $service.Methods }}
+func (h *{{ goNamePrivate $service.Name }}Handler)
+    {{- goName $method.GraphQLName }} (ctx context.Context, input *{{ $method.RequestMessage.Name }}) (*{{ $method.ResponseMessage.Name }}, error) {
+
+    resp, err := h.{{ goNamePrivate $service.Name }}.{{ $method.Name }}(ctx, input)
+    if err != nil {
+        // TODO なんらかのエラーハンドラが必要なはず
+        return nil, err
+    }
+
+    return resp, nil
+}
+{{ end }}
+
+{{ end }}
+

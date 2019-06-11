@@ -1,7 +1,10 @@
+//go:generate statik -src ./tmpls
+
 package main
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -15,6 +18,7 @@ import (
 	proto_extentions "github.com/vvakame/til/grpc/grpc-gqlgen/gqlgen-proto"
 
 	_ "github.com/golang/protobuf/ptypes/timestamp"
+	_ "github.com/vvakame/til/grpc/grpc-gqlgen/cmd/protoc-gen-gqlgen/statik"
 )
 
 func main() {
@@ -37,7 +41,13 @@ func run(r io.Reader, w io.Writer) error {
 		return err
 	}
 
-	resp := processReq(req)
+	ctx := context.Background()
+
+	bldr := &Builder{}
+	resp, err := bldr.Process(ctx, req)
+	if err != nil {
+		return err
+	}
 
 	return emitResp(w, resp)
 }

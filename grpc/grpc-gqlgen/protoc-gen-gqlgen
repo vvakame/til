@@ -2,4 +2,4 @@
 
 cd $(dirname $0)
 
-go run cmd/protoc-gen-gqlgen/main.go -
+go run github.com/vvakame/til/grpc/grpc-gqlgen/cmd/protoc-gen-gqlgen -
