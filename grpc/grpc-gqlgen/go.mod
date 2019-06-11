@@ -14,6 +14,9 @@ require (
 	github.com/google/wire v0.2.2
 	github.com/grpc-ecosystem/grpc-gateway v1.9.0
 	github.com/hashicorp/golang-lru v0.5.1 // indirect
+	github.com/k0kubun/colorstring v0.0.0-20150214042306-9440f1994b88 // indirect
+	github.com/k0kubun/pp v3.0.1+incompatible
+	github.com/mattn/go-colorable v0.1.2 // indirect
 	github.com/vektah/gqlparser v1.1.2
 	github.com/vvakame/sdlog v0.0.0-20190523062053-be70263e9c6c
 	go.opencensus.io v0.21.0

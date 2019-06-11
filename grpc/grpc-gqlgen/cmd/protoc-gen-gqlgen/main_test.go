@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"io/ioutil"
 	"testing"
 )
@@ -12,11 +13,16 @@ func Test(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	var buf bytes.Buffer
-	err = run(bytes.NewBuffer(b), &buf)
+	req, err := parseReq(bytes.NewBuffer(b))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	t.Log(buf.String())
+	ctx := context.Background()
+
+	bldr := &Builder{}
+	_, err = bldr.Process(ctx, req)
+	if err != nil {
+		t.Fatal(err)
+	}
 }
