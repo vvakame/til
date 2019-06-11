@@ -2,13 +2,14 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"reflect"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
+	descriptor "github.com/jhump/protoreflect/desc"
 	"github.com/k0kubun/pp"
 	proto_extentions "github.com/vvakame/til/grpc/grpc-gqlgen/gqlgen-proto"
+	"golang.org/x/xerrors"
 )
 
 type GraphQLOperationType int
@@ -21,12 +22,12 @@ const (
 
 type Builder struct {
 	CurrentRequest  *plugin.CodeGeneratorRequest
-	CurrentFile     *descriptor.FileDescriptorProto
+	CurrentFile     *descriptor.FileDescriptor
 	CurrentFileRule *proto_extentions.FileRule
-	CurrentService  *descriptor.ServiceDescriptorProto
-	CurrentMethod   *descriptor.MethodDescriptorProto
-	CurrentMessage  *descriptor.DescriptorProto
-	CurrentField    *descriptor.FieldDescriptorProto
+	CurrentService  *descriptor.ServiceDescriptor
+	CurrentMethod   *descriptor.MethodDescriptor
+	CurrentMessage  *descriptor.MessageDescriptor
+	CurrentField    *descriptor.FieldDescriptor
 
 	FileInfos []*FileInfo
 }
@@ -84,19 +85,19 @@ func (b *Builder) Process(ctx context.Context, req *plugin.CodeGeneratorRequest)
 		b.CurrentRequest = nil
 	}()
 
-	files := make(map[string]*descriptor.FileDescriptorProto)
-	for _, f := range req.ProtoFile {
-		files[f.GetName()] = f
-	}
-
 	resp := &plugin.CodeGeneratorResponse{}
 
+	fdMap, err := descriptor.CreateFileDescriptors(req.GetProtoFile())
+	if err != nil {
+		return nil, xerrors.Errorf("on descriptor.CreateFileDescriptors: %w", err)
+	}
+
 	for _, fname := range req.FileToGenerate {
-		f := files[fname]
+		f := fdMap[fname]
 
 		fileInfo, err := b.GenerateFileInfo(ctx, f)
 		if err != nil {
-			return nil, err
+			return nil, xerrors.Errorf("%s on Builder.GenerateFileInfo: %w", fname, err)
 		}
 
 		b.FileInfos = append(b.FileInfos, fileInfo)
@@ -107,23 +108,23 @@ func (b *Builder) Process(ctx context.Context, req *plugin.CodeGeneratorRequest)
 	return resp, nil
 }
 
-func (b *Builder) GenerateFileInfo(ctx context.Context, f *descriptor.FileDescriptorProto) (*FileInfo, error) {
-	b.CurrentFile = f
+func (b *Builder) GenerateFileInfo(ctx context.Context, req *descriptor.FileDescriptor) (*FileInfo, error) {
+	b.CurrentFile = req
 	defer func() {
 		b.CurrentFile = nil
 	}()
 
 	fileInfo := &FileInfo{
-		PackageName:    f.GetPackage(),
-		ProtoGoPackage: f.GetOptions().GetGoPackage(),
+		PackageName:    req.GetPackage(),
+		ProtoGoPackage: req.GetFileOptions().GetGoPackage(),
 	}
 
-	if opts := f.GetOptions(); opts != nil {
+	if opts := req.GetOptions(); opts != nil && !isNilPtr(opts) {
 		ext, err := proto.GetExtension(opts, proto_extentions.E_Resolver)
-		if err == proto.ErrMissingExtension {
+		if xerrors.Is(err, proto.ErrMissingExtension) {
 			// ok
 		} else if err != nil {
-			return nil, err
+			return nil, xerrors.Errorf("%s on proto.GetExtension in GenerateFileInfo: %w", req.GetFullyQualifiedName(), err)
 		} else {
 			v := ext.(*proto_extentions.FileRule)
 			rules, err := b.GenerateInferenceRules(ctx, v)
@@ -134,7 +135,7 @@ func (b *Builder) GenerateFileInfo(ctx context.Context, f *descriptor.FileDescri
 		}
 	}
 
-	for _, srvc := range f.GetService() {
+	for _, srvc := range req.GetServices() {
 		serviceInfo, err := b.GenerateServiceInfo(ctx, srvc)
 		if err != nil {
 			return nil, err
@@ -164,7 +165,7 @@ func (b *Builder) GenerateInferenceRules(ctx context.Context, req *proto_extenti
 	return rules, nil
 }
 
-func (b *Builder) GenerateServiceInfo(ctx context.Context, req *descriptor.ServiceDescriptorProto) (*ServiceInfo, error) {
+func (b *Builder) GenerateServiceInfo(ctx context.Context, req *descriptor.ServiceDescriptor) (*ServiceInfo, error) {
 	b.CurrentService = req
 	defer func() {
 		b.CurrentService = nil
@@ -174,7 +175,7 @@ func (b *Builder) GenerateServiceInfo(ctx context.Context, req *descriptor.Servi
 		Name: req.GetName(),
 	}
 
-	for _, m := range req.GetMethod() {
+	for _, m := range req.GetMethods() {
 		methodInfo, err := b.GenerateMethodInfo(ctx, m)
 		if err != nil {
 			return nil, err
@@ -186,7 +187,7 @@ func (b *Builder) GenerateServiceInfo(ctx context.Context, req *descriptor.Servi
 	return service, nil
 }
 
-func (b *Builder) GenerateMethodInfo(ctx context.Context, req *descriptor.MethodDescriptorProto) (*MethodInfo, error) {
+func (b *Builder) GenerateMethodInfo(ctx context.Context, req *descriptor.MethodDescriptor) (*MethodInfo, error) {
 	b.CurrentMethod = req
 	defer func() {
 		b.CurrentMethod = nil
@@ -196,12 +197,12 @@ func (b *Builder) GenerateMethodInfo(ctx context.Context, req *descriptor.Method
 		Name: req.GetName(),
 	}
 
-	if opts := req.GetOptions(); opts != nil {
+	if opts := req.GetOptions(); opts != nil && !isNilPtr(opts) {
 		ext, err := proto.GetExtension(opts, proto_extentions.E_Schema)
-		if err == proto.ErrMissingExtension {
+		if xerrors.Is(err, proto.ErrMissingExtension) {
 			// ok
 		} else if err != nil {
-			return nil, err
+			return nil, xerrors.Errorf("%s on proto.GetExtension in GenerateMethodInfo: %w", req.GetFullyQualifiedName(), err)
 		} else {
 			v := ext.(*proto_extentions.SchemaRule)
 			v.GetPattern()
@@ -218,37 +219,27 @@ func (b *Builder) GenerateMethodInfo(ctx context.Context, req *descriptor.Method
 		}
 	}
 
-	for _, m := range b.CurrentFile.GetMessageType() {
-		messageName := fmt.Sprintf(".%s.%s", b.CurrentFile.GetPackage(), m.GetName())
-		if messageName == req.GetInputType() {
-			messageInfo, err := b.GenerateMessageInfo(ctx, m)
-			if err != nil {
-				return nil, err
-			}
-
-			method.RequestMessage = messageInfo
+	{
+		messageInfo, err := b.GenerateMessageInfo(ctx, req.GetInputType())
+		if err != nil {
+			return nil, err
 		}
-		if messageName == req.GetOutputType() {
-			messageInfo, err := b.GenerateMessageInfo(ctx, m)
-			if err != nil {
-				return nil, err
-			}
 
-			method.ResponseMessage = messageInfo
+		method.RequestMessage = messageInfo
+	}
+	{
+		messageInfo, err := b.GenerateMessageInfo(ctx, req.GetOutputType())
+		if err != nil {
+			return nil, err
 		}
-	}
 
-	if method.RequestMessage == nil {
-		return nil, fmt.Errorf("request message doesn't lookup in method %s", req.GetName())
-	}
-	if method.ResponseMessage == nil {
-		return nil, fmt.Errorf("response message doesn't lookup in method %s", req.GetName())
+		method.ResponseMessage = messageInfo
 	}
 
 	return method, nil
 }
 
-func (b *Builder) GenerateMessageInfo(ctx context.Context, req *descriptor.DescriptorProto) (*MessageInfo, error) {
+func (b *Builder) GenerateMessageInfo(ctx context.Context, req *descriptor.MessageDescriptor) (*MessageInfo, error) {
 	b.CurrentMessage = req
 	defer func() {
 		b.CurrentMessage = nil
@@ -258,12 +249,12 @@ func (b *Builder) GenerateMessageInfo(ctx context.Context, req *descriptor.Descr
 		Name: req.GetName(),
 	}
 
-	if opts := req.GetOptions(); opts != nil {
+	if opts := req.GetOptions(); opts != nil && !isNilPtr(opts) {
 		ext, err := proto.GetExtension(opts, proto_extentions.E_Type)
-		if err == proto.ErrMissingExtension {
+		if xerrors.Is(err, proto.ErrMissingExtension) {
 			// ok
 		} else if err != nil {
-			return nil, err
+			return nil, xerrors.Errorf("%s on proto.GetExtension in GenerateMessageInfo: %w", req.GetFullyQualifiedName(), err)
 		} else {
 			v := ext.(*proto_extentions.MessageRule)
 			messageInfo.GraphQLAlias = v.GetAlias()
@@ -271,7 +262,7 @@ func (b *Builder) GenerateMessageInfo(ctx context.Context, req *descriptor.Descr
 		}
 	}
 
-	for _, f := range req.GetField() {
+	for _, f := range req.GetFields() {
 		fieldInfo, err := b.GenerateFieldInfo(ctx, f)
 		if err != nil {
 			return nil, err
@@ -282,7 +273,7 @@ func (b *Builder) GenerateMessageInfo(ctx context.Context, req *descriptor.Descr
 	return messageInfo, nil
 }
 
-func (b *Builder) GenerateFieldInfo(ctx context.Context, req *descriptor.FieldDescriptorProto) (*FieldInfo, error) {
+func (b *Builder) GenerateFieldInfo(ctx context.Context, req *descriptor.FieldDescriptor) (*FieldInfo, error) {
 	b.CurrentField = req
 	defer func() {
 		b.CurrentField = nil
@@ -292,12 +283,12 @@ func (b *Builder) GenerateFieldInfo(ctx context.Context, req *descriptor.FieldDe
 		Name: req.GetName(),
 	}
 
-	if opts := req.GetOptions(); opts != nil {
+	if opts := req.GetOptions(); opts != nil && !isNilPtr(opts) {
 		ext, err := proto.GetExtension(opts, proto_extentions.E_Field)
-		if err == proto.ErrMissingExtension {
+		if xerrors.Is(err, proto.ErrMissingExtension) {
 			// ok
 		} else if err != nil {
-			return nil, err
+			return nil, xerrors.Errorf("%s on proto.GetExtension in GenerateFieldInfo: %w", req.GetFullyQualifiedName(), err)
 		} else {
 			v := ext.(*proto_extentions.FieldRule)
 			fieldInfo.GraphQLID = v.GetId()
@@ -307,4 +298,9 @@ func (b *Builder) GenerateFieldInfo(ctx context.Context, req *descriptor.FieldDe
 	}
 
 	return fieldInfo, nil
+}
+
+func isNilPtr(x interface{}) bool {
+	v := reflect.ValueOf(x)
+	return v.Kind() == reflect.Ptr && v.IsNil()
 }
