@@ -5,20 +5,14 @@ package main
 import (
 	"bytes"
 	"context"
-	"fmt"
+	"github.com/golang/protobuf/proto"
+	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
+	_ "github.com/golang/protobuf/ptypes/timestamp"
+	_ "github.com/vvakame/til/grpc/grpc-gqlgen/cmd/protoc-gen-gqlgen/statik"
 	"io"
 	"io/ioutil"
 	"log"
 	"os"
-	"path"
-
-	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/protoc-gen-go/descriptor"
-	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
-	proto_extentions "github.com/vvakame/til/grpc/grpc-gqlgen/gqlgen-proto"
-
-	_ "github.com/golang/protobuf/ptypes/timestamp"
-	_ "github.com/vvakame/til/grpc/grpc-gqlgen/cmd/protoc-gen-gqlgen/statik"
 )
 
 func main() {
@@ -65,30 +59,6 @@ func parseReq(r io.Reader) (*plugin.CodeGeneratorRequest, error) {
 	return &req, nil
 }
 
-func processReq(req *plugin.CodeGeneratorRequest) *plugin.CodeGeneratorResponse {
-	files := make(map[string]*descriptor.FileDescriptorProto)
-	for _, f := range req.ProtoFile {
-		files[f.GetName()] = f
-	}
-
-	resp := &plugin.CodeGeneratorResponse{}
-
-	for _, fname := range req.FileToGenerate {
-		f := files[fname]
-
-		var buf bytes.Buffer
-		walkFileDescriptor(&buf, f)
-
-		genFileName := fmt.Sprintf("%s.info", path.Base(fname))
-		resp.File = append(resp.File, &plugin.CodeGeneratorResponse_File{
-			Name:    proto.String(genFileName),
-			Content: proto.String(buf.String()),
-		})
-	}
-
-	return resp
-}
-
 func emitResp(w io.Writer, resp *plugin.CodeGeneratorResponse) error {
 	buf, err := proto.Marshal(resp)
 	if err != nil {
@@ -96,98 +66,4 @@ func emitResp(w io.Writer, resp *plugin.CodeGeneratorResponse) error {
 	}
 	_, err = w.Write(buf)
 	return err
-}
-
-func walkFileDescriptor(w io.Writer, f *descriptor.FileDescriptorProto) {
-	_, _ = fmt.Fprintf(w, "file: %s\n", f.GetName())
-
-	opts := f.GetOptions()
-	if opts != nil {
-		ext, err := proto.GetExtension(opts, proto_extentions.E_Resolver)
-		if err == proto.ErrMissingExtension {
-			// ok
-		} else if err != nil {
-			log.Fatal(err)
-		} else {
-			opt := ext.(*proto_extentions.FileRule)
-			for _, v := range opt.GetTypeInference() {
-				_, _ = fmt.Fprintf(w, "fileRule: %s %s %s\n", v.GetSrc(), v.GetDest(), v.GetType())
-			}
-		}
-	}
-
-	for _, srv := range f.GetService() {
-		walkService(w, srv)
-	}
-
-	for _, msg := range f.GetMessageType() {
-		walkMessage(w, msg)
-	}
-}
-
-func walkService(w io.Writer, srv *descriptor.ServiceDescriptorProto) {
-	_, _ = fmt.Fprintf(w, "service: %s\n", srv.GetName())
-
-	for _, mt := range srv.GetMethod() {
-		walkMethod(w, mt)
-	}
-}
-
-func walkMethod(w io.Writer, mt *descriptor.MethodDescriptorProto) {
-	_, _ = fmt.Fprintf(w, "method: %s\n", mt.GetName())
-
-	opts := mt.GetOptions()
-	if opts != nil {
-		ext, err := proto.GetExtension(opts, proto_extentions.E_Schema)
-		if err == proto.ErrMissingExtension {
-			// ok
-		} else if err != nil {
-			log.Fatal(err)
-		} else {
-			v := ext.(*proto_extentions.SchemaRule)
-			_, _ = fmt.Fprintf(w, "schemaRule: %s %s %s %s\n", v.GetPattern(), v.GetQuery(), v.GetMutation(), v.GetSubscription())
-		}
-	}
-}
-
-func walkMessage(w io.Writer, msg *descriptor.DescriptorProto) {
-	_, _ = fmt.Fprintf(w, "message: %s\n", msg.GetName())
-
-	opts := msg.GetOptions()
-	if opts != nil {
-		ext, err := proto.GetExtension(opts, proto_extentions.E_Type)
-		if err == proto.ErrMissingExtension {
-			// ok
-		} else if err != nil {
-			log.Fatal(err)
-		} else {
-			v := ext.(*proto_extentions.MessageRule)
-			_, _ = fmt.Fprintf(w, "messageRule: %s %s\n", v.GetType(), v.GetAlias())
-		}
-	}
-
-	for _, f := range msg.GetField() {
-		walkField(w, f)
-	}
-
-	for _, msg := range msg.GetNestedType() {
-		walkMessage(w, msg)
-	}
-}
-
-func walkField(w io.Writer, fd *descriptor.FieldDescriptorProto) {
-	_, _ = fmt.Fprintf(w, "field: %s %s %s\n", fd.GetName(), fd.GetTypeName(), fd.GetType())
-
-	opts := fd.GetOptions()
-	if opts != nil {
-		ext, err := proto.GetExtension(opts, proto_extentions.E_Field)
-		if err == proto.ErrMissingExtension {
-			// ok
-		} else if err != nil {
-			log.Fatal(err)
-		} else {
-			v := ext.(*proto_extentions.FieldRule)
-			_, _ = fmt.Fprintf(w, "fieldRule: %s %v\n", v.GetAlias(), v.GetOptional())
-		}
-	}
 }
