@@ -9,11 +9,10 @@ import (
 	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
 	descriptor "github.com/jhump/protoreflect/desc"
 	"github.com/rakyll/statik/fs"
-	proto_extentions "github.com/vvakame/til/grpc/grpc-gqlgen/gqlgen-proto"
+	gqlgen_proto "github.com/vvakame/til/grpc/grpc-gqlgen/gqlgen-proto"
 	"golang.org/x/xerrors"
 	"io/ioutil"
 	"os"
-	"reflect"
 	"strings"
 	"text/template"
 )
@@ -27,15 +26,13 @@ const (
 )
 
 type Builder struct {
-	CurrentRequest  *plugin.CodeGeneratorRequest
-	CurrentFile     *descriptor.FileDescriptor
-	CurrentFileRule *proto_extentions.FileRule
-	CurrentService  *descriptor.ServiceDescriptor
-	CurrentMethod   *descriptor.MethodDescriptor
-	CurrentMessage  *descriptor.MessageDescriptor
-	CurrentField    *descriptor.FieldDescriptor
+	FileInfos  []*FileInfo
 
-	FileInfos []*FileInfo
+	CurrentFileInfo    *FileInfo
+	CurrentServiceInfo *ServiceInfo
+	CurrentMethodInfo  *MethodInfo
+	CurrentMessageInfo *MessageInfo
+	CurrentFieldInfo   *FieldInfo
 }
 
 type FileInfo struct {
@@ -68,7 +65,7 @@ func (fi *FileInfo) GoPackageName() string {
 type InferrenceRule struct {
 	Src         string
 	Dest        string
-	MessageType proto_extentions.MessageType
+	MessageType gqlgen_proto.MessageType
 }
 
 type ServiceInfo struct {
@@ -90,7 +87,7 @@ type MessageInfo struct {
 	Name string
 
 	GraphQLAlias       string
-	GraphQLMessageType proto_extentions.MessageType
+	GraphQLMessageType gqlgen_proto.MessageType
 
 	Fields []*FieldInfo
 }
@@ -104,28 +101,13 @@ type FieldInfo struct {
 }
 
 func (b *Builder) Process(ctx context.Context, req *plugin.CodeGeneratorRequest) (*plugin.CodeGeneratorResponse, error) {
-	b.CurrentRequest = req
-	defer func() {
-		b.CurrentRequest = nil
-	}()
+
+	err := Visit(req, b)
+	if err != nil {
+		return nil, err
+	}
 
 	resp := &plugin.CodeGeneratorResponse{}
-
-	fdMap, err := descriptor.CreateFileDescriptors(req.GetProtoFile())
-	if err != nil {
-		return nil, xerrors.Errorf("on descriptor.CreateFileDescriptors: %w", err)
-	}
-
-	for _, fname := range req.FileToGenerate {
-		f := fdMap[fname]
-
-		fileInfo, err := b.GenerateFileInfo(ctx, f)
-		if err != nil {
-			return nil, xerrors.Errorf("%s on Builder.GenerateFileInfo: %w", fname, err)
-		}
-
-		b.FileInfos = append(b.FileInfos, fileInfo)
-	}
 
 	tmplBytes, err := ioutil.ReadFile("./tmpls/glue.gotmpl")
 	if os.IsNotExist(err) {
@@ -188,199 +170,109 @@ func (b *Builder) Process(ctx context.Context, req *plugin.CodeGeneratorRequest)
 	return resp, nil
 }
 
-func (b *Builder) GenerateFileInfo(ctx context.Context, req *descriptor.FileDescriptor) (*FileInfo, error) {
-	b.CurrentFile = req
-	defer func() {
-		b.CurrentFile = nil
-	}()
+func (b *Builder) VisitFileDescriptor(w *Walker, req *descriptor.FileDescriptor, opts *gqlgen_proto.FileRule) error {
 
 	fileInfo := &FileInfo{
 		PackageName:    req.GetPackage(),
 		ProtoGoPackage: req.GetFileOptions().GetGoPackage(),
 	}
+	b.CurrentFileInfo = fileInfo
 
-	if opts := req.GetOptions(); opts != nil && !isNilPtr(opts) {
-		ext, err := proto.GetExtension(opts, proto_extentions.E_Resolver)
-		if xerrors.Is(err, proto.ErrMissingExtension) {
-			// ok
-		} else if err != nil {
-			return nil, xerrors.Errorf("%s on proto.GetExtension in GenerateFileInfo: %w", req.GetFullyQualifiedName(), err)
-		} else {
-			v := ext.(*proto_extentions.FileRule)
-			rules, err := b.GenerateInferenceRules(ctx, v)
-			if err != nil {
-				return nil, err
-			}
-			fileInfo.InferrenceRules = rules
-		}
-	}
-
-	for _, srvc := range req.GetServices() {
-		serviceInfo, err := b.GenerateServiceInfo(ctx, srvc)
-		if err != nil {
-			return nil, err
-		}
-
-		fileInfo.Services = append(fileInfo.Services, serviceInfo)
-	}
-
-	return fileInfo, nil
-}
-
-func (b *Builder) GenerateInferenceRules(ctx context.Context, req *proto_extentions.FileRule) ([]*InferrenceRule, error) {
-	b.CurrentFileRule = req
-	defer func() {
-		b.CurrentFileRule = nil
-	}()
-
-	var rules []*InferrenceRule
-	for _, v := range req.GetTypeInference() {
-		rules = append(rules, &InferrenceRule{
+	for _, v := range opts.GetTypeInference() {
+		fileInfo.InferrenceRules = append(fileInfo.InferrenceRules, &InferrenceRule{
 			Src:         v.GetSrc(),
 			Dest:        v.GetDest(),
 			MessageType: v.GetType(),
 		})
 	}
 
-	return rules, nil
+	b.FileInfos = append(b.FileInfos, fileInfo)
+
+	return nil
 }
 
-func (b *Builder) GenerateServiceInfo(ctx context.Context, req *descriptor.ServiceDescriptor) (*ServiceInfo, error) {
-	b.CurrentService = req
-	defer func() {
-		b.CurrentService = nil
-	}()
-
+func (b *Builder) VisitServiceDescriptor(w *Walker, req *descriptor.ServiceDescriptor) error {
 	service := &ServiceInfo{
 		Name: req.GetName(),
 	}
+	b.CurrentServiceInfo = service
 
-	for _, m := range req.GetMethods() {
-		methodInfo, err := b.GenerateMethodInfo(ctx, m)
-		if err != nil {
-			return nil, err
-		}
+	b.CurrentFileInfo.Services = append(b.CurrentFileInfo.Services, service)
 
-		service.Methods = append(service.Methods, methodInfo)
-	}
-
-	return service, nil
+	return nil
 }
 
-func (b *Builder) GenerateMethodInfo(ctx context.Context, req *descriptor.MethodDescriptor) (*MethodInfo, error) {
-	b.CurrentMethod = req
-	defer func() {
-		b.CurrentMethod = nil
-	}()
-
+func (b *Builder) VisitMethodDescriptor(w *Walker, req *descriptor.MethodDescriptor, opts *gqlgen_proto.SchemaRule) error {
 	method := &MethodInfo{
 		Name: req.GetName(),
 	}
-
-	if opts := req.GetOptions(); opts != nil && !isNilPtr(opts) {
-		ext, err := proto.GetExtension(opts, proto_extentions.E_Schema)
-		if xerrors.Is(err, proto.ErrMissingExtension) {
-			// ok
-		} else if err != nil {
-			return nil, xerrors.Errorf("%s on proto.GetExtension in GenerateMethodInfo: %w", req.GetFullyQualifiedName(), err)
-		} else {
-			v := ext.(*proto_extentions.SchemaRule)
-			v.GetPattern()
-			if v.GetQuery() != "" {
-				method.GraphQLOperationType = GraphQLQuery
-				method.GraphQLName = v.GetQuery()
-			} else if v.GetMutation() != "" {
-				method.GraphQLOperationType = GraphQLMutation
-				method.GraphQLName = v.GetMutation()
-			} else if v.GetSubscription() != "" {
-				method.GraphQLOperationType = GraphQLSubscription
-				method.GraphQLName = v.GetSubscription()
-			}
+	b.CurrentMethodInfo = method
+	if opts != nil {
+		if opts.GetQuery() != "" {
+			method.GraphQLOperationType = GraphQLQuery
+			method.GraphQLName = opts.GetQuery()
+		} else if opts.GetMutation() != "" {
+			method.GraphQLOperationType = GraphQLMutation
+			method.GraphQLName = opts.GetMutation()
+		} else if opts.GetSubscription() != "" {
+			method.GraphQLOperationType = GraphQLSubscription
+			method.GraphQLName = opts.GetSubscription()
 		}
 	}
 
-	{
-		messageInfo, err := b.GenerateMessageInfo(ctx, req.GetInputType())
-		if err != nil {
-			return nil, err
-		}
+	b.CurrentServiceInfo.Methods = append(b.CurrentServiceInfo.Methods, method)
 
-		method.RequestMessage = messageInfo
-	}
-	{
-		messageInfo, err := b.GenerateMessageInfo(ctx, req.GetOutputType())
-		if err != nil {
-			return nil, err
-		}
-
-		method.ResponseMessage = messageInfo
-	}
-
-	return method, nil
+	return nil
 }
 
-func (b *Builder) GenerateMessageInfo(ctx context.Context, req *descriptor.MessageDescriptor) (*MessageInfo, error) {
-	b.CurrentMessage = req
-	defer func() {
-		b.CurrentMessage = nil
-	}()
+func (b *Builder) VisitInputMessageDescriptor(w *Walker, req *descriptor.MessageDescriptor, opts *gqlgen_proto.MessageRule) error {
+	err := b.visitMessageDescriptor(w, req, opts)
+	if err != nil {
+		return err
+	}
 
+	b.CurrentMethodInfo.RequestMessage = b.CurrentMessageInfo
+
+	return nil
+}
+
+func (b *Builder) VisitOutputMessageDescriptor(w *Walker, req *descriptor.MessageDescriptor, opts *gqlgen_proto.MessageRule) error {
+	err := b.visitMessageDescriptor(w, req, opts)
+	if err != nil {
+		return err
+	}
+
+	b.CurrentMethodInfo.ResponseMessage = b.CurrentMessageInfo
+
+	return nil
+}
+
+func (b *Builder) visitMessageDescriptor(w *Walker, req *descriptor.MessageDescriptor, opts *gqlgen_proto.MessageRule) error {
 	messageInfo := &MessageInfo{
 		Name: req.GetName(),
 	}
-
-	if opts := req.GetOptions(); opts != nil && !isNilPtr(opts) {
-		ext, err := proto.GetExtension(opts, proto_extentions.E_Type)
-		if xerrors.Is(err, proto.ErrMissingExtension) {
-			// ok
-		} else if err != nil {
-			return nil, xerrors.Errorf("%s on proto.GetExtension in GenerateMessageInfo: %w", req.GetFullyQualifiedName(), err)
-		} else {
-			v := ext.(*proto_extentions.MessageRule)
-			messageInfo.GraphQLAlias = v.GetAlias()
-			messageInfo.GraphQLMessageType = v.GetType()
-		}
+	b.CurrentMessageInfo = messageInfo
+	if opts != nil {
+		messageInfo.GraphQLAlias = opts.GetAlias()
+		messageInfo.GraphQLMessageType = opts.GetType()
 	}
 
-	for _, f := range req.GetFields() {
-		fieldInfo, err := b.GenerateFieldInfo(ctx, f)
-		if err != nil {
-			return nil, err
-		}
-		messageInfo.Fields = append(messageInfo.Fields, fieldInfo)
-	}
-
-	return messageInfo, nil
+	return nil
 }
 
-func (b *Builder) GenerateFieldInfo(ctx context.Context, req *descriptor.FieldDescriptor) (*FieldInfo, error) {
-	b.CurrentField = req
-	defer func() {
-		b.CurrentField = nil
-	}()
-
+func (b *Builder) VisitFieldDescriptor(w *Walker, req *descriptor.FieldDescriptor, opts *gqlgen_proto.FieldRule) error {
 	fieldInfo := &FieldInfo{
 		Name: req.GetName(),
 	}
+	b.CurrentFieldInfo = fieldInfo
 
-	if opts := req.GetOptions(); opts != nil && !isNilPtr(opts) {
-		ext, err := proto.GetExtension(opts, proto_extentions.E_Field)
-		if xerrors.Is(err, proto.ErrMissingExtension) {
-			// ok
-		} else if err != nil {
-			return nil, xerrors.Errorf("%s on proto.GetExtension in GenerateFieldInfo: %w", req.GetFullyQualifiedName(), err)
-		} else {
-			v := ext.(*proto_extentions.FieldRule)
-			fieldInfo.GraphQLID = v.GetId()
-			fieldInfo.GraphQLAlias = v.GetAlias()
-			fieldInfo.GraphQLOptional = v.GetOptional()
-		}
+	if opts != nil {
+		fieldInfo.GraphQLID = opts.GetId()
+		fieldInfo.GraphQLAlias = opts.GetAlias()
+		fieldInfo.GraphQLOptional = opts.GetOptional()
 	}
 
-	return fieldInfo, nil
-}
+	b.CurrentMessageInfo.Fields = append(b.CurrentMessageInfo.Fields, fieldInfo)
 
-func isNilPtr(x interface{}) bool {
-	v := reflect.ValueOf(x)
-	return v.Kind() == reflect.Ptr && v.IsNil()
+	return nil
 }
