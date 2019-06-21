@@ -30,3 +30,5 @@ require (
 	google.golang.org/genproto v0.0.0-20190611190212-a7e196e89fd3
 	google.golang.org/grpc v1.21.1
 )
+
+replace github.com/vektah/gqlparser => github.com/vvakame/gqlparser v0.0.0-20190614064228-62f7407202a0

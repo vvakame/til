@@ -73,6 +73,7 @@ github.com/jhump/protoreflect v1.4.2/go.mod h1:gZ3i/BeD62fjlaIL0VW4UDMT70CTX+3m4
 github.com/jmespath/go-jmespath v0.0.0-20180206201540-c2b33e8439af h1:pmfjZENx5imkbgOkpRUYLnmbU7UEFbjtDA2hxJ1ichM=
 github.com/jmespath/go-jmespath v0.0.0-20180206201540-c2b33e8439af/go.mod h1:Nht3zPeWKUH0NzdCt2Blrr5ys8VGpn0CEB0cQHVjt7k=
 github.com/jstemmer/go-junit-report v0.0.0-20190106144839-af01ea7f8024/go.mod h1:6v2b51hI/fHJwM22ozAgKL4VKDeJcHhJFhtBdhmNjmU=
+github.com/kisielk/godepgraph v0.0.0-20181003180210-9a9a3d47fba3/go.mod h1:Gb5YEgxqiSSVrXKWQxDcKoCM94NO5QAwOwTaVmIUAMI=
 github.com/kr/pretty v0.1.0 h1:L/CwN0zerZDmRFUapSPitk6f+Q3+0za1rQkzVuMiMFI=
 github.com/kr/pretty v0.1.0/go.mod h1:dAy3ld7l9f0ibDNOQOHHMYYIIbhfbHSm3C4ZsoJORNo=
 github.com/kr/pty v1.1.1/go.mod h1:pFQYn66WHrOpPYNljwOMqo10TkYh1fy3cYio2l3bCsQ=
@@ -100,8 +101,8 @@ github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UV
 github.com/urfave/cli v1.20.0 h1:fDqGv3UG/4jbVl/QkFwEdddtEDjh/5Ov6X+0B/3bPaw=
 github.com/urfave/cli v1.20.0/go.mod h1:70zkFmudgCuE/ngEzBv17Jvp/497gISqfk5gWijbERA=
 github.com/vektah/dataloaden v0.2.1-0.20190515034641-a19b9a6e7c9e/go.mod h1:/HUdMve7rvxZma+2ZELQeNh88+003LL7Pf/CZ089j8U=
-github.com/vektah/gqlparser v1.1.2 h1:ZsyLGn7/7jDNI+y4SEhI4yAxRChlv15pUHMjijT+e68=
-github.com/vektah/gqlparser v1.1.2/go.mod h1:1ycwN7Ij5njmMkPPAOaRFY4rET2Enx7IkVv3vaXspKw=
+github.com/vvakame/gqlparser v0.0.0-20190614064228-62f7407202a0 h1:ETPWqC++bfYsgkkzQJtrxN9mCpTiSbEkZXwNaAr0qvA=
+github.com/vvakame/gqlparser v0.0.0-20190614064228-62f7407202a0/go.mod h1:dPq13EOu30FmIMSwfpcyIDwtLMC8Y1huqD5uU1yC1GY=
 github.com/vvakame/sdlog v0.0.0-20190523062053-be70263e9c6c h1:Ko7usVIbIm63ODUpaPQtl1Uk0IMvGKl0vAtStoiYnUk=
 github.com/vvakame/sdlog v0.0.0-20190523062053-be70263e9c6c/go.mod h1:ZarLTvvUR1PZ6kSrQgLUYQeeNBjV1FeL2nbHfXFEeC0=
 go.opencensus.io v0.21.0/go.mod h1:mSImk1erAIZhrmZN+AvHh14ztQfjbGwt4TtuofqLduU=

@@ -9,6 +9,8 @@ import (
 	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
 	descriptor "github.com/jhump/protoreflect/desc"
 	"github.com/rakyll/statik/fs"
+	"github.com/vektah/gqlparser/ast"
+	gqlformatter "github.com/vektah/gqlparser/formatter"
 	gqlgen_proto "github.com/vvakame/til/grpc/grpc-gqlgen/gqlgen-proto"
 	"golang.org/x/xerrors"
 	"io/ioutil"
@@ -27,6 +29,7 @@ const (
 
 type Builder struct {
 	FileInfos  []*FileInfo
+	SchemaDocs []*ast.SchemaDocument
 
 	CurrentFileInfo    *FileInfo
 	CurrentServiceInfo *ServiceInfo
@@ -163,6 +166,20 @@ func (b *Builder) Process(ctx context.Context, req *plugin.CodeGeneratorRequest)
 
 		resp.File = append(resp.File, &plugin.CodeGeneratorResponse_File{
 			Name:    proto.String(fmt.Sprintf("%s.gql.go", fileInfo.PackageName)),
+			Content: proto.String(buf.String()),
+		})
+	}
+	for idx, doc := range b.SchemaDocs {
+		fileInfo := b.FileInfos[idx]
+
+		var buf bytes.Buffer
+		err := gqlformatter.NewFormatter(&buf).FormatSchemaDocument(doc)
+		if err != nil {
+			return nil, err
+		}
+
+		resp.File = append(resp.File, &plugin.CodeGeneratorResponse_File{
+			Name:    proto.String(fmt.Sprintf("%s.graphql", fileInfo.PackageName)),
 			Content: proto.String(buf.String()),
 		})
 	}
