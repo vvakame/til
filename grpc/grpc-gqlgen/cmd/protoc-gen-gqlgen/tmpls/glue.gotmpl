@@ -3,6 +3,11 @@ package {{ .GoPackageName }}
 
 import (
     "context"
+    "fmt"
+    "io"
+    "strconv"
+
+    "github.com/99designs/gqlgen/graphql"
 )
 
 {{ range $service := .Services }}

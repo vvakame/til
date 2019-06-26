@@ -37,10 +37,10 @@ models:
     model: github.com/vvakame/til/grpc/grpc-gqlgen/todopb.UpdateRequest
   UpdateTodoPayload:
     model: github.com/vvakame/til/grpc/grpc-gqlgen/todopb.UpdateResponse
-  ListADoneFilter:
-    model: github.com/vvakame/til/grpc/grpc-gqlgen/todopb.ListADoneFilter
-  ListBDoneFilter:
-    model: github.com/vvakame/til/grpc/grpc-gqlgen/todopb.ListBDoneFilter
+  ListATodoInputDoneFilter:
+    model: github.com/vvakame/til/grpc/grpc-gqlgen/todopb.ListATodoInputDoneFilter
+  ListBDone:
+    model: github.com/vvakame/til/grpc/grpc-gqlgen/todopb.ListBDone
 
   Example1:
     model: github.com/vvakame/til/grpc/grpc-gqlgen/echopb.Example1

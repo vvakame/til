@@ -488,7 +488,7 @@ type CreateTodoPayload {
 input ListATodoInput {
 	first: Int
 	after: String
-	done: ListADoneFilter
+	done: ListATodoInputDoneFilter
 }
 type ListATodoPayload {
 	cursor: String
@@ -497,7 +497,7 @@ type ListATodoPayload {
 input ListBTodoInput {
 	offset: Int
 	limit: Int
-	done: ListBDoneFilter
+	done: ListBDone
 }
 type ListBTodoPayload {
 	todos: [Todo!]!
@@ -510,12 +510,12 @@ input UpdateTodoInput {
 type UpdateTodoPayload {
 	todo: Todo!
 }
-enum ListADoneFilter {
+enum ListATodoInputDoneFilter {
 	NONE
 	DONE
 	NOT_DONE
 }
-enum ListBDoneFilter {
+enum ListBDone {
 	NONE
 	DONE
 	NOT_DONE
@@ -2393,7 +2393,7 @@ func (ec *executionContext) unmarshalInputListATodoInput(ctx context.Context, v 
 			}
 		case "done":
 			var err error
-			it.Done, err = ec.unmarshalOListADoneFilter2githubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋtodopbᚐListARequest_DoneFilter(ctx, v)
+			it.Done, err = ec.unmarshalOListATodoInputDoneFilter2githubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋtodopbᚐListARequest_DoneFilter(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -2423,7 +2423,7 @@ func (ec *executionContext) unmarshalInputListBTodoInput(ctx context.Context, v 
 			}
 		case "done":
 			var err error
-			it.Done, err = ec.unmarshalOListBDoneFilter2githubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋtodopbᚐListBRequest_DoneFilter(ctx, v)
+			it.Done, err = ec.unmarshalOListBDone2githubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋtodopbᚐListBRequest_DoneFilter(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -3675,20 +3675,20 @@ func (ec *executionContext) marshalOInt2int32(ctx context.Context, sel ast.Selec
 	return graphql.MarshalInt32(v)
 }
 
-func (ec *executionContext) unmarshalOListADoneFilter2githubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋtodopbᚐListARequest_DoneFilter(ctx context.Context, v interface{}) (todopb.ListARequest_DoneFilter, error) {
-	return todopb.UnmarshalListADoneFilter(v)
+func (ec *executionContext) unmarshalOListATodoInputDoneFilter2githubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋtodopbᚐListARequest_DoneFilter(ctx context.Context, v interface{}) (todopb.ListARequest_DoneFilter, error) {
+	return todopb.UnmarshalListATodoInputDoneFilter(v)
 }
 
-func (ec *executionContext) marshalOListADoneFilter2githubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋtodopbᚐListARequest_DoneFilter(ctx context.Context, sel ast.SelectionSet, v todopb.ListARequest_DoneFilter) graphql.Marshaler {
-	return todopb.MarshalListADoneFilter(v)
+func (ec *executionContext) marshalOListATodoInputDoneFilter2githubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋtodopbᚐListARequest_DoneFilter(ctx context.Context, sel ast.SelectionSet, v todopb.ListARequest_DoneFilter) graphql.Marshaler {
+	return todopb.MarshalListATodoInputDoneFilter(v)
 }
 
-func (ec *executionContext) unmarshalOListBDoneFilter2githubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋtodopbᚐListBRequest_DoneFilter(ctx context.Context, v interface{}) (todopb.ListBRequest_DoneFilter, error) {
-	return todopb.UnmarshalListBDoneFilter(v)
+func (ec *executionContext) unmarshalOListBDone2githubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋtodopbᚐListBRequest_DoneFilter(ctx context.Context, v interface{}) (todopb.ListBRequest_DoneFilter, error) {
+	return todopb.UnmarshalListBDone(v)
 }
 
-func (ec *executionContext) marshalOListBDoneFilter2githubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋtodopbᚐListBRequest_DoneFilter(ctx context.Context, sel ast.SelectionSet, v todopb.ListBRequest_DoneFilter) graphql.Marshaler {
-	return todopb.MarshalListBDoneFilter(v)
+func (ec *executionContext) marshalOListBDone2githubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋtodopbᚐListBRequest_DoneFilter(ctx context.Context, sel ast.SelectionSet, v todopb.ListBRequest_DoneFilter) graphql.Marshaler {
+	return todopb.MarshalListBDone(v)
 }
 
 func (ec *executionContext) unmarshalOString2string(ctx context.Context, v interface{}) (string, error) {

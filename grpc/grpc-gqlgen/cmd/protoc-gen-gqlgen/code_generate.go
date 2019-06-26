@@ -90,7 +90,8 @@ type MethodInfo struct {
 }
 
 type MessageInfo struct {
-	Proto *descriptor.MessageDescriptor
+	ParentMessage *MessageInfo
+	Proto         *descriptor.MessageDescriptor
 
 	Name string
 
@@ -105,7 +106,24 @@ func (m *MessageInfo) GraphQLName() string {
 		return m.GraphQLAlias
 	}
 
-	return templates.ToGo(m.GoName())
+	if m.GraphQLAlias != "" {
+		return m.GraphQLAlias
+	}
+
+	var buf bytes.Buffer
+
+	var printName func(parent *MessageInfo)
+	printName = func(parent *MessageInfo) {
+		if parent == nil {
+			return
+		}
+		printName(parent.ParentMessage)
+		buf.WriteString(parent.GraphQLName())
+	}
+	printName(m.ParentMessage)
+	buf.WriteString(templates.ToGo(m.Name))
+
+	return buf.String()
 }
 
 func (m *MessageInfo) GoName() string {
@@ -158,7 +176,8 @@ func (f *FieldInfo) GraphQLName() string {
 }
 
 type EnumInfo struct {
-	Proto *descriptor.EnumDescriptor
+	ParentMessage *MessageInfo
+	Proto         *descriptor.EnumDescriptor
 
 	Name string
 
@@ -172,7 +191,20 @@ func (e *EnumInfo) GraphQLName() string {
 		return e.GraphQLAlias
 	}
 
-	return templates.ToGo(e.GoName())
+	var buf bytes.Buffer
+
+	var printName func(parent *MessageInfo)
+	printName = func(parent *MessageInfo) {
+		if parent == nil {
+			return
+		}
+		printName(parent.ParentMessage)
+		buf.WriteString(parent.GraphQLName())
+	}
+	printName(e.ParentMessage)
+	buf.WriteString(templates.ToGo(e.Name))
+
+	return buf.String()
 }
 
 func (e *EnumInfo) GoName() string {
@@ -332,8 +364,9 @@ func (b *Builder) VisitMethodDescriptor(w *Walker, req *descriptor.MethodDescrip
 
 func (b *Builder) VisitMessageDescriptor(w *Walker, req *descriptor.MessageDescriptor, opts *gqlgen_proto.MessageRule, info *VisitMessageInfo) error {
 	messageInfo := &MessageInfo{
-		Proto: req,
-		Name:  req.GetName(),
+		ParentMessage: b.FindMessageInfo(req.GetParent().GetFullyQualifiedName()),
+		Proto:         req,
+		Name:          req.GetName(),
 	}
 	b.CurrentMessageInfo = messageInfo
 
@@ -401,8 +434,9 @@ func (b *Builder) VisitFieldDescriptor(w *Walker, req *descriptor.FieldDescripto
 
 func (b *Builder) VisitEnumDescriptor(w *Walker, req *descriptor.EnumDescriptor, opts *gqlgen_proto.EnumRule) error {
 	enumInfo := &EnumInfo{
-		Proto: req,
-		Name:  req.GetName(),
+		ParentMessage: b.FindMessageInfo(req.GetParent().GetFullyQualifiedName()),
+		Proto:         req,
+		Name:          req.GetName(),
 	}
 	b.CurrentEnumInfo = enumInfo
 

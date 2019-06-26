@@ -15,7 +15,7 @@ type CreateTodoPayload {
 input ListATodoInput {
 	first: Int
 	after: String
-	done: ListADoneFilter
+	done: ListATodoInputDoneFilter
 }
 type ListATodoPayload {
 	cursor: String
@@ -24,7 +24,7 @@ type ListATodoPayload {
 input ListBTodoInput {
 	offset: Int
 	limit: Int
-	done: ListBDoneFilter
+	done: ListBDone
 }
 type ListBTodoPayload {
 	todos: [Todo!]!
@@ -37,12 +37,12 @@ input UpdateTodoInput {
 type UpdateTodoPayload {
 	todo: Todo!
 }
-enum ListADoneFilter {
+enum ListATodoInputDoneFilter {
 	NONE
 	DONE
 	NOT_DONE
 }
-enum ListBDoneFilter {
+enum ListBDone {
 	NONE
 	DONE
 	NOT_DONE

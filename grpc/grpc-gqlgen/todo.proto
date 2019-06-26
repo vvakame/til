@@ -69,8 +69,6 @@ message ListARequest {
     DoneFilter done = 3 [(gqlgen.api.field) = {optional: true}];
 
     enum DoneFilter {
-        // TODO Alias無しで動かす
-        option (gqlgen.api.enum) = {alias: "ListADoneFilter"};
         NONE = 0;
         DONE = 1;
         NOT_DONE = 2;
@@ -90,7 +88,7 @@ message ListBRequest {
     DoneFilter done = 3 [(gqlgen.api.field) = {optional: true}];
 
     enum DoneFilter {
-        option (gqlgen.api.enum) = {alias: "ListBDoneFilter"};
+        option (gqlgen.api.enum) = {alias: "ListBDone"};
         NONE = 0;
         DONE = 1;
         NOT_DONE = 2;

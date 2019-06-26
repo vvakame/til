@@ -24,6 +24,11 @@
 * Relay Connection Spec周りの自動生成がかなり厳しそう
 * Relay Global Object Identification Spec周りのかみ合わせ大変そう
     * .proto の package + ServiceName + ID をデフォにする…？
+* 対応すべき.proto syntax etc
+    * 各種数値型
+    * oneof
+    * map
+    * reserved の活用(directive化とか？)
 
 ### 所感
 
