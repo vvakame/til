@@ -8,8 +8,6 @@ mkdir bin/
 
 go mod download
 # go mod tidy
-# go generate のため
-go mod vendor
 
 GOBIN="$(pwd -P)/bin"
 export GOBIN
