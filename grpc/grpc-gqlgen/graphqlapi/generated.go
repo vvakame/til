@@ -3676,19 +3676,19 @@ func (ec *executionContext) marshalOInt2int32(ctx context.Context, sel ast.Selec
 }
 
 func (ec *executionContext) unmarshalOListADoneFilter2githubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋtodopbᚐListARequest_DoneFilter(ctx context.Context, v interface{}) (todopb.ListARequest_DoneFilter, error) {
-	return UnmarshalListADoneFilter(v)
+	return todopb.UnmarshalListADoneFilter(v)
 }
 
 func (ec *executionContext) marshalOListADoneFilter2githubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋtodopbᚐListARequest_DoneFilter(ctx context.Context, sel ast.SelectionSet, v todopb.ListARequest_DoneFilter) graphql.Marshaler {
-	return MarshalListADoneFilter(v)
+	return todopb.MarshalListADoneFilter(v)
 }
 
 func (ec *executionContext) unmarshalOListBDoneFilter2githubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋtodopbᚐListBRequest_DoneFilter(ctx context.Context, v interface{}) (todopb.ListBRequest_DoneFilter, error) {
-	return UnmarshalListBDoneFilter(v)
+	return todopb.UnmarshalListBDoneFilter(v)
 }
 
 func (ec *executionContext) marshalOListBDoneFilter2githubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋtodopbᚐListBRequest_DoneFilter(ctx context.Context, sel ast.SelectionSet, v todopb.ListBRequest_DoneFilter) graphql.Marshaler {
-	return MarshalListBDoneFilter(v)
+	return todopb.MarshalListBDoneFilter(v)
 }
 
 func (ec *executionContext) unmarshalOString2string(ctx context.Context, v interface{}) (string, error) {

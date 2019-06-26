@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"regexp"
@@ -143,6 +144,35 @@ func (e *EnumInfo) GraphQLName() string {
 		name = e.Name
 	}
 	return templates.ToGo(name)
+}
+
+func (e *EnumInfo) GoName() string {
+	var buf bytes.Buffer
+
+	var printName func(desc descriptor.Descriptor) bool
+	printName = func(desc descriptor.Descriptor) bool {
+		switch v := desc.(type) {
+		case *descriptor.EnumDescriptor:
+			if printName(v.GetParent()) {
+				buf.WriteString("_")
+			}
+			buf.WriteString(v.GetName())
+			return true
+
+		case *descriptor.MessageDescriptor:
+			if printName(v.GetParent()) {
+				buf.WriteString("_")
+			}
+			buf.WriteString(v.GetName())
+			return true
+
+		default:
+			return false
+		}
+	}
+	printName(e.Proto)
+
+	return buf.String()
 }
 
 type EnumValueInfo struct {

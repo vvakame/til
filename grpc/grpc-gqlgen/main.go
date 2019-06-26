@@ -14,7 +14,6 @@ import (
 	"github.com/99designs/gqlgen/handler"
 	"github.com/vvakame/til/grpc/grpc-gqlgen/graphqlapi"
 	"github.com/vvakame/til/grpc/grpc-gqlgen/grpcapi"
-
 	"contrib.go.opencensus.io/exporter/stackdriver"
 	"contrib.go.opencensus.io/exporter/stackdriver/propagation"
 	"github.com/akutz/memconn"

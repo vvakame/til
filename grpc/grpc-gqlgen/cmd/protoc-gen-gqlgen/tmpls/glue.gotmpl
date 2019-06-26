@@ -41,3 +41,22 @@ func (h *{{ goNamePrivate $service.Name }}Handler)
 
 {{ end }}
 
+
+{{ range $enum := .EnumInfos }}
+func Marshal{{ $enum.GraphQLName }}(v {{ $enum.GoName }}) graphql.Marshaler {
+    return graphql.WriterFunc(func(w io.Writer) {
+        _, _ = io.WriteString(w, strconv.Quote(v.String()))
+    })
+}
+
+func Unmarshal{{ $enum.GraphQLName }}(v interface{}) ({{ $enum.GoName }}, error) {
+    if tmpStr, ok := v.(string); ok {
+        v, ok := {{ $enum.GoName }}_value[tmpStr]
+        if !ok {
+            return 0, fmt.Errorf("invalid value format: %s", tmpStr)
+        }
+        return {{ $enum.GoName }}(v), nil
+    }
+    return 0, fmt.Errorf("unexpected value type: %T", v)
+}
+{{ end }}

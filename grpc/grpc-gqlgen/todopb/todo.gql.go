@@ -2,6 +2,11 @@ package todopb
 
 import (
 	"context"
+	fmt "fmt"
+	"io"
+	"strconv"
+
+	"github.com/99designs/gqlgen/graphql"
 )
 
 var _ TodoServiceGraphQLInterface = (*todoServiceHandler)(nil)
@@ -63,4 +68,38 @@ func (h *todoServiceHandler) UpdateTodo(ctx context.Context, input UpdateRequest
 	}
 
 	return resp, nil
+}
+
+func MarshalListADoneFilter(v ListARequest_DoneFilter) graphql.Marshaler {
+	return graphql.WriterFunc(func(w io.Writer) {
+		_, _ = io.WriteString(w, strconv.Quote(v.String()))
+	})
+}
+
+func UnmarshalListADoneFilter(v interface{}) (ListARequest_DoneFilter, error) {
+	if tmpStr, ok := v.(string); ok {
+		v, ok := ListARequest_DoneFilter_value[tmpStr]
+		if !ok {
+			return 0, fmt.Errorf("invalid value format: %s", tmpStr)
+		}
+		return ListARequest_DoneFilter(v), nil
+	}
+	return 0, fmt.Errorf("unexpected value type: %T", v)
+}
+
+func MarshalListBDoneFilter(v ListBRequest_DoneFilter) graphql.Marshaler {
+	return graphql.WriterFunc(func(w io.Writer) {
+		_, _ = io.WriteString(w, strconv.Quote(v.String()))
+	})
+}
+
+func UnmarshalListBDoneFilter(v interface{}) (ListBRequest_DoneFilter, error) {
+	if tmpStr, ok := v.(string); ok {
+		v, ok := ListBRequest_DoneFilter_value[tmpStr]
+		if !ok {
+			return 0, fmt.Errorf("invalid value format: %s", tmpStr)
+		}
+		return ListBRequest_DoneFilter(v), nil
+	}
+	return 0, fmt.Errorf("unexpected value type: %T", v)
 }
