@@ -25,7 +25,7 @@ func InitializeGraphQLConfig(ctx context.Context) (Config, error) {
 		initializeResolvers,
 		wire.Value(DirectiveRoot{}),
 		wire.Value(ComplexityRoot{}),
-		Config{},
+		wire.Struct(new(Config), "*"),
 	)
 
 	return Config{}, nil
@@ -36,10 +36,10 @@ func initializeResolvers(ctx context.Context) (ResolverRoot, error) {
 		grpcClientSet,
 		gqlHandlerSet,
 
-		queryResolver{},
-		mutationResolver{},
-		resolver{},
-		wire.Bind(new(ResolverRoot), new(resolver)),
+		wire.Struct(new(queryResolver), "*"),
+		wire.Struct(new(mutationResolver), "*"),
+		wire.Struct(new(resolver), "*"),
+		wire.Bind(new(ResolverRoot), new(*resolver)),
 	)
 
 	return nil, nil

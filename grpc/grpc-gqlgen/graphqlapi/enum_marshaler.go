@@ -19,7 +19,7 @@ func UnmarshalListADoneFilter(v interface{}) (todopb.ListARequest_DoneFilter, er
 	if tmpStr, ok := v.(string); ok {
 		v, ok := todopb.ListARequest_DoneFilter_value[tmpStr]
 		if !ok {
-			return 0, fmt.Errorf("invalid value format]: %s", tmpStr)
+			return 0, fmt.Errorf("invalid value format: %s", tmpStr)
 		}
 		return todopb.ListARequest_DoneFilter(v), nil
 	}

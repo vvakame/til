@@ -107,7 +107,7 @@ func RegisterEchoHandlerClient(ctx context.Context, mux *runtime.ServeMux, clien
 }
 
 var (
-	pattern_Echo_Say_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "echo", "say"}, ""))
+	pattern_Echo_Say_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "echo", "say"}, "", runtime.AssumeColonVerbOpt(true)))
 )
 
 var (

@@ -7,7 +7,6 @@ package graphqlapi
 
 import (
 	"context"
-
 	"github.com/google/wire"
 	"github.com/vvakame/til/grpc/grpc-gqlgen/echopb"
 	"github.com/vvakame/til/grpc/grpc-gqlgen/todopb"
