@@ -16,7 +16,7 @@ func New{{ goName $service.Name }}Handler(cli {{ $service.Name }}Client) {{ $ser
 type {{ $service.Name }}GraphQLInterface interface {
     {{- range $method := $service.Methods }}
         {{ goName $method.GraphQLName -}}
-            (ctx context.Context, input {{ $method.RequestMessage.Name }}) (*{{ $method.ResponseMessage.Name }}, error)
+            (ctx context.Context, input {{ $method.RequestMessage.GoName }}) (*{{ $method.ResponseMessage.GoName }}, error)
             {{- /* rm newline */ -}}
     {{ end }}
 }
@@ -27,7 +27,7 @@ type {{ goNamePrivate $service.Name }}Handler struct {
 
 {{- range $method := $service.Methods }}
 func (h *{{ goNamePrivate $service.Name }}Handler)
-    {{- goName $method.GraphQLName }} (ctx context.Context, input {{ $method.RequestMessage.Name }}) (*{{ $method.ResponseMessage.Name }}, error) {
+    {{- goName $method.GraphQLName }} (ctx context.Context, input {{ $method.RequestMessage.GoName }}) (*{{ $method.ResponseMessage.GoName }}, error) {
 
     resp, err := h.{{ goNamePrivate $service.Name }}.{{ $method.Name }}(ctx, &input)
     if err != nil {

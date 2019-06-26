@@ -1,9 +1,9 @@
 input SayInput {
-	clientMutationID: String
+	clientMutationId: String
 	messageBody: String!
 }
 type SayPayload {
-	clientMutationID: String
+	clientMutationId: String
 	messageBody: String!
 	received: Timestamp!
 }
@@ -14,9 +14,9 @@ type Example1InMessage {
 	bar: String!
 }
 type Example2 {
-	hoge: Example2InMessage!
+	hoge: Example2WithMessage!
 }
-type Example2InMessage {
+type Example2WithMessage {
 	fuga: String!
 }
 extend type Mutation {

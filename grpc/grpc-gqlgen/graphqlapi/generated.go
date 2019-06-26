@@ -61,7 +61,7 @@ type ComplexityRoot struct {
 		Hoge func(childComplexity int) int
 	}
 
-	Example2InMessage struct {
+	Example2WithMessage struct {
 		Fuga func(childComplexity int) int
 	}
 
@@ -169,12 +169,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Example2.Hoge(childComplexity), true
 
-	case "Example2InMessage.fuga":
-		if e.complexity.Example2InMessage.Fuga == nil {
+	case "Example2WithMessage.fuga":
+		if e.complexity.Example2WithMessage.Fuga == nil {
 			break
 		}
 
-		return e.complexity.Example2InMessage.Fuga(childComplexity), true
+		return e.complexity.Example2WithMessage.Fuga(childComplexity), true
 
 	case "ListATodoPayload.cursor":
 		if e.complexity.ListATodoPayload.Cursor == nil {
@@ -306,7 +306,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.SayPayload.MessageBody(childComplexity), true
 
-	case "SayPayload.clientMutationID":
+	case "SayPayload.clientMutationId":
 		if e.complexity.SayPayload.MessageId == nil {
 			break
 		}
@@ -447,11 +447,11 @@ func (ec *executionContext) introspectType(name string) (*introspection.Type, er
 
 var parsedSchema = gqlparser.MustLoadSchema(
 	&ast.Source{Name: "../echopb/echo.graphql", Input: `input SayInput {
-	clientMutationID: String
+	clientMutationId: String
 	messageBody: String!
 }
 type SayPayload {
-	clientMutationID: String
+	clientMutationId: String
 	messageBody: String!
 	received: Timestamp!
 }
@@ -462,9 +462,9 @@ type Example1InMessage {
 	bar: String!
 }
 type Example2 {
-	hoge: Example2InMessage!
+	hoge: Example2WithMessage!
 }
-type Example2InMessage {
+type Example2WithMessage {
 	fuga: String!
 }
 extend type Mutation {
@@ -777,14 +777,14 @@ func (ec *executionContext) _Example2_hoge(ctx context.Context, field graphql.Co
 	res := resTmp.(*echopb.Example2_InMessage)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNExample2InMessage2ᚖgithubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋechopbᚐExample2_InMessage(ctx, field.Selections, res)
+	return ec.marshalNExample2WithMessage2ᚖgithubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋechopbᚐExample2_InMessage(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Example2InMessage_fuga(ctx context.Context, field graphql.CollectedField, obj *echopb.Example2_InMessage) graphql.Marshaler {
+func (ec *executionContext) _Example2WithMessage_fuga(ctx context.Context, field graphql.CollectedField, obj *echopb.Example2_InMessage) graphql.Marshaler {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
 	rctx := &graphql.ResolverContext{
-		Object:   "Example2InMessage",
+		Object:   "Example2WithMessage",
 		Field:    field,
 		Args:     nil,
 		IsMethod: false,
@@ -1260,7 +1260,7 @@ func (ec *executionContext) _Query___schema(ctx context.Context, field graphql.C
 	return ec.marshalO__Schema2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐSchema(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _SayPayload_clientMutationID(ctx context.Context, field graphql.CollectedField, obj *echopb.SayResponse) graphql.Marshaler {
+func (ec *executionContext) _SayPayload_clientMutationId(ctx context.Context, field graphql.CollectedField, obj *echopb.SayResponse) graphql.Marshaler {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
 	rctx := &graphql.ResolverContext{
@@ -2439,7 +2439,7 @@ func (ec *executionContext) unmarshalInputSayInput(ctx context.Context, v interf
 
 	for k, v := range asMap {
 		switch k {
-		case "clientMutationID":
+		case "clientMutationId":
 			var err error
 			it.MessageId, err = ec.unmarshalOString2string(ctx, v)
 			if err != nil {
@@ -2603,19 +2603,19 @@ func (ec *executionContext) _Example2(ctx context.Context, sel ast.SelectionSet,
 	return out
 }
 
-var example2InMessageImplementors = []string{"Example2InMessage"}
+var example2WithMessageImplementors = []string{"Example2WithMessage"}
 
-func (ec *executionContext) _Example2InMessage(ctx context.Context, sel ast.SelectionSet, obj *echopb.Example2_InMessage) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.RequestContext, sel, example2InMessageImplementors)
+func (ec *executionContext) _Example2WithMessage(ctx context.Context, sel ast.SelectionSet, obj *echopb.Example2_InMessage) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.RequestContext, sel, example2WithMessageImplementors)
 
 	out := graphql.NewFieldSet(fields)
 	var invalids uint32
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
-			out.Values[i] = graphql.MarshalString("Example2InMessage")
+			out.Values[i] = graphql.MarshalString("Example2WithMessage")
 		case "fuga":
-			out.Values[i] = ec._Example2InMessage_fuga(ctx, field, obj)
+			out.Values[i] = ec._Example2WithMessage_fuga(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -2845,8 +2845,8 @@ func (ec *executionContext) _SayPayload(ctx context.Context, sel ast.SelectionSe
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("SayPayload")
-		case "clientMutationID":
-			out.Values[i] = ec._SayPayload_clientMutationID(ctx, field, obj)
+		case "clientMutationId":
+			out.Values[i] = ec._SayPayload_clientMutationId(ctx, field, obj)
 		case "messageBody":
 			out.Values[i] = ec._SayPayload_messageBody(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -3235,18 +3235,18 @@ func (ec *executionContext) marshalNExample1InMessage2ᚖgithubᚗcomᚋvvakame�
 	return ec._Example1InMessage(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNExample2InMessage2githubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋechopbᚐExample2_InMessage(ctx context.Context, sel ast.SelectionSet, v echopb.Example2_InMessage) graphql.Marshaler {
-	return ec._Example2InMessage(ctx, sel, &v)
+func (ec *executionContext) marshalNExample2WithMessage2githubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋechopbᚐExample2_InMessage(ctx context.Context, sel ast.SelectionSet, v echopb.Example2_InMessage) graphql.Marshaler {
+	return ec._Example2WithMessage(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNExample2InMessage2ᚖgithubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋechopbᚐExample2_InMessage(ctx context.Context, sel ast.SelectionSet, v *echopb.Example2_InMessage) graphql.Marshaler {
+func (ec *executionContext) marshalNExample2WithMessage2ᚖgithubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋechopbᚐExample2_InMessage(ctx context.Context, sel ast.SelectionSet, v *echopb.Example2_InMessage) graphql.Marshaler {
 	if v == nil {
 		if !ec.HasError(graphql.GetResolverContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")
 		}
 		return graphql.Null
 	}
-	return ec._Example2InMessage(ctx, sel, v)
+	return ec._Example2WithMessage(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNListATodoInput2githubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋtodopbᚐListARequest(ctx context.Context, v interface{}) (todopb.ListARequest, error) {

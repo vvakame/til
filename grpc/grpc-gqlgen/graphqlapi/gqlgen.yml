@@ -48,15 +48,15 @@ models:
     model: github.com/vvakame/til/grpc/grpc-gqlgen/echopb.Example1_InMessage
   Example2:
     model: github.com/vvakame/til/grpc/grpc-gqlgen/echopb.Example2
-  Example2InMessage:
+  Example2WithMessage:
     model: github.com/vvakame/til/grpc/grpc-gqlgen/echopb.Example2_InMessage
   SayInput:
     model: github.com/vvakame/til/grpc/grpc-gqlgen/echopb.SayRequest
     fields:
-      clientMutationID:
+      clientMutationId:
           fieldName: MessageId
   SayPayload:
     model: github.com/vvakame/til/grpc/grpc-gqlgen/echopb.SayResponse
     fields:
-      clientMutationID:
+      clientMutationId:
         fieldName: MessageId

@@ -101,11 +101,40 @@ type MessageInfo struct {
 }
 
 func (m *MessageInfo) GraphQLName() string {
-	name := m.GraphQLAlias
-	if name == "" {
-		name = m.Name
+	if m.GraphQLAlias != "" {
+		return m.GraphQLAlias
 	}
-	return templates.ToGo(name)
+
+	return templates.ToGo(m.GoName())
+}
+
+func (m *MessageInfo) GoName() string {
+	var buf bytes.Buffer
+
+	var printName func(desc descriptor.Descriptor) bool
+	printName = func(desc descriptor.Descriptor) bool {
+		switch v := desc.(type) {
+		case *descriptor.EnumDescriptor:
+			if printName(v.GetParent()) {
+				buf.WriteString("_")
+			}
+			buf.WriteString(v.GetName())
+			return true
+
+		case *descriptor.MessageDescriptor:
+			if printName(v.GetParent()) {
+				buf.WriteString("_")
+			}
+			buf.WriteString(v.GetName())
+			return true
+
+		default:
+			return false
+		}
+	}
+	printName(m.Proto)
+
+	return buf.String()
 }
 
 type FieldInfo struct {
@@ -121,11 +150,11 @@ type FieldInfo struct {
 }
 
 func (f *FieldInfo) GraphQLName() string {
-	name := f.GraphQLAlias
-	if name == "" {
-		name = f.Name
+	if f.GraphQLAlias != "" {
+		return f.GraphQLAlias
 	}
-	return templates.ToGoPrivate(name)
+
+	return templates.ToGoPrivate(f.Name)
 }
 
 type EnumInfo struct {
@@ -139,11 +168,11 @@ type EnumInfo struct {
 }
 
 func (e *EnumInfo) GraphQLName() string {
-	name := e.GraphQLAlias
-	if name == "" {
-		name = e.Name
+	if e.GraphQLAlias != "" {
+		return e.GraphQLAlias
 	}
-	return templates.ToGo(name)
+
+	return templates.ToGo(e.GoName())
 }
 
 func (e *EnumInfo) GoName() string {

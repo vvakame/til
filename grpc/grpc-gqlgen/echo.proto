@@ -50,8 +50,6 @@ message SayResponse {
 message Example1 {
   InMessage foo = 1;
   message InMessage {
-    // TODO Alias無しで動かす
-    option (gqlgen.api.type) = {alias: "Example1InMessage"};
     string bar = 1;
   }
 }
@@ -59,7 +57,7 @@ message Example1 {
 message Example2 {
   InMessage hoge = 1;
   message InMessage {
-    option (gqlgen.api.type) = {alias: "Example2InMessage"};
+    option (gqlgen.api.type) = {alias: "Example2WithMessage"};
     string fuga = 1;
   }
 }
