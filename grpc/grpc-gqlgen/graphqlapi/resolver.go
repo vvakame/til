@@ -2,7 +2,12 @@
 
 package graphqlapi
 
-import "context"
+import (
+	"context"
+
+	"github.com/vvakame/til/grpc/grpc-gqlgen/echopb"
+	"github.com/vvakame/til/grpc/grpc-gqlgen/todopb"
+)
 
 var _ ResolverRoot = (*resolver)(nil)
 
@@ -22,8 +27,8 @@ func (r *resolver) Mutation() MutationResolver {
 var _ QueryResolver = (*queryResolver)(nil)
 
 type queryResolver struct {
-	todoServiceGraphQLInterface
-	echoGraphQLInterface
+	todopb.TodoServiceGraphQLInterface
+	echopb.EchoGraphQLInterface
 }
 
 func (r *queryResolver) Tmp(ctx context.Context) (*string, error) {
@@ -33,8 +38,8 @@ func (r *queryResolver) Tmp(ctx context.Context) (*string, error) {
 var _ MutationResolver = (*mutationResolver)(nil)
 
 type mutationResolver struct {
-	todoServiceGraphQLInterface
-	echoGraphQLInterface
+	todopb.TodoServiceGraphQLInterface
+	echopb.EchoGraphQLInterface
 }
 
 func (r *mutationResolver) Tmp(ctx context.Context) (*string, error) {

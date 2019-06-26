@@ -2,78 +2,9 @@
 
 package graphqlapi
 
-import (
-	"github.com/golang/protobuf/ptypes/timestamp"
-	"github.com/vvakame/til/grpc/grpc-gqlgen/todopb"
-)
-
-type CreateTodoInput struct {
-	Text string `json:"text"`
-}
-
-type CreateTodoPayload struct {
-	Todo *todopb.Todo `json:"todo"`
-}
-
-type Example1 struct {
-	Foo *Example1InMessage `json:"foo"`
-}
-
-type Example1InMessage struct {
-	Bar string `json:"bar"`
-}
-
-type Example2 struct {
-	Hoge *Example2InMessage `json:"hoge"`
-}
-
-type Example2InMessage struct {
-	Fuga string `json:"fuga"`
-}
-
 type PageInfo struct {
 	StartCursor     *string `json:"startCursor"`
 	EndCursor       *string `json:"endCursor"`
 	HasNextPage     bool    `json:"hasNextPage"`
 	HasPreviousPage bool    `json:"hasPreviousPage"`
-}
-
-type SayInput struct {
-	ClientMutationID *string `json:"clientMutationId"`
-	MessageBody      string  `json:"messageBody"`
-}
-
-type SayPayload struct {
-	ClientMutationID *string             `json:"clientMutationId"`
-	MessageBody      string              `json:"messageBody"`
-	Received         timestamp.Timestamp `json:"received"`
-}
-
-type TodoConnection struct {
-	PageInfo *PageInfo      `json:"pageInfo"`
-	Edges    []*TodoEdge    `json:"edges"`
-	Nodes    []*todopb.Todo `json:"nodes"`
-}
-
-type TodoEdge struct {
-	Cursor *string      `json:"cursor"`
-	Node   *todopb.Todo `json:"node"`
-}
-
-type TodoListAInput struct {
-	NotDone *bool `json:"notDone"`
-}
-
-type TodoListBInput struct {
-	NotDone *bool `json:"notDone"`
-}
-
-type UpdateTodoInput struct {
-	ID   string  `json:"id"`
-	Text *string `json:"text"`
-	Done *bool   `json:"done"`
-}
-
-type UpdateTodoPayload struct {
-	Todo *todopb.Todo `json:"todo"`
 }

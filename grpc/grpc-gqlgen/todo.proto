@@ -63,11 +63,14 @@ message CreateResponse {
 }
 
 message ListARequest {
-    uint32 first = 1 [(gqlgen.api.field) = {optional: true}];
+    // TODO uint32 first = 1 [(gqlgen.api.field) = {optional: true}];
+    int32 first = 1 [(gqlgen.api.field) = {optional: true}];
     string after = 2 [(gqlgen.api.field) = {optional: true}];
     DoneFilter done = 3 [(gqlgen.api.field) = {optional: true}];
 
     enum DoneFilter {
+        // TODO Alias無しで動かす
+        option (gqlgen.api.enum) = {alias: "ListADoneFilter"};
         NONE = 0;
         DONE = 1;
         NOT_DONE = 2;
@@ -80,11 +83,14 @@ message ListAResponse {
 }
 
 message ListBRequest {
-    uint32 offset = 1 [(gqlgen.api.field) = {optional: true}];
-    uint32 limit = 2 [(gqlgen.api.field) = {optional: true}];
+    // TODO uint32 offset = 1 [(gqlgen.api.field) = {optional: true}];
+    int32 offset = 1 [(gqlgen.api.field) = {optional: true}];
+    // TODO uint32 limit = 2 [(gqlgen.api.field) = {optional: true}];
+    int32 limit = 2 [(gqlgen.api.field) = {optional: true}];
     DoneFilter done = 3 [(gqlgen.api.field) = {optional: true}];
 
     enum DoneFilter {
+        option (gqlgen.api.enum) = {alias: "ListBDoneFilter"};
         NONE = 0;
         DONE = 1;
         NOT_DONE = 2;

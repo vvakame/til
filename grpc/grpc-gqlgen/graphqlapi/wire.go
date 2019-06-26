@@ -6,11 +6,18 @@ import (
 	"context"
 
 	"github.com/google/wire"
+	"github.com/vvakame/til/grpc/grpc-gqlgen/echopb"
+	"github.com/vvakame/til/grpc/grpc-gqlgen/todopb"
 )
 
 var grpcClientSet = wire.NewSet(
 	ProvideTodoServiceClient,
 	ProvideEchoClient,
+)
+
+var gqlHandlerSet = wire.NewSet(
+	echopb.NewEchoHandler,
+	todopb.NewTodoServiceHandler,
 )
 
 func InitializeGraphQLConfig(ctx context.Context) (Config, error) {
@@ -27,11 +34,7 @@ func InitializeGraphQLConfig(ctx context.Context) (Config, error) {
 func initializeResolvers(ctx context.Context) (ResolverRoot, error) {
 	wire.Build(
 		grpcClientSet,
-
-		todoServiceHandler{},
-		wire.Bind(new(todoServiceGraphQLInterface), new(todoServiceHandler)),
-		echoHandler{},
-		wire.Bind(new(echoGraphQLInterface), new(echoHandler)),
+		gqlHandlerSet,
 
 		queryResolver{},
 		mutationResolver{},

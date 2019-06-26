@@ -5,8 +5,8 @@
 
 schema:
   - schema.graphql
-  - todo_service.graphql
-  - echo.graphql
+  - ../echopb/echo.graphql
+  - ../todopb/todo.graphql
 exec:
   filename: generated.go
 model:
@@ -16,8 +16,47 @@ resolver:
   type: Resolver
 
 models:
-  Time:
-    model: github.com/vvakame/til/grpc/grpc-gqlgen/graphqlapi.GraphQLTimeScalar
+  Timestamp:
+    model: github.com/vvakame/til/grpc/grpc-gqlgen/graphqlapi.GraphQLTimestampScalar
 
   Todo:
     model: github.com/vvakame/til/grpc/grpc-gqlgen/todopb.Todo
+  CreateTodoInput:
+    model: github.com/vvakame/til/grpc/grpc-gqlgen/todopb.CreateRequest
+  CreateTodoPayload:
+    model: github.com/vvakame/til/grpc/grpc-gqlgen/todopb.CreateResponse
+  ListATodoInput:
+    model: github.com/vvakame/til/grpc/grpc-gqlgen/todopb.ListARequest
+  ListATodoPayload:
+    model: github.com/vvakame/til/grpc/grpc-gqlgen/todopb.ListAResponse
+  ListBTodoInput:
+    model: github.com/vvakame/til/grpc/grpc-gqlgen/todopb.ListBRequest
+  ListBTodoPayload:
+    model: github.com/vvakame/til/grpc/grpc-gqlgen/todopb.ListBResponse
+  UpdateTodoInput:
+    model: github.com/vvakame/til/grpc/grpc-gqlgen/todopb.UpdateRequest
+  UpdateTodoPayload:
+    model: github.com/vvakame/til/grpc/grpc-gqlgen/todopb.UpdateResponse
+  ListADoneFilter:
+    model: github.com/vvakame/til/grpc/grpc-gqlgen/graphqlapi.ListADoneFilter
+  ListBDoneFilter:
+    model: github.com/vvakame/til/grpc/grpc-gqlgen/graphqlapi.ListBDoneFilter
+
+  Example1:
+    model: github.com/vvakame/til/grpc/grpc-gqlgen/echopb.Example1
+  Example1InMessage:
+    model: github.com/vvakame/til/grpc/grpc-gqlgen/echopb.Example1_InMessage
+  Example2:
+    model: github.com/vvakame/til/grpc/grpc-gqlgen/echopb.Example2
+  Example2InMessage:
+    model: github.com/vvakame/til/grpc/grpc-gqlgen/echopb.Example2_InMessage
+  SayInput:
+    model: github.com/vvakame/til/grpc/grpc-gqlgen/echopb.SayRequest
+    fields:
+      clientMutationID:
+          fieldName: MessageId
+  SayPayload:
+    model: github.com/vvakame/til/grpc/grpc-gqlgen/echopb.SayResponse
+    fields:
+      clientMutationID:
+        fieldName: MessageId

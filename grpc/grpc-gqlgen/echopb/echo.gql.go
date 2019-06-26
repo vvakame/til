@@ -6,17 +6,21 @@ import (
 
 var _ EchoGraphQLInterface = (*echoHandler)(nil)
 
+func NewEchoHandler(cli EchoClient) EchoGraphQLInterface {
+	return &echoHandler{cli}
+}
+
 type EchoGraphQLInterface interface {
-	Say(ctx context.Context, input *SayRequest) (*SayResponse, error)
+	Say(ctx context.Context, input SayRequest) (*SayResponse, error)
 }
 
 type echoHandler struct {
 	echo EchoClient
 }
 
-func (h *echoHandler) Say(ctx context.Context, input *SayRequest) (*SayResponse, error) {
+func (h *echoHandler) Say(ctx context.Context, input SayRequest) (*SayResponse, error) {
 
-	resp, err := h.echo.Say(ctx, input)
+	resp, err := h.echo.Say(ctx, &input)
 	if err != nil {
 		// TODO なんらかのエラーハンドラが必要なはず
 		return nil, err

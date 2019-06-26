@@ -15,6 +15,7 @@ import (
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/vektah/gqlparser"
 	"github.com/vektah/gqlparser/ast"
+	"github.com/vvakame/til/grpc/grpc-gqlgen/echopb"
 	"github.com/vvakame/til/grpc/grpc-gqlgen/todopb"
 )
 
@@ -64,11 +65,20 @@ type ComplexityRoot struct {
 		Fuga func(childComplexity int) int
 	}
 
+	ListATodoPayload struct {
+		Cursor func(childComplexity int) int
+		Todos  func(childComplexity int) int
+	}
+
+	ListBTodoPayload struct {
+		Todos func(childComplexity int) int
+	}
+
 	Mutation struct {
-		CreateTodo func(childComplexity int, input CreateTodoInput) int
-		Say        func(childComplexity int, input SayInput) int
+		CreateTodo func(childComplexity int, input todopb.CreateRequest) int
+		Say        func(childComplexity int, input echopb.SayRequest) int
 		Tmp        func(childComplexity int) int
-		UpdateTodo func(childComplexity int, input UpdateTodoInput) int
+		UpdateTodo func(childComplexity int, input todopb.UpdateRequest) int
 	}
 
 	PageInfo struct {
@@ -80,14 +90,14 @@ type ComplexityRoot struct {
 
 	Query struct {
 		Tmp    func(childComplexity int) int
-		TodosA func(childComplexity int, first *int, after *string, input TodoListAInput) int
-		TodosB func(childComplexity int, first *int, after *string, input TodoListBInput) int
+		TodosA func(childComplexity int, input todopb.ListARequest) int
+		TodosB func(childComplexity int, input todopb.ListBRequest) int
 	}
 
 	SayPayload struct {
-		ClientMutationID func(childComplexity int) int
-		MessageBody      func(childComplexity int) int
-		Received         func(childComplexity int) int
+		MessageBody func(childComplexity int) int
+		MessageId   func(childComplexity int) int
+		Received    func(childComplexity int) int
 	}
 
 	Todo struct {
@@ -99,17 +109,6 @@ type ComplexityRoot struct {
 		UpdatedAt func(childComplexity int) int
 	}
 
-	TodoConnection struct {
-		Edges    func(childComplexity int) int
-		Nodes    func(childComplexity int) int
-		PageInfo func(childComplexity int) int
-	}
-
-	TodoEdge struct {
-		Cursor func(childComplexity int) int
-		Node   func(childComplexity int) int
-	}
-
 	UpdateTodoPayload struct {
 		Todo func(childComplexity int) int
 	}
@@ -117,14 +116,14 @@ type ComplexityRoot struct {
 
 type MutationResolver interface {
 	Tmp(ctx context.Context) (*string, error)
-	CreateTodo(ctx context.Context, input CreateTodoInput) (*CreateTodoPayload, error)
-	UpdateTodo(ctx context.Context, input UpdateTodoInput) (*UpdateTodoPayload, error)
-	Say(ctx context.Context, input SayInput) (*SayPayload, error)
+	Say(ctx context.Context, input echopb.SayRequest) (*echopb.SayResponse, error)
+	CreateTodo(ctx context.Context, input todopb.CreateRequest) (*todopb.CreateResponse, error)
+	UpdateTodo(ctx context.Context, input todopb.UpdateRequest) (*todopb.UpdateResponse, error)
 }
 type QueryResolver interface {
 	Tmp(ctx context.Context) (*string, error)
-	TodosA(ctx context.Context, first *int, after *string, input TodoListAInput) (*TodoConnection, error)
-	TodosB(ctx context.Context, first *int, after *string, input TodoListBInput) (*TodoConnection, error)
+	TodosA(ctx context.Context, input todopb.ListARequest) (*todopb.ListAResponse, error)
+	TodosB(ctx context.Context, input todopb.ListBRequest) (*todopb.ListBResponse, error)
 }
 
 type executableSchema struct {
@@ -177,6 +176,27 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Example2InMessage.Fuga(childComplexity), true
 
+	case "ListATodoPayload.cursor":
+		if e.complexity.ListATodoPayload.Cursor == nil {
+			break
+		}
+
+		return e.complexity.ListATodoPayload.Cursor(childComplexity), true
+
+	case "ListATodoPayload.todos":
+		if e.complexity.ListATodoPayload.Todos == nil {
+			break
+		}
+
+		return e.complexity.ListATodoPayload.Todos(childComplexity), true
+
+	case "ListBTodoPayload.todos":
+		if e.complexity.ListBTodoPayload.Todos == nil {
+			break
+		}
+
+		return e.complexity.ListBTodoPayload.Todos(childComplexity), true
+
 	case "Mutation.createTodo":
 		if e.complexity.Mutation.CreateTodo == nil {
 			break
@@ -187,7 +207,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.CreateTodo(childComplexity, args["input"].(CreateTodoInput)), true
+		return e.complexity.Mutation.CreateTodo(childComplexity, args["input"].(todopb.CreateRequest)), true
 
 	case "Mutation.say":
 		if e.complexity.Mutation.Say == nil {
@@ -199,7 +219,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.Say(childComplexity, args["input"].(SayInput)), true
+		return e.complexity.Mutation.Say(childComplexity, args["input"].(echopb.SayRequest)), true
 
 	case "Mutation.tmp":
 		if e.complexity.Mutation.Tmp == nil {
@@ -218,7 +238,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UpdateTodo(childComplexity, args["input"].(UpdateTodoInput)), true
+		return e.complexity.Mutation.UpdateTodo(childComplexity, args["input"].(todopb.UpdateRequest)), true
 
 	case "PageInfo.endCursor":
 		if e.complexity.PageInfo.EndCursor == nil {
@@ -265,7 +285,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.TodosA(childComplexity, args["first"].(*int), args["after"].(*string), args["input"].(TodoListAInput)), true
+		return e.complexity.Query.TodosA(childComplexity, args["input"].(todopb.ListARequest)), true
 
 	case "Query.todosB":
 		if e.complexity.Query.TodosB == nil {
@@ -277,14 +297,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.TodosB(childComplexity, args["first"].(*int), args["after"].(*string), args["input"].(TodoListBInput)), true
-
-	case "SayPayload.clientMutationId":
-		if e.complexity.SayPayload.ClientMutationID == nil {
-			break
-		}
-
-		return e.complexity.SayPayload.ClientMutationID(childComplexity), true
+		return e.complexity.Query.TodosB(childComplexity, args["input"].(todopb.ListBRequest)), true
 
 	case "SayPayload.messageBody":
 		if e.complexity.SayPayload.MessageBody == nil {
@@ -292,6 +305,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.SayPayload.MessageBody(childComplexity), true
+
+	case "SayPayload.clientMutationID":
+		if e.complexity.SayPayload.MessageId == nil {
+			break
+		}
+
+		return e.complexity.SayPayload.MessageId(childComplexity), true
 
 	case "SayPayload.received":
 		if e.complexity.SayPayload.Received == nil {
@@ -341,41 +361,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Todo.UpdatedAt(childComplexity), true
-
-	case "TodoConnection.edges":
-		if e.complexity.TodoConnection.Edges == nil {
-			break
-		}
-
-		return e.complexity.TodoConnection.Edges(childComplexity), true
-
-	case "TodoConnection.nodes":
-		if e.complexity.TodoConnection.Nodes == nil {
-			break
-		}
-
-		return e.complexity.TodoConnection.Nodes(childComplexity), true
-
-	case "TodoConnection.pageInfo":
-		if e.complexity.TodoConnection.PageInfo == nil {
-			break
-		}
-
-		return e.complexity.TodoConnection.PageInfo(childComplexity), true
-
-	case "TodoEdge.cursor":
-		if e.complexity.TodoEdge.Cursor == nil {
-			break
-		}
-
-		return e.complexity.TodoEdge.Cursor(childComplexity), true
-
-	case "TodoEdge.node":
-		if e.complexity.TodoEdge.Node == nil {
-			break
-		}
-
-		return e.complexity.TodoEdge.Node(childComplexity), true
 
 	case "UpdateTodoPayload.todo":
 		if e.complexity.UpdateTodoPayload.Todo == nil {
@@ -461,35 +446,91 @@ func (ec *executionContext) introspectType(name string) (*introspection.Type, er
 }
 
 var parsedSchema = gqlparser.MustLoadSchema(
-	&ast.Source{Name: "echo.graphql", Input: `extend type Mutation {
-  say(input: SayInput!): SayPayload!
+	&ast.Source{Name: "../echopb/echo.graphql", Input: `input SayInput {
+	clientMutationID: String
+	messageBody: String!
 }
-
-input SayInput {
-  clientMutationId: String
-  messageBody: String!
-}
-
 type SayPayload {
-  clientMutationId: String
-  messageBody: String!
-  received: Time!
+	clientMutationID: String
+	messageBody: String!
+	received: Timestamp!
 }
-
 type Example1 {
-  foo: Example1InMessage!
+	foo: Example1InMessage!
 }
-
 type Example1InMessage {
-  bar: String!
+	bar: String!
 }
-
 type Example2 {
-  hoge: Example2InMessage!
+	hoge: Example2InMessage!
 }
-
 type Example2InMessage {
-  fuga: String!
+	fuga: String!
+}
+extend type Mutation {
+	say(input: SayInput!): SayPayload!
+}
+`},
+	&ast.Source{Name: "../todopb/todo.graphql", Input: `type Todo {
+	id: String!
+	text: String!
+	done: Boolean!
+	doneAt: Timestamp
+	updatedAt: Timestamp!
+	createdAt: Timestamp!
+}
+input CreateTodoInput {
+	text: String!
+}
+type CreateTodoPayload {
+	todo: Todo!
+}
+input ListATodoInput {
+	first: Int
+	after: String
+	done: ListADoneFilter
+}
+type ListATodoPayload {
+	cursor: String
+	todos: [Todo!]!
+}
+input ListBTodoInput {
+	offset: Int
+	limit: Int
+	done: ListBDoneFilter
+}
+type ListBTodoPayload {
+	todos: [Todo!]!
+}
+input UpdateTodoInput {
+	id: String!
+	text: String
+	done: Boolean
+}
+type UpdateTodoPayload {
+	todo: Todo!
+}
+enum ListADoneFilter {
+	NONE
+	DONE
+	NOT_DONE
+}
+enum ListBDoneFilter {
+	NONE
+	DONE
+	NOT_DONE
+}
+extend type Mutation {
+	createTodo(input: CreateTodoInput!): CreateTodoPayload!
+}
+extend type Query {
+	todosA(input: ListATodoInput!): ListATodoPayload!
+}
+extend type Query {
+	todosB(input: ListBTodoInput!): ListBTodoPayload!
+}
+extend type Mutation {
+	updateTodo(input: UpdateTodoInput!): UpdateTodoPayload!
 }
 `},
 	&ast.Source{Name: "schema.graphql", Input: `type Query {
@@ -507,63 +548,7 @@ type PageInfo {
   hasPreviousPage: Boolean!
 }
 
-scalar Time
-`},
-	&ast.Source{Name: "todo_service.graphql", Input: `extend type Query {
-  todosA(first: Int, after: String, input: TodoListAInput!): TodoConnection!
-  todosB(first: Int, after: String, input: TodoListBInput!): TodoConnection!
-}
-
-extend type Mutation {
-  createTodo(input: CreateTodoInput!): CreateTodoPayload!
-  updateTodo(input: UpdateTodoInput!): UpdateTodoPayload!
-}
-
-type Todo {
-  id: ID!
-  text: String!
-  done: Boolean!
-  doneAt: Time
-  updatedAt: Time
-  createdAt: Time
-}
-
-input CreateTodoInput {
-  text: String!
-}
-
-type CreateTodoPayload {
-  todo: Todo!
-}
-
-input UpdateTodoInput {
-  id: ID!
-  text: String
-  done: Boolean
-}
-
-type UpdateTodoPayload {
-  todo: Todo!
-}
-
-input TodoListAInput {
-  notDone: Boolean
-}
-
-input TodoListBInput {
-  notDone: Boolean
-}
-
-type TodoConnection {
-  pageInfo: PageInfo!
-  edges: [TodoEdge!]!
-  nodes: [Todo!]!
-}
-
-type TodoEdge {
-  cursor: String
-  node: Todo!
-}
+scalar Timestamp
 `},
 )
 
@@ -574,9 +559,9 @@ type TodoEdge {
 func (ec *executionContext) field_Mutation_createTodo_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 CreateTodoInput
+	var arg0 todopb.CreateRequest
 	if tmp, ok := rawArgs["input"]; ok {
-		arg0, err = ec.unmarshalNCreateTodoInput2githubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋgraphqlapiᚐCreateTodoInput(ctx, tmp)
+		arg0, err = ec.unmarshalNCreateTodoInput2githubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋtodopbᚐCreateRequest(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -588,9 +573,9 @@ func (ec *executionContext) field_Mutation_createTodo_args(ctx context.Context, 
 func (ec *executionContext) field_Mutation_say_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 SayInput
+	var arg0 echopb.SayRequest
 	if tmp, ok := rawArgs["input"]; ok {
-		arg0, err = ec.unmarshalNSayInput2githubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋgraphqlapiᚐSayInput(ctx, tmp)
+		arg0, err = ec.unmarshalNSayInput2githubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋechopbᚐSayRequest(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -602,9 +587,9 @@ func (ec *executionContext) field_Mutation_say_args(ctx context.Context, rawArgs
 func (ec *executionContext) field_Mutation_updateTodo_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 UpdateTodoInput
+	var arg0 todopb.UpdateRequest
 	if tmp, ok := rawArgs["input"]; ok {
-		arg0, err = ec.unmarshalNUpdateTodoInput2githubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋgraphqlapiᚐUpdateTodoInput(ctx, tmp)
+		arg0, err = ec.unmarshalNUpdateTodoInput2githubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋtodopbᚐUpdateRequest(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -630,60 +615,28 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 func (ec *executionContext) field_Query_todosA_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 *int
-	if tmp, ok := rawArgs["first"]; ok {
-		arg0, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["first"] = arg0
-	var arg1 *string
-	if tmp, ok := rawArgs["after"]; ok {
-		arg1, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["after"] = arg1
-	var arg2 TodoListAInput
+	var arg0 todopb.ListARequest
 	if tmp, ok := rawArgs["input"]; ok {
-		arg2, err = ec.unmarshalNTodoListAInput2githubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋgraphqlapiᚐTodoListAInput(ctx, tmp)
+		arg0, err = ec.unmarshalNListATodoInput2githubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋtodopbᚐListARequest(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["input"] = arg2
+	args["input"] = arg0
 	return args, nil
 }
 
 func (ec *executionContext) field_Query_todosB_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 *int
-	if tmp, ok := rawArgs["first"]; ok {
-		arg0, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["first"] = arg0
-	var arg1 *string
-	if tmp, ok := rawArgs["after"]; ok {
-		arg1, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["after"] = arg1
-	var arg2 TodoListBInput
+	var arg0 todopb.ListBRequest
 	if tmp, ok := rawArgs["input"]; ok {
-		arg2, err = ec.unmarshalNTodoListBInput2githubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋgraphqlapiᚐTodoListBInput(ctx, tmp)
+		arg0, err = ec.unmarshalNListBTodoInput2githubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋtodopbᚐListBRequest(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["input"] = arg2
+	args["input"] = arg0
 	return args, nil
 }
 
@@ -719,7 +672,7 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 
 // region    **************************** field.gotpl *****************************
 
-func (ec *executionContext) _CreateTodoPayload_todo(ctx context.Context, field graphql.CollectedField, obj *CreateTodoPayload) graphql.Marshaler {
+func (ec *executionContext) _CreateTodoPayload_todo(ctx context.Context, field graphql.CollectedField, obj *todopb.CreateResponse) graphql.Marshaler {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
 	rctx := &graphql.ResolverContext{
@@ -746,7 +699,7 @@ func (ec *executionContext) _CreateTodoPayload_todo(ctx context.Context, field g
 	return ec.marshalNTodo2ᚖgithubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋtodopbᚐTodo(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Example1_foo(ctx context.Context, field graphql.CollectedField, obj *Example1) graphql.Marshaler {
+func (ec *executionContext) _Example1_foo(ctx context.Context, field graphql.CollectedField, obj *echopb.Example1) graphql.Marshaler {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
 	rctx := &graphql.ResolverContext{
@@ -767,13 +720,13 @@ func (ec *executionContext) _Example1_foo(ctx context.Context, field graphql.Col
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*Example1InMessage)
+	res := resTmp.(*echopb.Example1_InMessage)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNExample1InMessage2ᚖgithubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋgraphqlapiᚐExample1InMessage(ctx, field.Selections, res)
+	return ec.marshalNExample1InMessage2ᚖgithubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋechopbᚐExample1_InMessage(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Example1InMessage_bar(ctx context.Context, field graphql.CollectedField, obj *Example1InMessage) graphql.Marshaler {
+func (ec *executionContext) _Example1InMessage_bar(ctx context.Context, field graphql.CollectedField, obj *echopb.Example1_InMessage) graphql.Marshaler {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
 	rctx := &graphql.ResolverContext{
@@ -800,7 +753,7 @@ func (ec *executionContext) _Example1InMessage_bar(ctx context.Context, field gr
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Example2_hoge(ctx context.Context, field graphql.CollectedField, obj *Example2) graphql.Marshaler {
+func (ec *executionContext) _Example2_hoge(ctx context.Context, field graphql.CollectedField, obj *echopb.Example2) graphql.Marshaler {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
 	rctx := &graphql.ResolverContext{
@@ -821,13 +774,13 @@ func (ec *executionContext) _Example2_hoge(ctx context.Context, field graphql.Co
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*Example2InMessage)
+	res := resTmp.(*echopb.Example2_InMessage)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNExample2InMessage2ᚖgithubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋgraphqlapiᚐExample2InMessage(ctx, field.Selections, res)
+	return ec.marshalNExample2InMessage2ᚖgithubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋechopbᚐExample2_InMessage(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Example2InMessage_fuga(ctx context.Context, field graphql.CollectedField, obj *Example2InMessage) graphql.Marshaler {
+func (ec *executionContext) _Example2InMessage_fuga(ctx context.Context, field graphql.CollectedField, obj *echopb.Example2_InMessage) graphql.Marshaler {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
 	rctx := &graphql.ResolverContext{
@@ -854,6 +807,84 @@ func (ec *executionContext) _Example2InMessage_fuga(ctx context.Context, field g
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _ListATodoPayload_cursor(ctx context.Context, field graphql.CollectedField, obj *todopb.ListAResponse) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object:   "ListATodoPayload",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Cursor, nil
+	})
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ListATodoPayload_todos(ctx context.Context, field graphql.CollectedField, obj *todopb.ListAResponse) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object:   "ListATodoPayload",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Todos, nil
+	})
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*todopb.Todo)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalNTodo2ᚕᚖgithubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋtodopbᚐTodo(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ListBTodoPayload_todos(ctx context.Context, field graphql.CollectedField, obj *todopb.ListBResponse) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object:   "ListBTodoPayload",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Todos, nil
+	})
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*todopb.Todo)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalNTodo2ᚕᚖgithubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋtodopbᚐTodo(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Mutation_tmp(ctx context.Context, field graphql.CollectedField) graphql.Marshaler {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
@@ -878,6 +909,40 @@ func (ec *executionContext) _Mutation_tmp(ctx context.Context, field graphql.Col
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Mutation_say(ctx context.Context, field graphql.CollectedField) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_say_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	rctx.Args = args
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, nil, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().Say(rctx, args["input"].(echopb.SayRequest))
+	})
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*echopb.SayResponse)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalNSayPayload2ᚖgithubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋechopbᚐSayResponse(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Mutation_createTodo(ctx context.Context, field graphql.CollectedField) graphql.Marshaler {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
@@ -898,7 +963,7 @@ func (ec *executionContext) _Mutation_createTodo(ctx context.Context, field grap
 	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
 	resTmp := ec.FieldMiddleware(ctx, nil, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CreateTodo(rctx, args["input"].(CreateTodoInput))
+		return ec.resolvers.Mutation().CreateTodo(rctx, args["input"].(todopb.CreateRequest))
 	})
 	if resTmp == nil {
 		if !ec.HasError(rctx) {
@@ -906,10 +971,10 @@ func (ec *executionContext) _Mutation_createTodo(ctx context.Context, field grap
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*CreateTodoPayload)
+	res := resTmp.(*todopb.CreateResponse)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNCreateTodoPayload2ᚖgithubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋgraphqlapiᚐCreateTodoPayload(ctx, field.Selections, res)
+	return ec.marshalNCreateTodoPayload2ᚖgithubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋtodopbᚐCreateResponse(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_updateTodo(ctx context.Context, field graphql.CollectedField) graphql.Marshaler {
@@ -932,7 +997,7 @@ func (ec *executionContext) _Mutation_updateTodo(ctx context.Context, field grap
 	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
 	resTmp := ec.FieldMiddleware(ctx, nil, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UpdateTodo(rctx, args["input"].(UpdateTodoInput))
+		return ec.resolvers.Mutation().UpdateTodo(rctx, args["input"].(todopb.UpdateRequest))
 	})
 	if resTmp == nil {
 		if !ec.HasError(rctx) {
@@ -940,44 +1005,10 @@ func (ec *executionContext) _Mutation_updateTodo(ctx context.Context, field grap
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*UpdateTodoPayload)
+	res := resTmp.(*todopb.UpdateResponse)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNUpdateTodoPayload2ᚖgithubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋgraphqlapiᚐUpdateTodoPayload(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Mutation_say(ctx context.Context, field graphql.CollectedField) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "Mutation",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
-	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
-	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Mutation_say_args(ctx, rawArgs)
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	rctx.Args = args
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, nil, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().Say(rctx, args["input"].(SayInput))
-	})
-	if resTmp == nil {
-		if !ec.HasError(rctx) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*SayPayload)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNSayPayload2ᚖgithubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋgraphqlapiᚐSayPayload(ctx, field.Selections, res)
+	return ec.marshalNUpdateTodoPayload2ᚖgithubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋtodopbᚐUpdateResponse(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _PageInfo_startCursor(ctx context.Context, field graphql.CollectedField, obj *PageInfo) graphql.Marshaler {
@@ -1126,7 +1157,7 @@ func (ec *executionContext) _Query_todosA(ctx context.Context, field graphql.Col
 	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
 	resTmp := ec.FieldMiddleware(ctx, nil, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().TodosA(rctx, args["first"].(*int), args["after"].(*string), args["input"].(TodoListAInput))
+		return ec.resolvers.Query().TodosA(rctx, args["input"].(todopb.ListARequest))
 	})
 	if resTmp == nil {
 		if !ec.HasError(rctx) {
@@ -1134,10 +1165,10 @@ func (ec *executionContext) _Query_todosA(ctx context.Context, field graphql.Col
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*TodoConnection)
+	res := resTmp.(*todopb.ListAResponse)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNTodoConnection2ᚖgithubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋgraphqlapiᚐTodoConnection(ctx, field.Selections, res)
+	return ec.marshalNListATodoPayload2ᚖgithubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋtodopbᚐListAResponse(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_todosB(ctx context.Context, field graphql.CollectedField) graphql.Marshaler {
@@ -1160,7 +1191,7 @@ func (ec *executionContext) _Query_todosB(ctx context.Context, field graphql.Col
 	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
 	resTmp := ec.FieldMiddleware(ctx, nil, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().TodosB(rctx, args["first"].(*int), args["after"].(*string), args["input"].(TodoListBInput))
+		return ec.resolvers.Query().TodosB(rctx, args["input"].(todopb.ListBRequest))
 	})
 	if resTmp == nil {
 		if !ec.HasError(rctx) {
@@ -1168,10 +1199,10 @@ func (ec *executionContext) _Query_todosB(ctx context.Context, field graphql.Col
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*TodoConnection)
+	res := resTmp.(*todopb.ListBResponse)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNTodoConnection2ᚖgithubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋgraphqlapiᚐTodoConnection(ctx, field.Selections, res)
+	return ec.marshalNListBTodoPayload2ᚖgithubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋtodopbᚐListBResponse(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) graphql.Marshaler {
@@ -1229,7 +1260,7 @@ func (ec *executionContext) _Query___schema(ctx context.Context, field graphql.C
 	return ec.marshalO__Schema2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐSchema(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _SayPayload_clientMutationId(ctx context.Context, field graphql.CollectedField, obj *SayPayload) graphql.Marshaler {
+func (ec *executionContext) _SayPayload_clientMutationID(ctx context.Context, field graphql.CollectedField, obj *echopb.SayResponse) graphql.Marshaler {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
 	rctx := &graphql.ResolverContext{
@@ -1242,18 +1273,18 @@ func (ec *executionContext) _SayPayload_clientMutationId(ctx context.Context, fi
 	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
 	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.ClientMutationID, nil
+		return obj.MessageId, nil
 	})
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(*string)
+	res := resTmp.(string)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+	return ec.marshalOString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _SayPayload_messageBody(ctx context.Context, field graphql.CollectedField, obj *SayPayload) graphql.Marshaler {
+func (ec *executionContext) _SayPayload_messageBody(ctx context.Context, field graphql.CollectedField, obj *echopb.SayResponse) graphql.Marshaler {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
 	rctx := &graphql.ResolverContext{
@@ -1280,7 +1311,7 @@ func (ec *executionContext) _SayPayload_messageBody(ctx context.Context, field g
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _SayPayload_received(ctx context.Context, field graphql.CollectedField, obj *SayPayload) graphql.Marshaler {
+func (ec *executionContext) _SayPayload_received(ctx context.Context, field graphql.CollectedField, obj *echopb.SayResponse) graphql.Marshaler {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
 	rctx := &graphql.ResolverContext{
@@ -1301,10 +1332,10 @@ func (ec *executionContext) _SayPayload_received(ctx context.Context, field grap
 		}
 		return graphql.Null
 	}
-	res := resTmp.(timestamp.Timestamp)
+	res := resTmp.(*timestamp.Timestamp)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNTime2githubᚗcomᚋgolangᚋprotobufᚋptypesᚋtimestampᚐTimestamp(ctx, field.Selections, res)
+	return ec.marshalNTimestamp2ᚖgithubᚗcomᚋgolangᚋprotobufᚋptypesᚋtimestampᚐTimestamp(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Todo_id(ctx context.Context, field graphql.CollectedField, obj *todopb.Todo) graphql.Marshaler {
@@ -1331,7 +1362,7 @@ func (ec *executionContext) _Todo_id(ctx context.Context, field graphql.Collecte
 	res := resTmp.(string)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNID2string(ctx, field.Selections, res)
+	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Todo_text(ctx context.Context, field graphql.CollectedField, obj *todopb.Todo) graphql.Marshaler {
@@ -1409,7 +1440,7 @@ func (ec *executionContext) _Todo_doneAt(ctx context.Context, field graphql.Coll
 	res := resTmp.(*timestamp.Timestamp)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalOTime2ᚖgithubᚗcomᚋgolangᚋprotobufᚋptypesᚋtimestampᚐTimestamp(ctx, field.Selections, res)
+	return ec.marshalOTimestamp2ᚖgithubᚗcomᚋgolangᚋprotobufᚋptypesᚋtimestampᚐTimestamp(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Todo_updatedAt(ctx context.Context, field graphql.CollectedField, obj *todopb.Todo) graphql.Marshaler {
@@ -1428,12 +1459,15 @@ func (ec *executionContext) _Todo_updatedAt(ctx context.Context, field graphql.C
 		return obj.UpdatedAt, nil
 	})
 	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
 	res := resTmp.(*timestamp.Timestamp)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalOTime2ᚖgithubᚗcomᚋgolangᚋprotobufᚋptypesᚋtimestampᚐTimestamp(ctx, field.Selections, res)
+	return ec.marshalNTimestamp2ᚖgithubᚗcomᚋgolangᚋprotobufᚋptypesᚋtimestampᚐTimestamp(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Todo_createdAt(ctx context.Context, field graphql.CollectedField, obj *todopb.Todo) graphql.Marshaler {
@@ -1452,147 +1486,18 @@ func (ec *executionContext) _Todo_createdAt(ctx context.Context, field graphql.C
 		return obj.CreatedAt, nil
 	})
 	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
 	res := resTmp.(*timestamp.Timestamp)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalOTime2ᚖgithubᚗcomᚋgolangᚋprotobufᚋptypesᚋtimestampᚐTimestamp(ctx, field.Selections, res)
+	return ec.marshalNTimestamp2ᚖgithubᚗcomᚋgolangᚋprotobufᚋptypesᚋtimestampᚐTimestamp(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _TodoConnection_pageInfo(ctx context.Context, field graphql.CollectedField, obj *TodoConnection) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "TodoConnection",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
-	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.PageInfo, nil
-	})
-	if resTmp == nil {
-		if !ec.HasError(rctx) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*PageInfo)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNPageInfo2ᚖgithubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋgraphqlapiᚐPageInfo(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _TodoConnection_edges(ctx context.Context, field graphql.CollectedField, obj *TodoConnection) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "TodoConnection",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
-	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Edges, nil
-	})
-	if resTmp == nil {
-		if !ec.HasError(rctx) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.([]*TodoEdge)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNTodoEdge2ᚕᚖgithubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋgraphqlapiᚐTodoEdge(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _TodoConnection_nodes(ctx context.Context, field graphql.CollectedField, obj *TodoConnection) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "TodoConnection",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
-	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Nodes, nil
-	})
-	if resTmp == nil {
-		if !ec.HasError(rctx) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.([]*todopb.Todo)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNTodo2ᚕᚖgithubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋtodopbᚐTodo(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _TodoEdge_cursor(ctx context.Context, field graphql.CollectedField, obj *TodoEdge) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "TodoEdge",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
-	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Cursor, nil
-	})
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*string)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _TodoEdge_node(ctx context.Context, field graphql.CollectedField, obj *TodoEdge) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "TodoEdge",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
-	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Node, nil
-	})
-	if resTmp == nil {
-		if !ec.HasError(rctx) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*todopb.Todo)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNTodo2ᚖgithubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋtodopbᚐTodo(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _UpdateTodoPayload_todo(ctx context.Context, field graphql.CollectedField, obj *UpdateTodoPayload) graphql.Marshaler {
+func (ec *executionContext) _UpdateTodoPayload_todo(ctx context.Context, field graphql.CollectedField, obj *todopb.UpdateResponse) graphql.Marshaler {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
 	rctx := &graphql.ResolverContext{
@@ -2450,8 +2355,8 @@ func (ec *executionContext) ___Type_ofType(ctx context.Context, field graphql.Co
 
 // region    **************************** input.gotpl *****************************
 
-func (ec *executionContext) unmarshalInputCreateTodoInput(ctx context.Context, v interface{}) (CreateTodoInput, error) {
-	var it CreateTodoInput
+func (ec *executionContext) unmarshalInputCreateTodoInput(ctx context.Context, v interface{}) (todopb.CreateRequest, error) {
+	var it todopb.CreateRequest
 	var asMap = v.(map[string]interface{})
 
 	for k, v := range asMap {
@@ -2468,15 +2373,75 @@ func (ec *executionContext) unmarshalInputCreateTodoInput(ctx context.Context, v
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputSayInput(ctx context.Context, v interface{}) (SayInput, error) {
-	var it SayInput
+func (ec *executionContext) unmarshalInputListATodoInput(ctx context.Context, v interface{}) (todopb.ListARequest, error) {
+	var it todopb.ListARequest
 	var asMap = v.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
-		case "clientMutationId":
+		case "first":
 			var err error
-			it.ClientMutationID, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			it.First, err = ec.unmarshalOInt2int32(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "after":
+			var err error
+			it.After, err = ec.unmarshalOString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "done":
+			var err error
+			it.Done, err = ec.unmarshalOListADoneFilter2githubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋtodopbᚐListARequest_DoneFilter(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputListBTodoInput(ctx context.Context, v interface{}) (todopb.ListBRequest, error) {
+	var it todopb.ListBRequest
+	var asMap = v.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "offset":
+			var err error
+			it.Offset, err = ec.unmarshalOInt2int32(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "limit":
+			var err error
+			it.Limit, err = ec.unmarshalOInt2int32(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "done":
+			var err error
+			it.Done, err = ec.unmarshalOListBDoneFilter2githubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋtodopbᚐListBRequest_DoneFilter(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputSayInput(ctx context.Context, v interface{}) (echopb.SayRequest, error) {
+	var it echopb.SayRequest
+	var asMap = v.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "clientMutationID":
+			var err error
+			it.MessageId, err = ec.unmarshalOString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -2492,63 +2457,27 @@ func (ec *executionContext) unmarshalInputSayInput(ctx context.Context, v interf
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputTodoListAInput(ctx context.Context, v interface{}) (TodoListAInput, error) {
-	var it TodoListAInput
-	var asMap = v.(map[string]interface{})
-
-	for k, v := range asMap {
-		switch k {
-		case "notDone":
-			var err error
-			it.NotDone, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		}
-	}
-
-	return it, nil
-}
-
-func (ec *executionContext) unmarshalInputTodoListBInput(ctx context.Context, v interface{}) (TodoListBInput, error) {
-	var it TodoListBInput
-	var asMap = v.(map[string]interface{})
-
-	for k, v := range asMap {
-		switch k {
-		case "notDone":
-			var err error
-			it.NotDone, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		}
-	}
-
-	return it, nil
-}
-
-func (ec *executionContext) unmarshalInputUpdateTodoInput(ctx context.Context, v interface{}) (UpdateTodoInput, error) {
-	var it UpdateTodoInput
+func (ec *executionContext) unmarshalInputUpdateTodoInput(ctx context.Context, v interface{}) (todopb.UpdateRequest, error) {
+	var it todopb.UpdateRequest
 	var asMap = v.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
 		case "id":
 			var err error
-			it.ID, err = ec.unmarshalNID2string(ctx, v)
+			it.Id, err = ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
 		case "text":
 			var err error
-			it.Text, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			it.Text, err = ec.unmarshalOString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
 		case "done":
 			var err error
-			it.Done, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			it.Done, err = ec.unmarshalOBoolean2bool(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -2568,7 +2497,7 @@ func (ec *executionContext) unmarshalInputUpdateTodoInput(ctx context.Context, v
 
 var createTodoPayloadImplementors = []string{"CreateTodoPayload"}
 
-func (ec *executionContext) _CreateTodoPayload(ctx context.Context, sel ast.SelectionSet, obj *CreateTodoPayload) graphql.Marshaler {
+func (ec *executionContext) _CreateTodoPayload(ctx context.Context, sel ast.SelectionSet, obj *todopb.CreateResponse) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.RequestContext, sel, createTodoPayloadImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -2595,7 +2524,7 @@ func (ec *executionContext) _CreateTodoPayload(ctx context.Context, sel ast.Sele
 
 var example1Implementors = []string{"Example1"}
 
-func (ec *executionContext) _Example1(ctx context.Context, sel ast.SelectionSet, obj *Example1) graphql.Marshaler {
+func (ec *executionContext) _Example1(ctx context.Context, sel ast.SelectionSet, obj *echopb.Example1) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.RequestContext, sel, example1Implementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -2622,7 +2551,7 @@ func (ec *executionContext) _Example1(ctx context.Context, sel ast.SelectionSet,
 
 var example1InMessageImplementors = []string{"Example1InMessage"}
 
-func (ec *executionContext) _Example1InMessage(ctx context.Context, sel ast.SelectionSet, obj *Example1InMessage) graphql.Marshaler {
+func (ec *executionContext) _Example1InMessage(ctx context.Context, sel ast.SelectionSet, obj *echopb.Example1_InMessage) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.RequestContext, sel, example1InMessageImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -2649,7 +2578,7 @@ func (ec *executionContext) _Example1InMessage(ctx context.Context, sel ast.Sele
 
 var example2Implementors = []string{"Example2"}
 
-func (ec *executionContext) _Example2(ctx context.Context, sel ast.SelectionSet, obj *Example2) graphql.Marshaler {
+func (ec *executionContext) _Example2(ctx context.Context, sel ast.SelectionSet, obj *echopb.Example2) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.RequestContext, sel, example2Implementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -2676,7 +2605,7 @@ func (ec *executionContext) _Example2(ctx context.Context, sel ast.SelectionSet,
 
 var example2InMessageImplementors = []string{"Example2InMessage"}
 
-func (ec *executionContext) _Example2InMessage(ctx context.Context, sel ast.SelectionSet, obj *Example2InMessage) graphql.Marshaler {
+func (ec *executionContext) _Example2InMessage(ctx context.Context, sel ast.SelectionSet, obj *echopb.Example2_InMessage) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.RequestContext, sel, example2InMessageImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -2687,6 +2616,62 @@ func (ec *executionContext) _Example2InMessage(ctx context.Context, sel ast.Sele
 			out.Values[i] = graphql.MarshalString("Example2InMessage")
 		case "fuga":
 			out.Values[i] = ec._Example2InMessage_fuga(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var listATodoPayloadImplementors = []string{"ListATodoPayload"}
+
+func (ec *executionContext) _ListATodoPayload(ctx context.Context, sel ast.SelectionSet, obj *todopb.ListAResponse) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.RequestContext, sel, listATodoPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ListATodoPayload")
+		case "cursor":
+			out.Values[i] = ec._ListATodoPayload_cursor(ctx, field, obj)
+		case "todos":
+			out.Values[i] = ec._ListATodoPayload_todos(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var listBTodoPayloadImplementors = []string{"ListBTodoPayload"}
+
+func (ec *executionContext) _ListBTodoPayload(ctx context.Context, sel ast.SelectionSet, obj *todopb.ListBResponse) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.RequestContext, sel, listBTodoPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ListBTodoPayload")
+		case "todos":
+			out.Values[i] = ec._ListBTodoPayload_todos(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -2718,6 +2703,11 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			out.Values[i] = graphql.MarshalString("Mutation")
 		case "tmp":
 			out.Values[i] = ec._Mutation_tmp(ctx, field)
+		case "say":
+			out.Values[i] = ec._Mutation_say(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "createTodo":
 			out.Values[i] = ec._Mutation_createTodo(ctx, field)
 			if out.Values[i] == graphql.Null {
@@ -2725,11 +2715,6 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			}
 		case "updateTodo":
 			out.Values[i] = ec._Mutation_updateTodo(ctx, field)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "say":
-			out.Values[i] = ec._Mutation_say(ctx, field)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -2851,7 +2836,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 
 var sayPayloadImplementors = []string{"SayPayload"}
 
-func (ec *executionContext) _SayPayload(ctx context.Context, sel ast.SelectionSet, obj *SayPayload) graphql.Marshaler {
+func (ec *executionContext) _SayPayload(ctx context.Context, sel ast.SelectionSet, obj *echopb.SayResponse) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.RequestContext, sel, sayPayloadImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -2860,8 +2845,8 @@ func (ec *executionContext) _SayPayload(ctx context.Context, sel ast.SelectionSe
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("SayPayload")
-		case "clientMutationId":
-			out.Values[i] = ec._SayPayload_clientMutationId(ctx, field, obj)
+		case "clientMutationID":
+			out.Values[i] = ec._SayPayload_clientMutationID(ctx, field, obj)
 		case "messageBody":
 			out.Values[i] = ec._SayPayload_messageBody(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -2913,71 +2898,11 @@ func (ec *executionContext) _Todo(ctx context.Context, sel ast.SelectionSet, obj
 			out.Values[i] = ec._Todo_doneAt(ctx, field, obj)
 		case "updatedAt":
 			out.Values[i] = ec._Todo_updatedAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "createdAt":
 			out.Values[i] = ec._Todo_createdAt(ctx, field, obj)
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch()
-	if invalids > 0 {
-		return graphql.Null
-	}
-	return out
-}
-
-var todoConnectionImplementors = []string{"TodoConnection"}
-
-func (ec *executionContext) _TodoConnection(ctx context.Context, sel ast.SelectionSet, obj *TodoConnection) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.RequestContext, sel, todoConnectionImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	var invalids uint32
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("TodoConnection")
-		case "pageInfo":
-			out.Values[i] = ec._TodoConnection_pageInfo(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "edges":
-			out.Values[i] = ec._TodoConnection_edges(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "nodes":
-			out.Values[i] = ec._TodoConnection_nodes(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch()
-	if invalids > 0 {
-		return graphql.Null
-	}
-	return out
-}
-
-var todoEdgeImplementors = []string{"TodoEdge"}
-
-func (ec *executionContext) _TodoEdge(ctx context.Context, sel ast.SelectionSet, obj *TodoEdge) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.RequestContext, sel, todoEdgeImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	var invalids uint32
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("TodoEdge")
-		case "cursor":
-			out.Values[i] = ec._TodoEdge_cursor(ctx, field, obj)
-		case "node":
-			out.Values[i] = ec._TodoEdge_node(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -2994,7 +2919,7 @@ func (ec *executionContext) _TodoEdge(ctx context.Context, sel ast.SelectionSet,
 
 var updateTodoPayloadImplementors = []string{"UpdateTodoPayload"}
 
-func (ec *executionContext) _UpdateTodoPayload(ctx context.Context, sel ast.SelectionSet, obj *UpdateTodoPayload) graphql.Marshaler {
+func (ec *executionContext) _UpdateTodoPayload(ctx context.Context, sel ast.SelectionSet, obj *todopb.UpdateResponse) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.RequestContext, sel, updateTodoPayloadImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -3278,15 +3203,15 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
-func (ec *executionContext) unmarshalNCreateTodoInput2githubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋgraphqlapiᚐCreateTodoInput(ctx context.Context, v interface{}) (CreateTodoInput, error) {
+func (ec *executionContext) unmarshalNCreateTodoInput2githubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋtodopbᚐCreateRequest(ctx context.Context, v interface{}) (todopb.CreateRequest, error) {
 	return ec.unmarshalInputCreateTodoInput(ctx, v)
 }
 
-func (ec *executionContext) marshalNCreateTodoPayload2githubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋgraphqlapiᚐCreateTodoPayload(ctx context.Context, sel ast.SelectionSet, v CreateTodoPayload) graphql.Marshaler {
+func (ec *executionContext) marshalNCreateTodoPayload2githubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋtodopbᚐCreateResponse(ctx context.Context, sel ast.SelectionSet, v todopb.CreateResponse) graphql.Marshaler {
 	return ec._CreateTodoPayload(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNCreateTodoPayload2ᚖgithubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋgraphqlapiᚐCreateTodoPayload(ctx context.Context, sel ast.SelectionSet, v *CreateTodoPayload) graphql.Marshaler {
+func (ec *executionContext) marshalNCreateTodoPayload2ᚖgithubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋtodopbᚐCreateResponse(ctx context.Context, sel ast.SelectionSet, v *todopb.CreateResponse) graphql.Marshaler {
 	if v == nil {
 		if !ec.HasError(graphql.GetResolverContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")
@@ -3296,11 +3221,11 @@ func (ec *executionContext) marshalNCreateTodoPayload2ᚖgithubᚗcomᚋvvakame�
 	return ec._CreateTodoPayload(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNExample1InMessage2githubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋgraphqlapiᚐExample1InMessage(ctx context.Context, sel ast.SelectionSet, v Example1InMessage) graphql.Marshaler {
+func (ec *executionContext) marshalNExample1InMessage2githubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋechopbᚐExample1_InMessage(ctx context.Context, sel ast.SelectionSet, v echopb.Example1_InMessage) graphql.Marshaler {
 	return ec._Example1InMessage(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNExample1InMessage2ᚖgithubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋgraphqlapiᚐExample1InMessage(ctx context.Context, sel ast.SelectionSet, v *Example1InMessage) graphql.Marshaler {
+func (ec *executionContext) marshalNExample1InMessage2ᚖgithubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋechopbᚐExample1_InMessage(ctx context.Context, sel ast.SelectionSet, v *echopb.Example1_InMessage) graphql.Marshaler {
 	if v == nil {
 		if !ec.HasError(graphql.GetResolverContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")
@@ -3310,11 +3235,11 @@ func (ec *executionContext) marshalNExample1InMessage2ᚖgithubᚗcomᚋvvakame�
 	return ec._Example1InMessage(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNExample2InMessage2githubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋgraphqlapiᚐExample2InMessage(ctx context.Context, sel ast.SelectionSet, v Example2InMessage) graphql.Marshaler {
+func (ec *executionContext) marshalNExample2InMessage2githubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋechopbᚐExample2_InMessage(ctx context.Context, sel ast.SelectionSet, v echopb.Example2_InMessage) graphql.Marshaler {
 	return ec._Example2InMessage(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNExample2InMessage2ᚖgithubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋgraphqlapiᚐExample2InMessage(ctx context.Context, sel ast.SelectionSet, v *Example2InMessage) graphql.Marshaler {
+func (ec *executionContext) marshalNExample2InMessage2ᚖgithubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋechopbᚐExample2_InMessage(ctx context.Context, sel ast.SelectionSet, v *echopb.Example2_InMessage) graphql.Marshaler {
 	if v == nil {
 		if !ec.HasError(graphql.GetResolverContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")
@@ -3324,43 +3249,51 @@ func (ec *executionContext) marshalNExample2InMessage2ᚖgithubᚗcomᚋvvakame�
 	return ec._Example2InMessage(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalNID2string(ctx context.Context, v interface{}) (string, error) {
-	return graphql.UnmarshalID(v)
+func (ec *executionContext) unmarshalNListATodoInput2githubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋtodopbᚐListARequest(ctx context.Context, v interface{}) (todopb.ListARequest, error) {
+	return ec.unmarshalInputListATodoInput(ctx, v)
 }
 
-func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
-	res := graphql.MarshalID(v)
-	if res == graphql.Null {
-		if !ec.HasError(graphql.GetResolverContext(ctx)) {
-			ec.Errorf(ctx, "must not be null")
-		}
-	}
-	return res
+func (ec *executionContext) marshalNListATodoPayload2githubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋtodopbᚐListAResponse(ctx context.Context, sel ast.SelectionSet, v todopb.ListAResponse) graphql.Marshaler {
+	return ec._ListATodoPayload(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNPageInfo2githubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋgraphqlapiᚐPageInfo(ctx context.Context, sel ast.SelectionSet, v PageInfo) graphql.Marshaler {
-	return ec._PageInfo(ctx, sel, &v)
-}
-
-func (ec *executionContext) marshalNPageInfo2ᚖgithubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋgraphqlapiᚐPageInfo(ctx context.Context, sel ast.SelectionSet, v *PageInfo) graphql.Marshaler {
+func (ec *executionContext) marshalNListATodoPayload2ᚖgithubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋtodopbᚐListAResponse(ctx context.Context, sel ast.SelectionSet, v *todopb.ListAResponse) graphql.Marshaler {
 	if v == nil {
 		if !ec.HasError(graphql.GetResolverContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")
 		}
 		return graphql.Null
 	}
-	return ec._PageInfo(ctx, sel, v)
+	return ec._ListATodoPayload(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalNSayInput2githubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋgraphqlapiᚐSayInput(ctx context.Context, v interface{}) (SayInput, error) {
+func (ec *executionContext) unmarshalNListBTodoInput2githubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋtodopbᚐListBRequest(ctx context.Context, v interface{}) (todopb.ListBRequest, error) {
+	return ec.unmarshalInputListBTodoInput(ctx, v)
+}
+
+func (ec *executionContext) marshalNListBTodoPayload2githubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋtodopbᚐListBResponse(ctx context.Context, sel ast.SelectionSet, v todopb.ListBResponse) graphql.Marshaler {
+	return ec._ListBTodoPayload(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNListBTodoPayload2ᚖgithubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋtodopbᚐListBResponse(ctx context.Context, sel ast.SelectionSet, v *todopb.ListBResponse) graphql.Marshaler {
+	if v == nil {
+		if !ec.HasError(graphql.GetResolverContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._ListBTodoPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNSayInput2githubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋechopbᚐSayRequest(ctx context.Context, v interface{}) (echopb.SayRequest, error) {
 	return ec.unmarshalInputSayInput(ctx, v)
 }
 
-func (ec *executionContext) marshalNSayPayload2githubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋgraphqlapiᚐSayPayload(ctx context.Context, sel ast.SelectionSet, v SayPayload) graphql.Marshaler {
+func (ec *executionContext) marshalNSayPayload2githubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋechopbᚐSayResponse(ctx context.Context, sel ast.SelectionSet, v echopb.SayResponse) graphql.Marshaler {
 	return ec._SayPayload(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNSayPayload2ᚖgithubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋgraphqlapiᚐSayPayload(ctx context.Context, sel ast.SelectionSet, v *SayPayload) graphql.Marshaler {
+func (ec *executionContext) marshalNSayPayload2ᚖgithubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋechopbᚐSayResponse(ctx context.Context, sel ast.SelectionSet, v *echopb.SayResponse) graphql.Marshaler {
 	if v == nil {
 		if !ec.HasError(graphql.GetResolverContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")
@@ -3384,18 +3317,36 @@ func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.S
 	return res
 }
 
-func (ec *executionContext) unmarshalNTime2githubᚗcomᚋgolangᚋprotobufᚋptypesᚋtimestampᚐTimestamp(ctx context.Context, v interface{}) (timestamp.Timestamp, error) {
-	return UnmarshalGraphQLTimeScalar(v)
+func (ec *executionContext) unmarshalNTimestamp2githubᚗcomᚋgolangᚋprotobufᚋptypesᚋtimestampᚐTimestamp(ctx context.Context, v interface{}) (timestamp.Timestamp, error) {
+	return UnmarshalGraphQLTimestampScalar(v)
 }
 
-func (ec *executionContext) marshalNTime2githubᚗcomᚋgolangᚋprotobufᚋptypesᚋtimestampᚐTimestamp(ctx context.Context, sel ast.SelectionSet, v timestamp.Timestamp) graphql.Marshaler {
-	res := MarshalGraphQLTimeScalar(v)
+func (ec *executionContext) marshalNTimestamp2githubᚗcomᚋgolangᚋprotobufᚋptypesᚋtimestampᚐTimestamp(ctx context.Context, sel ast.SelectionSet, v timestamp.Timestamp) graphql.Marshaler {
+	res := MarshalGraphQLTimestampScalar(v)
 	if res == graphql.Null {
 		if !ec.HasError(graphql.GetResolverContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) unmarshalNTimestamp2ᚖgithubᚗcomᚋgolangᚋprotobufᚋptypesᚋtimestampᚐTimestamp(ctx context.Context, v interface{}) (*timestamp.Timestamp, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalNTimestamp2githubᚗcomᚋgolangᚋprotobufᚋptypesᚋtimestampᚐTimestamp(ctx, v)
+	return &res, err
+}
+
+func (ec *executionContext) marshalNTimestamp2ᚖgithubᚗcomᚋgolangᚋprotobufᚋptypesᚋtimestampᚐTimestamp(ctx context.Context, sel ast.SelectionSet, v *timestamp.Timestamp) graphql.Marshaler {
+	if v == nil {
+		if !ec.HasError(graphql.GetResolverContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec.marshalNTimestamp2githubᚗcomᚋgolangᚋprotobufᚋptypesᚋtimestampᚐTimestamp(ctx, sel, *v)
 }
 
 func (ec *executionContext) marshalNTodo2githubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋtodopbᚐTodo(ctx context.Context, sel ast.SelectionSet, v todopb.Todo) graphql.Marshaler {
@@ -3449,88 +3400,15 @@ func (ec *executionContext) marshalNTodo2ᚖgithubᚗcomᚋvvakameᚋtilᚋgrpc�
 	return ec._Todo(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNTodoConnection2githubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋgraphqlapiᚐTodoConnection(ctx context.Context, sel ast.SelectionSet, v TodoConnection) graphql.Marshaler {
-	return ec._TodoConnection(ctx, sel, &v)
-}
-
-func (ec *executionContext) marshalNTodoConnection2ᚖgithubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋgraphqlapiᚐTodoConnection(ctx context.Context, sel ast.SelectionSet, v *TodoConnection) graphql.Marshaler {
-	if v == nil {
-		if !ec.HasError(graphql.GetResolverContext(ctx)) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	return ec._TodoConnection(ctx, sel, v)
-}
-
-func (ec *executionContext) marshalNTodoEdge2githubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋgraphqlapiᚐTodoEdge(ctx context.Context, sel ast.SelectionSet, v TodoEdge) graphql.Marshaler {
-	return ec._TodoEdge(ctx, sel, &v)
-}
-
-func (ec *executionContext) marshalNTodoEdge2ᚕᚖgithubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋgraphqlapiᚐTodoEdge(ctx context.Context, sel ast.SelectionSet, v []*TodoEdge) graphql.Marshaler {
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		rctx := &graphql.ResolverContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithResolverContext(ctx, rctx)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalNTodoEdge2ᚖgithubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋgraphqlapiᚐTodoEdge(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
-	return ret
-}
-
-func (ec *executionContext) marshalNTodoEdge2ᚖgithubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋgraphqlapiᚐTodoEdge(ctx context.Context, sel ast.SelectionSet, v *TodoEdge) graphql.Marshaler {
-	if v == nil {
-		if !ec.HasError(graphql.GetResolverContext(ctx)) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	return ec._TodoEdge(ctx, sel, v)
-}
-
-func (ec *executionContext) unmarshalNTodoListAInput2githubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋgraphqlapiᚐTodoListAInput(ctx context.Context, v interface{}) (TodoListAInput, error) {
-	return ec.unmarshalInputTodoListAInput(ctx, v)
-}
-
-func (ec *executionContext) unmarshalNTodoListBInput2githubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋgraphqlapiᚐTodoListBInput(ctx context.Context, v interface{}) (TodoListBInput, error) {
-	return ec.unmarshalInputTodoListBInput(ctx, v)
-}
-
-func (ec *executionContext) unmarshalNUpdateTodoInput2githubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋgraphqlapiᚐUpdateTodoInput(ctx context.Context, v interface{}) (UpdateTodoInput, error) {
+func (ec *executionContext) unmarshalNUpdateTodoInput2githubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋtodopbᚐUpdateRequest(ctx context.Context, v interface{}) (todopb.UpdateRequest, error) {
 	return ec.unmarshalInputUpdateTodoInput(ctx, v)
 }
 
-func (ec *executionContext) marshalNUpdateTodoPayload2githubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋgraphqlapiᚐUpdateTodoPayload(ctx context.Context, sel ast.SelectionSet, v UpdateTodoPayload) graphql.Marshaler {
+func (ec *executionContext) marshalNUpdateTodoPayload2githubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋtodopbᚐUpdateResponse(ctx context.Context, sel ast.SelectionSet, v todopb.UpdateResponse) graphql.Marshaler {
 	return ec._UpdateTodoPayload(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNUpdateTodoPayload2ᚖgithubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋgraphqlapiᚐUpdateTodoPayload(ctx context.Context, sel ast.SelectionSet, v *UpdateTodoPayload) graphql.Marshaler {
+func (ec *executionContext) marshalNUpdateTodoPayload2ᚖgithubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋtodopbᚐUpdateResponse(ctx context.Context, sel ast.SelectionSet, v *todopb.UpdateResponse) graphql.Marshaler {
 	if v == nil {
 		if !ec.HasError(graphql.GetResolverContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")
@@ -3789,27 +3667,28 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	return ec.marshalOBoolean2bool(ctx, sel, *v)
 }
 
-func (ec *executionContext) unmarshalOInt2int(ctx context.Context, v interface{}) (int, error) {
-	return graphql.UnmarshalInt(v)
+func (ec *executionContext) unmarshalOInt2int32(ctx context.Context, v interface{}) (int32, error) {
+	return graphql.UnmarshalInt32(v)
 }
 
-func (ec *executionContext) marshalOInt2int(ctx context.Context, sel ast.SelectionSet, v int) graphql.Marshaler {
-	return graphql.MarshalInt(v)
+func (ec *executionContext) marshalOInt2int32(ctx context.Context, sel ast.SelectionSet, v int32) graphql.Marshaler {
+	return graphql.MarshalInt32(v)
 }
 
-func (ec *executionContext) unmarshalOInt2ᚖint(ctx context.Context, v interface{}) (*int, error) {
-	if v == nil {
-		return nil, nil
-	}
-	res, err := ec.unmarshalOInt2int(ctx, v)
-	return &res, err
+func (ec *executionContext) unmarshalOListADoneFilter2githubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋtodopbᚐListARequest_DoneFilter(ctx context.Context, v interface{}) (todopb.ListARequest_DoneFilter, error) {
+	return UnmarshalListADoneFilter(v)
 }
 
-func (ec *executionContext) marshalOInt2ᚖint(ctx context.Context, sel ast.SelectionSet, v *int) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec.marshalOInt2int(ctx, sel, *v)
+func (ec *executionContext) marshalOListADoneFilter2githubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋtodopbᚐListARequest_DoneFilter(ctx context.Context, sel ast.SelectionSet, v todopb.ListARequest_DoneFilter) graphql.Marshaler {
+	return MarshalListADoneFilter(v)
+}
+
+func (ec *executionContext) unmarshalOListBDoneFilter2githubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋtodopbᚐListBRequest_DoneFilter(ctx context.Context, v interface{}) (todopb.ListBRequest_DoneFilter, error) {
+	return UnmarshalListBDoneFilter(v)
+}
+
+func (ec *executionContext) marshalOListBDoneFilter2githubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋtodopbᚐListBRequest_DoneFilter(ctx context.Context, sel ast.SelectionSet, v todopb.ListBRequest_DoneFilter) graphql.Marshaler {
+	return MarshalListBDoneFilter(v)
 }
 
 func (ec *executionContext) unmarshalOString2string(ctx context.Context, v interface{}) (string, error) {
@@ -3835,27 +3714,27 @@ func (ec *executionContext) marshalOString2ᚖstring(ctx context.Context, sel as
 	return ec.marshalOString2string(ctx, sel, *v)
 }
 
-func (ec *executionContext) unmarshalOTime2githubᚗcomᚋgolangᚋprotobufᚋptypesᚋtimestampᚐTimestamp(ctx context.Context, v interface{}) (timestamp.Timestamp, error) {
-	return UnmarshalGraphQLTimeScalar(v)
+func (ec *executionContext) unmarshalOTimestamp2githubᚗcomᚋgolangᚋprotobufᚋptypesᚋtimestampᚐTimestamp(ctx context.Context, v interface{}) (timestamp.Timestamp, error) {
+	return UnmarshalGraphQLTimestampScalar(v)
 }
 
-func (ec *executionContext) marshalOTime2githubᚗcomᚋgolangᚋprotobufᚋptypesᚋtimestampᚐTimestamp(ctx context.Context, sel ast.SelectionSet, v timestamp.Timestamp) graphql.Marshaler {
-	return MarshalGraphQLTimeScalar(v)
+func (ec *executionContext) marshalOTimestamp2githubᚗcomᚋgolangᚋprotobufᚋptypesᚋtimestampᚐTimestamp(ctx context.Context, sel ast.SelectionSet, v timestamp.Timestamp) graphql.Marshaler {
+	return MarshalGraphQLTimestampScalar(v)
 }
 
-func (ec *executionContext) unmarshalOTime2ᚖgithubᚗcomᚋgolangᚋprotobufᚋptypesᚋtimestampᚐTimestamp(ctx context.Context, v interface{}) (*timestamp.Timestamp, error) {
+func (ec *executionContext) unmarshalOTimestamp2ᚖgithubᚗcomᚋgolangᚋprotobufᚋptypesᚋtimestampᚐTimestamp(ctx context.Context, v interface{}) (*timestamp.Timestamp, error) {
 	if v == nil {
 		return nil, nil
 	}
-	res, err := ec.unmarshalOTime2githubᚗcomᚋgolangᚋprotobufᚋptypesᚋtimestampᚐTimestamp(ctx, v)
+	res, err := ec.unmarshalOTimestamp2githubᚗcomᚋgolangᚋprotobufᚋptypesᚋtimestampᚐTimestamp(ctx, v)
 	return &res, err
 }
 
-func (ec *executionContext) marshalOTime2ᚖgithubᚗcomᚋgolangᚋprotobufᚋptypesᚋtimestampᚐTimestamp(ctx context.Context, sel ast.SelectionSet, v *timestamp.Timestamp) graphql.Marshaler {
+func (ec *executionContext) marshalOTimestamp2ᚖgithubᚗcomᚋgolangᚋprotobufᚋptypesᚋtimestampᚐTimestamp(ctx context.Context, sel ast.SelectionSet, v *timestamp.Timestamp) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
-	return ec.marshalOTime2githubᚗcomᚋgolangᚋprotobufᚋptypesᚋtimestampᚐTimestamp(ctx, sel, *v)
+	return ec.marshalOTimestamp2githubᚗcomᚋgolangᚋprotobufᚋptypesᚋtimestampᚐTimestamp(ctx, sel, *v)
 }
 
 func (ec *executionContext) marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValue(ctx context.Context, sel ast.SelectionSet, v []introspection.EnumValue) graphql.Marshaler {

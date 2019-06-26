@@ -1,0 +1,24 @@
+input SayInput {
+	clientMutationID: String
+	messageBody: String!
+}
+type SayPayload {
+	clientMutationID: String
+	messageBody: String!
+	received: Timestamp!
+}
+type Example1 {
+	foo: Example1InMessage!
+}
+type Example1InMessage {
+	bar: String!
+}
+type Example2 {
+	hoge: Example2InMessage!
+}
+type Example2InMessage {
+	fuga: String!
+}
+extend type Mutation {
+	say(input: SayInput!): SayPayload!
+}

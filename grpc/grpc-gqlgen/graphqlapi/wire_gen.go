@@ -7,7 +7,10 @@ package graphqlapi
 
 import (
 	"context"
+
 	"github.com/google/wire"
+	"github.com/vvakame/til/grpc/grpc-gqlgen/echopb"
+	"github.com/vvakame/til/grpc/grpc-gqlgen/todopb"
 )
 
 // Injectors from wire.go:
@@ -37,23 +40,19 @@ func initializeResolvers(ctx context.Context) (ResolverRoot, error) {
 	if err != nil {
 		return nil, err
 	}
-	graphqlapiTodoServiceHandler := &todoServiceHandler{
-		todoService: todoServiceClient,
-	}
+	todoServiceGraphQLInterface := todopb.NewTodoServiceHandler(todoServiceClient)
 	echoClient, err := ProvideEchoClient(ctx)
 	if err != nil {
 		return nil, err
 	}
-	graphqlapiEchoHandler := &echoHandler{
-		echo: echoClient,
-	}
+	echoGraphQLInterface := echopb.NewEchoHandler(echoClient)
 	graphqlapiQueryResolver := &queryResolver{
-		todoServiceGraphQLInterface: graphqlapiTodoServiceHandler,
-		echoGraphQLInterface:        graphqlapiEchoHandler,
+		TodoServiceGraphQLInterface: todoServiceGraphQLInterface,
+		EchoGraphQLInterface:        echoGraphQLInterface,
 	}
 	graphqlapiMutationResolver := &mutationResolver{
-		todoServiceGraphQLInterface: graphqlapiTodoServiceHandler,
-		echoGraphQLInterface:        graphqlapiEchoHandler,
+		TodoServiceGraphQLInterface: todoServiceGraphQLInterface,
+		EchoGraphQLInterface:        echoGraphQLInterface,
 	}
 	graphqlapiResolver := &resolver{
 		queryResolver:    graphqlapiQueryResolver,
@@ -68,3 +67,5 @@ var grpcClientSet = wire.NewSet(
 	ProvideTodoServiceClient,
 	ProvideEchoClient,
 )
+
+var gqlHandlerSet = wire.NewSet(echopb.NewEchoHandler, todopb.NewTodoServiceHandler)

@@ -18,6 +18,8 @@ require (
 	github.com/gorilla/websocket v1.4.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.9.1
 	github.com/jhump/protoreflect v1.4.2
+	github.com/k0kubun/pp v3.0.1+incompatible
+	github.com/mattn/go-colorable v0.1.2 // indirect
 	github.com/rakyll/statik v0.1.6
 	github.com/vektah/gqlparser v1.1.2
 	github.com/vvakame/sdlog v0.0.0-20190523062053-be70263e9c6c

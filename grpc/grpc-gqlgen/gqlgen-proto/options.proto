@@ -22,6 +22,14 @@ extend google.protobuf.FieldOptions {
     FieldRule field = 50003;
 }
 
+extend google.protobuf.EnumOptions {
+    EnumRule enum = 50004;
+}
+
+extend google.protobuf.EnumValueOptions {
+    EnumValueRule enum_value = 50005;
+}
+
 message FileRule {
     repeated InferrenceRule type_inference = 1;
 }
@@ -56,4 +64,11 @@ message FieldRule {
     string alias = 1;
     bool optional = 2;
     bool id = 3;
+}
+
+message EnumRule {
+    string alias = 1;
+}
+
+message EnumValueRule {
 }

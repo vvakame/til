@@ -1,21 +1,28 @@
 package main
 
 import (
+	"reflect"
+
 	"github.com/golang/protobuf/proto"
 	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
 	descriptor "github.com/jhump/protoreflect/desc"
 	gqlgen_proto "github.com/vvakame/til/grpc/grpc-gqlgen/gqlgen-proto"
 	"golang.org/x/xerrors"
-	"reflect"
 )
 
 type Visitor interface {
 	VisitFileDescriptor(w *Walker, fd *descriptor.FileDescriptor, opts *gqlgen_proto.FileRule) error
 	VisitServiceDescriptor(w *Walker, sd *descriptor.ServiceDescriptor) error
 	VisitMethodDescriptor(w *Walker, md *descriptor.MethodDescriptor, opts *gqlgen_proto.SchemaRule) error
-	VisitInputMessageDescriptor(w *Walker, md *descriptor.MessageDescriptor, opts *gqlgen_proto.MessageRule) error
-	VisitOutputMessageDescriptor(w *Walker, md *descriptor.MessageDescriptor, opts *gqlgen_proto.MessageRule) error
+	VisitMessageDescriptor(w *Walker, md *descriptor.MessageDescriptor, opts *gqlgen_proto.MessageRule, info *VisitMessageInfo) error
 	VisitFieldDescriptor(w *Walker, fd *descriptor.FieldDescriptor, opts *gqlgen_proto.FieldRule) error
+	VisitEnumDescriptor(w *Walker, ed *descriptor.EnumDescriptor, opts *gqlgen_proto.EnumRule) error
+	VisitEnumValueDescriptor(w *Walker, enumValueDescriptor *descriptor.EnumValueDescriptor, opts *gqlgen_proto.EnumValueRule) error
+}
+
+type VisitMessageInfo struct {
+	IsInput  bool
+	IsOutput bool
 }
 
 func Visit(req *plugin.CodeGeneratorRequest, v Visitor) error {
@@ -26,13 +33,15 @@ func Visit(req *plugin.CodeGeneratorRequest, v Visitor) error {
 }
 
 type Walker struct {
-	CurrentRequest  *plugin.CodeGeneratorRequest
-	CurrentFile     *descriptor.FileDescriptor
-	CurrentFileRule *gqlgen_proto.FileRule
-	CurrentService  *descriptor.ServiceDescriptor
-	CurrentMethod   *descriptor.MethodDescriptor
-	CurrentMessage  *descriptor.MessageDescriptor
-	CurrentField    *descriptor.FieldDescriptor
+	CurrentRequest   *plugin.CodeGeneratorRequest
+	CurrentFile      *descriptor.FileDescriptor
+	CurrentFileRule  *gqlgen_proto.FileRule
+	CurrentService   *descriptor.ServiceDescriptor
+	CurrentMethod    *descriptor.MethodDescriptor
+	CurrentMessage   *descriptor.MessageDescriptor
+	CurrentField     *descriptor.FieldDescriptor
+	CurrentEnum      *descriptor.EnumDescriptor
+	CurrentEnumValue *descriptor.EnumValueDescriptor
 }
 
 func (w *Walker) start(v Visitor) error {
@@ -83,6 +92,20 @@ func (w *Walker) visitFileDescriptor(v Visitor, req *descriptor.FileDescriptor) 
 
 	for _, srvc := range req.GetServices() {
 		err := w.visitServiceDescriptor(v, srvc)
+		if err != nil {
+			return err
+		}
+	}
+
+	for _, message := range req.GetMessageTypes() {
+		err := w.visitMessageDescriptor(v, message, &VisitMessageInfo{})
+		if err != nil {
+			return err
+		}
+	}
+
+	for _, enum := range req.GetEnumTypes() {
+		err := w.visitEnumDescriptor(v, enum)
 		if err != nil {
 			return err
 		}
@@ -139,13 +162,13 @@ func (w *Walker) visitMethodDescriptor(v Visitor, req *descriptor.MethodDescript
 	}
 
 	{
-		err := w.visitMessageDescriptor(v, req.GetInputType(), true)
+		err := w.visitMessageDescriptor(v, req.GetInputType(), &VisitMessageInfo{IsInput: true})
 		if err != nil {
 			return err
 		}
 	}
 	{
-		err := w.visitMessageDescriptor(v, req.GetOutputType(), false)
+		err := w.visitMessageDescriptor(v, req.GetOutputType(), &VisitMessageInfo{IsOutput: true})
 		if err != nil {
 			return err
 		}
@@ -154,7 +177,7 @@ func (w *Walker) visitMethodDescriptor(v Visitor, req *descriptor.MethodDescript
 	return nil
 }
 
-func (w *Walker) visitMessageDescriptor(v Visitor, req *descriptor.MessageDescriptor, isInput bool) error {
+func (w *Walker) visitMessageDescriptor(v Visitor, req *descriptor.MessageDescriptor, info *VisitMessageInfo) error {
 	bk := w.CurrentMessage
 	w.CurrentMessage = req
 	defer func() {
@@ -174,22 +197,33 @@ func (w *Walker) visitMessageDescriptor(v Visitor, req *descriptor.MessageDescri
 		}
 	}
 
-	if isInput {
-		err := v.VisitInputMessageDescriptor(w, req, optVal)
-		if err != nil {
-			return err
-		}
-	} else {
-		err := v.VisitOutputMessageDescriptor(w, req, optVal)
-		if err != nil {
-			return err
-		}
+	err := v.VisitMessageDescriptor(w, req, optVal, info)
+	if err != nil {
+		return err
 	}
 
 	for _, f := range req.GetFields() {
 		err := w.visitFieldDescriptor(v, f)
 		if err != nil {
 			return err
+		}
+	}
+
+	if !info.IsInput && !info.IsOutput {
+		for _, m := range req.GetNestedMessageTypes() {
+			// TODO nested らしくする
+			err := w.visitMessageDescriptor(v, m, &VisitMessageInfo{})
+			if err != nil {
+				return err
+			}
+		}
+
+		for _, e := range req.GetNestedEnumTypes() {
+			// TODO nested らしくする
+			err := w.visitEnumDescriptor(v, e)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
@@ -217,6 +251,69 @@ func (w *Walker) visitFieldDescriptor(v Visitor, req *descriptor.FieldDescriptor
 	}
 
 	err := v.VisitFieldDescriptor(w, req, optVal)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (w *Walker) visitEnumDescriptor(v Visitor, req *descriptor.EnumDescriptor) error {
+	bk := w.CurrentEnum
+	w.CurrentEnum = req
+	defer func() {
+		w.CurrentEnum = bk
+	}()
+
+	var optVal *gqlgen_proto.EnumRule
+	opts := req.GetOptions()
+	if opts != nil && !isNilPtr(opts) {
+		ext, err := proto.GetExtension(opts, gqlgen_proto.E_Enum)
+		if xerrors.Is(err, proto.ErrMissingExtension) {
+			// ok
+		} else if err != nil {
+			return xerrors.Errorf("%s on proto.GetExtension in visitEnumDescriptor: %w", req.GetFullyQualifiedName(), err)
+		} else {
+			optVal = ext.(*gqlgen_proto.EnumRule)
+		}
+	}
+
+	err := v.VisitEnumDescriptor(w, req, optVal)
+	if err != nil {
+		return err
+	}
+
+	for _, ev := range req.GetValues() {
+		err := w.visitEnumValueDescriptor(v, ev)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (w *Walker) visitEnumValueDescriptor(v Visitor, req *descriptor.EnumValueDescriptor) error {
+	bk := w.CurrentEnumValue
+	w.CurrentEnumValue = req
+	defer func() {
+		w.CurrentEnumValue = bk
+	}()
+
+	var optVal *gqlgen_proto.EnumValueRule
+	opts := req.GetOptions()
+	if opts != nil && !isNilPtr(opts) {
+		ext, err := proto.GetExtension(opts, gqlgen_proto.E_EnumValue)
+		if xerrors.Is(err, proto.ErrMissingExtension) {
+			// ok
+		} else if err != nil {
+			return xerrors.Errorf("%s on proto.GetExtension in visitEnumValueDescriptor: %w", req.GetFullyQualifiedName(), err)
+		} else {
+			optVal = ext.(*gqlgen_proto.EnumValueRule)
+		}
+	}
+
+	err := v.VisitEnumValueDescriptor(w, req, optVal)
 	if err != nil {
 		return err
 	}

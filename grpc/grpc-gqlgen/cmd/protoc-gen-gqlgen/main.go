@@ -5,14 +5,15 @@ package main
 import (
 	"bytes"
 	"context"
-	"github.com/golang/protobuf/proto"
-	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
-	_ "github.com/golang/protobuf/ptypes/timestamp"
-	_ "github.com/vvakame/til/grpc/grpc-gqlgen/cmd/protoc-gen-gqlgen/statik"
 	"io"
 	"io/ioutil"
 	"log"
 	"os"
+
+	"github.com/golang/protobuf/proto"
+	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
+	_ "github.com/golang/protobuf/ptypes/timestamp"
+	_ "github.com/vvakame/til/grpc/grpc-gqlgen/cmd/protoc-gen-gqlgen/statik"
 )
 
 func main() {

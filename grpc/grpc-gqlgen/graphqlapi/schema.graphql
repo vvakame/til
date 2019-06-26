@@ -13,4 +13,4 @@ type PageInfo {
   hasPreviousPage: Boolean!
 }
 
-scalar Time
+scalar Timestamp

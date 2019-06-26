@@ -11,7 +11,7 @@ import (
 	"github.com/golang/protobuf/ptypes/timestamp"
 )
 
-func MarshalGraphQLTimeScalar(v timestamp.Timestamp) graphql.Marshaler {
+func MarshalGraphQLTimestampScalar(v timestamp.Timestamp) graphql.Marshaler {
 	return graphql.WriterFunc(func(w io.Writer) {
 		t, err := ptypes.Timestamp(&v)
 		if err != nil {
@@ -21,7 +21,7 @@ func MarshalGraphQLTimeScalar(v timestamp.Timestamp) graphql.Marshaler {
 	})
 }
 
-func UnmarshalGraphQLTimeScalar(v interface{}) (timestamp.Timestamp, error) {
+func UnmarshalGraphQLTimestampScalar(v interface{}) (timestamp.Timestamp, error) {
 	if tmpStr, ok := v.(string); ok {
 		t, err := time.Parse(time.RFC3339Nano, tmpStr)
 		if err != nil {
