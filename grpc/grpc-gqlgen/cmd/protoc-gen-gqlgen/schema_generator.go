@@ -13,9 +13,21 @@ import (
 	gqlgen_proto "github.com/vvakame/til/grpc/grpc-gqlgen/gqlgen-proto"
 )
 
+type multiError []error
+
+func (me multiError) Error() string {
+	var buf bytes.Buffer
+	for _, err := range me {
+		buf.WriteString(err.Error())
+		buf.WriteString("\n")
+	}
+
+	return buf.String()
+}
+
 func schemaGenerate(ctx context.Context, b *Builder) ([]*plugin.CodeGeneratorResponse_File, error) {
 	g := &schemaGenerator{b: b}
-	return g.Generate(ctx, b.FileInfos)
+	return g.Generate(ctx, b.GenerateFileInfos)
 }
 
 type schemaGenerator struct {
@@ -23,6 +35,9 @@ type schemaGenerator struct {
 }
 
 func (g *schemaGenerator) Generate(ctx context.Context, fileInfos []*FileInfo) ([]*plugin.CodeGeneratorResponse_File, error) {
+
+	var mErr multiError
+
 	var files []*plugin.CodeGeneratorResponse_File
 	for _, fileInfo := range fileInfos {
 		doc := &ast.SchemaDocument{}
@@ -42,10 +57,13 @@ func (g *schemaGenerator) Generate(ctx context.Context, fileInfos []*FileInfo) (
 
 				case GraphQLSubscription:
 					def.Name = "Subscription" // TODO カスタム名対応
+
+				default:
+					return nil, fmt.Errorf("unexpected operation type in %s.%s", service.Name, method.Name)
 				}
 
 				field := &ast.FieldDefinition{
-					Name: method.GraphQLName,
+					Name: method.GraphQLName(),
 					Arguments: ast.ArgumentDefinitionList{ // Request
 						{
 							Name: "input",
@@ -68,11 +86,11 @@ func (g *schemaGenerator) Generate(ctx context.Context, fileInfos []*FileInfo) (
 				Name: message.GraphQLName(),
 			}
 			switch message.GraphQLMessageType {
-			case gqlgen_proto.MessageType_UNKNOWN,
-				gqlgen_proto.MessageType_TYPE:
+			case gqlgen_proto.MessageType_TYPE_UNKNOWN,
+				gqlgen_proto.MessageType_TYPE_TYPE:
 				def.Kind = ast.Object
 
-			case gqlgen_proto.MessageType_INPUT:
+			case gqlgen_proto.MessageType_TYPE_INPUT:
 				def.Kind = ast.InputObject
 			}
 
@@ -117,6 +135,10 @@ func (g *schemaGenerator) Generate(ctx context.Context, fileInfos []*FileInfo) (
 		})
 	}
 
+	if len(mErr) != 0 {
+		return nil, mErr
+	}
+
 	return files, nil
 }
 
@@ -143,6 +165,12 @@ outer:
 	case basedescriptor.FieldDescriptorProto_TYPE_INT32,
 		basedescriptor.FieldDescriptorProto_TYPE_UINT32:
 		t.NamedType = "Int"
+
+	case basedescriptor.FieldDescriptorProto_TYPE_INT64:
+		t.NamedType = "Int64"
+
+	case basedescriptor.FieldDescriptorProto_TYPE_UINT64:
+		t.NamedType = "UInt64"
 
 	case basedescriptor.FieldDescriptorProto_TYPE_FLOAT,
 		basedescriptor.FieldDescriptorProto_TYPE_FIXED32:

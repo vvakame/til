@@ -11,13 +11,17 @@ import (
 )
 
 type Visitor interface {
-	VisitFileDescriptor(w *Walker, fd *descriptor.FileDescriptor, opts *gqlgen_proto.FileRule) error
+	VisitFileDescriptor(w *Walker, fd *descriptor.FileDescriptor, opts *gqlgen_proto.FileRule, info *VisitFileInfo) error
 	VisitServiceDescriptor(w *Walker, sd *descriptor.ServiceDescriptor) error
 	VisitMethodDescriptor(w *Walker, md *descriptor.MethodDescriptor, opts *gqlgen_proto.SchemaRule) error
 	VisitMessageDescriptor(w *Walker, md *descriptor.MessageDescriptor, opts *gqlgen_proto.MessageRule, info *VisitMessageInfo) error
 	VisitFieldDescriptor(w *Walker, fd *descriptor.FieldDescriptor, opts *gqlgen_proto.FieldRule) error
 	VisitEnumDescriptor(w *Walker, ed *descriptor.EnumDescriptor, opts *gqlgen_proto.EnumRule) error
 	VisitEnumValueDescriptor(w *Walker, enumValueDescriptor *descriptor.EnumValueDescriptor, opts *gqlgen_proto.EnumValueRule) error
+}
+
+type VisitFileInfo struct {
+	IsGenerate bool
 }
 
 type VisitMessageInfo struct {
@@ -53,10 +57,30 @@ func (w *Walker) start(v Visitor) error {
 		return xerrors.Errorf("on descriptor.CreateFileDescriptors: %w", err)
 	}
 
+	nonTargetFdMap := make(map[string]*descriptor.FileDescriptor)
+	for k, v := range fdMap {
+		nonTargetFdMap[k] = v
+	}
+	for _, fname := range req.GetFileToGenerate() {
+		delete(nonTargetFdMap, fname)
+	}
+	for _, f := range req.GetProtoFile() {
+		f, ok := nonTargetFdMap[f.GetName()]
+		if !ok {
+			// FileToGenerateじゃないものだけ先に処理する
+			continue
+		}
+
+		err := w.visitFileDescriptor(v, f, &VisitFileInfo{IsGenerate: false})
+		if err != nil {
+			return err
+		}
+	}
+
 	for _, fname := range req.GetFileToGenerate() {
 		f := fdMap[fname]
 
-		err := w.visitFileDescriptor(v, f)
+		err := w.visitFileDescriptor(v, f, &VisitFileInfo{IsGenerate: true})
 		if err != nil {
 			return err
 		}
@@ -65,7 +89,7 @@ func (w *Walker) start(v Visitor) error {
 	return nil
 }
 
-func (w *Walker) visitFileDescriptor(v Visitor, req *descriptor.FileDescriptor) error {
+func (w *Walker) visitFileDescriptor(v Visitor, req *descriptor.FileDescriptor, info *VisitFileInfo) error {
 	bk := w.CurrentFile
 	w.CurrentFile = req
 	defer func() {
@@ -85,7 +109,7 @@ func (w *Walker) visitFileDescriptor(v Visitor, req *descriptor.FileDescriptor) 
 		}
 	}
 
-	err := v.VisitFileDescriptor(w, req, optVal)
+	err := v.VisitFileDescriptor(w, req, optVal, info)
 	if err != nil {
 		return err
 	}

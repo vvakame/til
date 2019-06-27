@@ -89,9 +89,10 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		Tmp    func(childComplexity int) int
-		TodosA func(childComplexity int, input todopb.ListARequest) int
-		TodosB func(childComplexity int, input todopb.ListBRequest) int
+		SaySecond func(childComplexity int, input echopb.SayRequest) int
+		Tmp       func(childComplexity int) int
+		TodosA    func(childComplexity int, input todopb.ListARequest) int
+		TodosB    func(childComplexity int, input todopb.ListBRequest) int
 	}
 
 	SayPayload struct {
@@ -122,6 +123,7 @@ type MutationResolver interface {
 }
 type QueryResolver interface {
 	Tmp(ctx context.Context) (*string, error)
+	SaySecond(ctx context.Context, input echopb.SayRequest) (*echopb.SayResponse, error)
 	TodosA(ctx context.Context, input todopb.ListARequest) (*todopb.ListAResponse, error)
 	TodosB(ctx context.Context, input todopb.ListBRequest) (*todopb.ListBResponse, error)
 }
@@ -267,6 +269,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.PageInfo.StartCursor(childComplexity), true
+
+	case "Query.saySecond":
+		if e.complexity.Query.SaySecond == nil {
+			break
+		}
+
+		args, err := ec.field_Query_saySecond_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.SaySecond(childComplexity, args["input"].(echopb.SayRequest)), true
 
 	case "Query.tmp":
 		if e.complexity.Query.Tmp == nil {
@@ -470,6 +484,9 @@ type Example2WithMessage {
 extend type Mutation {
 	say(input: SayInput!): SayPayload!
 }
+extend type Query {
+	saySecond(input: SayInput!): SayPayload!
+}
 `},
 	&ast.Source{Name: "../todopb/todo.graphql", Input: `type Todo {
 	id: String!
@@ -609,6 +626,20 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 		}
 	}
 	args["name"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_saySecond_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 echopb.SayRequest
+	if tmp, ok := rawArgs["input"]; ok {
+		arg0, err = ec.unmarshalNSayInput2githubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋechopbᚐSayRequest(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
 	return args, nil
 }
 
@@ -1135,6 +1166,40 @@ func (ec *executionContext) _Query_tmp(ctx context.Context, field graphql.Collec
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_saySecond(ctx context.Context, field graphql.CollectedField) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object:   "Query",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_saySecond_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	rctx.Args = args
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, nil, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().SaySecond(rctx, args["input"].(echopb.SayRequest))
+	})
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*echopb.SayResponse)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalNSayPayload2ᚖgithubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋechopbᚐSayResponse(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_todosA(ctx context.Context, field graphql.CollectedField) graphql.Marshaler {
@@ -2789,6 +2854,20 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_tmp(ctx, field)
+				return res
+			})
+		case "saySecond":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_saySecond(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
 				return res
 			})
 		case "todosA":

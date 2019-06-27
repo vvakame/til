@@ -10,15 +10,15 @@ import "gqlgen-proto/options.proto";
 option go_package = "github.com/vvakame/til/grpc/grpc-gqlgen/todopb";
 
 option (gqlgen.api.resolver) = {
-    type_inference: {
+    message_rule: {
         src: "^(.*)Request$"
         dest: "$1TodoInput"
-        type: INPUT
+        type: TYPE_INPUT
     }
-    type_inference: {
+    message_rule: {
         src: "^(.*)Response$"
         dest: "$1TodoPayload"
-        type: TYPE
+        type: TYPE_TYPE
     }
 };
 

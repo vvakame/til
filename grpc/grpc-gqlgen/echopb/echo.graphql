@@ -22,3 +22,6 @@ type Example2WithMessage {
 extend type Mutation {
 	say(input: SayInput!): SayPayload!
 }
+extend type Query {
+	saySecond(input: SayInput!): SayPayload!
+}

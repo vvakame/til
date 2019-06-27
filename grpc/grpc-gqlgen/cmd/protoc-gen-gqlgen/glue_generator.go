@@ -17,7 +17,7 @@ import (
 
 func glueGenerate(ctx context.Context, b *Builder) ([]*plugin.CodeGeneratorResponse_File, error) {
 
-	fileInfos := b.FileInfos
+	fileInfos := b.GenerateFileInfos
 
 	tmplBytes, err := ioutil.ReadFile("./tmpls/glue.gotmpl")
 	if os.IsNotExist(err) {

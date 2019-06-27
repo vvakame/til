@@ -25,8 +25,9 @@ const (
 )
 
 type Builder struct {
-	FileInfos  []*FileInfo
-	SchemaDocs []*ast.SchemaDocument
+	AllFileInfos      []*FileInfo
+	GenerateFileInfos []*FileInfo
+	SchemaDocs        []*ast.SchemaDocument
 
 	CurrentFileInfo      *FileInfo
 	CurrentServiceInfo   *ServiceInfo
@@ -43,7 +44,8 @@ type FileInfo struct {
 	PackageName    string
 	ProtoGoPackage string
 
-	InferrenceRules []*InferrenceRule
+	MethodRules  []*MethodRule
+	MessageRules []*MessageRule
 
 	Services     []*ServiceInfo
 	MessageInfos []*MessageInfo
@@ -68,7 +70,13 @@ func (fi *FileInfo) GoPackageName() string {
 	return ss[len(ss)-1]
 }
 
-type InferrenceRule struct {
+type MethodRule struct {
+	Src        *regexp.Regexp
+	Dest       string
+	MethodType gqlgen_proto.MethodType
+}
+
+type MessageRule struct {
 	Src         *regexp.Regexp
 	Dest        string
 	MessageType gqlgen_proto.MessageType
@@ -86,7 +94,15 @@ type MethodInfo struct {
 	ResponseMessage *MessageInfo
 
 	GraphQLOperationType GraphQLOperationType
-	GraphQLName          string
+	GraphQLAlias         string
+}
+
+func (m *MethodInfo) GraphQLName() string {
+	if m.GraphQLAlias != "" {
+		return m.GraphQLAlias
+	}
+
+	return templates.ToGoPrivate(m.Name)
 }
 
 type MessageInfo struct {
@@ -102,10 +118,6 @@ type MessageInfo struct {
 }
 
 func (m *MessageInfo) GraphQLName() string {
-	if m.GraphQLAlias != "" {
-		return m.GraphQLAlias
-	}
-
 	if m.GraphQLAlias != "" {
 		return m.GraphQLAlias
 	}
@@ -279,7 +291,7 @@ func (b *Builder) Process(ctx context.Context, req *plugin.CodeGeneratorRequest)
 }
 
 func (b *Builder) FindMessageInfo(name string) *MessageInfo {
-	for _, fileInfo := range b.FileInfos {
+	for _, fileInfo := range b.AllFileInfos {
 		for _, messageInfo := range fileInfo.MessageInfos {
 			if messageInfo.Proto.GetFullyQualifiedName() == name {
 				return messageInfo
@@ -291,7 +303,7 @@ func (b *Builder) FindMessageInfo(name string) *MessageInfo {
 }
 
 func (b *Builder) FindEnumInfo(name string) *EnumInfo {
-	for _, fileInfo := range b.FileInfos {
+	for _, fileInfo := range b.AllFileInfos {
 		for _, enumInfo := range fileInfo.EnumInfos {
 			if enumInfo.Proto.GetFullyQualifiedName() == name {
 				return enumInfo
@@ -302,7 +314,7 @@ func (b *Builder) FindEnumInfo(name string) *EnumInfo {
 	return nil
 }
 
-func (b *Builder) VisitFileDescriptor(w *Walker, req *descriptor.FileDescriptor, opts *gqlgen_proto.FileRule) error {
+func (b *Builder) VisitFileDescriptor(w *Walker, req *descriptor.FileDescriptor, opts *gqlgen_proto.FileRule, info *VisitFileInfo) error {
 
 	fileInfo := &FileInfo{
 		Proto:          req,
@@ -311,19 +323,40 @@ func (b *Builder) VisitFileDescriptor(w *Walker, req *descriptor.FileDescriptor,
 	}
 	b.CurrentFileInfo = fileInfo
 
-	for _, v := range opts.GetTypeInference() {
+	for _, v := range opts.GetMethodRule() {
+		if v.GetSrc() == "" {
+			return xerrors.New("src value is required in method_rule")
+		}
 		src, err := regexp.Compile(v.GetSrc())
 		if err != nil {
 			return err
 		}
-		fileInfo.InferrenceRules = append(fileInfo.InferrenceRules, &InferrenceRule{
+		fileInfo.MethodRules = append(fileInfo.MethodRules, &MethodRule{
+			Src:        src,
+			Dest:       v.GetDest(),
+			MethodType: v.GetType(),
+		})
+	}
+
+	for _, v := range opts.GetMessageRule() {
+		if v.GetSrc() == "" {
+			return xerrors.New("src value is required in message_rule")
+		}
+		src, err := regexp.Compile(v.GetSrc())
+		if err != nil {
+			return err
+		}
+		fileInfo.MessageRules = append(fileInfo.MessageRules, &MessageRule{
 			Src:         src,
 			Dest:        v.GetDest(),
 			MessageType: v.GetType(),
 		})
 	}
 
-	b.FileInfos = append(b.FileInfos, fileInfo)
+	b.AllFileInfos = append(b.AllFileInfos, fileInfo)
+	if info.IsGenerate {
+		b.GenerateFileInfos = append(b.GenerateFileInfos, fileInfo)
+	}
 
 	return nil
 }
@@ -344,16 +377,40 @@ func (b *Builder) VisitMethodDescriptor(w *Walker, req *descriptor.MethodDescrip
 		Name: req.GetName(),
 	}
 	b.CurrentMethodInfo = method
+
+	for _, rule := range b.CurrentFileInfo.MethodRules {
+		ss := rule.Src.FindStringSubmatch(req.GetName())
+		if len(ss) == 0 {
+			continue
+		}
+
+		if name := rule.Dest; name != "" {
+			for idx, s := range ss[1:] {
+				name = strings.Replace(name, fmt.Sprintf("$%d", idx+1), s, 1)
+			}
+			method.GraphQLAlias = name
+		}
+
+		switch rule.MethodType {
+		case gqlgen_proto.MethodType_OPERATION_QUERY:
+			method.GraphQLOperationType = GraphQLQuery
+		case gqlgen_proto.MethodType_OPERATION_MUTATION:
+			method.GraphQLOperationType = GraphQLMutation
+		case gqlgen_proto.MethodType_OPERATION_SUBSCRIPTION:
+			method.GraphQLOperationType = GraphQLSubscription
+		}
+	}
+
 	if opts != nil {
 		if opts.GetQuery() != "" {
 			method.GraphQLOperationType = GraphQLQuery
-			method.GraphQLName = opts.GetQuery()
+			method.GraphQLAlias = opts.GetQuery()
 		} else if opts.GetMutation() != "" {
 			method.GraphQLOperationType = GraphQLMutation
-			method.GraphQLName = opts.GetMutation()
+			method.GraphQLAlias = opts.GetMutation()
 		} else if opts.GetSubscription() != "" {
 			method.GraphQLOperationType = GraphQLSubscription
-			method.GraphQLName = opts.GetSubscription()
+			method.GraphQLAlias = opts.GetSubscription()
 		}
 	}
 
@@ -370,23 +427,24 @@ func (b *Builder) VisitMessageDescriptor(w *Walker, req *descriptor.MessageDescr
 	}
 	b.CurrentMessageInfo = messageInfo
 
-	for _, rule := range b.CurrentFileInfo.InferrenceRules {
+	for _, rule := range b.CurrentFileInfo.MessageRules {
 		ss := rule.Src.FindStringSubmatch(req.GetName())
 		if len(ss) == 0 {
 			continue
 		}
 
-		name := rule.Dest
-		for idx, s := range ss[1:] {
-			name = strings.Replace(name, fmt.Sprintf("$%d", idx+1), s, 1)
+		if name := rule.Dest; name != "" {
+			for idx, s := range ss[1:] {
+				name = strings.Replace(name, fmt.Sprintf("$%d", idx+1), s, 1)
+			}
+			messageInfo.GraphQLAlias = name
 		}
-		messageInfo.GraphQLAlias = name
 
 		switch rule.MessageType {
-		case gqlgen_proto.MessageType_UNKNOWN:
+		case gqlgen_proto.MessageType_TYPE_UNKNOWN:
 		// ignore
-		case gqlgen_proto.MessageType_TYPE,
-			gqlgen_proto.MessageType_INPUT:
+		case gqlgen_proto.MessageType_TYPE_TYPE,
+			gqlgen_proto.MessageType_TYPE_INPUT:
 			messageInfo.GraphQLMessageType = rule.MessageType
 		}
 	}
@@ -395,7 +453,7 @@ func (b *Builder) VisitMessageDescriptor(w *Walker, req *descriptor.MessageDescr
 		if v := opts.GetAlias(); v != "" {
 			messageInfo.GraphQLAlias = v
 		}
-		if v := opts.GetType(); v != gqlgen_proto.MessageType_UNKNOWN {
+		if v := opts.GetType(); v != gqlgen_proto.MessageType_TYPE_UNKNOWN {
 			messageInfo.GraphQLMessageType = v
 		}
 	}

@@ -31,10 +31,17 @@ extend google.protobuf.EnumValueOptions {
 }
 
 message FileRule {
-    repeated InferrenceRule type_inference = 1;
+    repeated MethodInferenceRule method_rule = 1;
+    repeated MessageInferenceRule message_rule = 2;
 }
 
-message InferrenceRule {
+message MethodInferenceRule {
+    string src = 1;
+    string dest = 2;
+    MethodType type = 3;
+}
+
+message MessageInferenceRule {
     string src = 1;
     string dest = 2;
     MessageType type = 3;
@@ -49,15 +56,22 @@ message SchemaRule {
     // TODO paging, offset
 }
 
+enum MethodType {
+    OPERATION_UNKNOWN = 0;
+    OPERATION_QUERY = 1;
+    OPERATION_MUTATION = 2;
+    OPERATION_SUBSCRIPTION = 3;
+}
+
 message MessageRule {
     string alias = 1;
     MessageType type = 2;
 }
 
 enum MessageType {
-    UNKNOWN = 0;
-    TYPE = 1;
-    INPUT = 2;
+    TYPE_UNKNOWN = 0;
+    TYPE_TYPE = 1;
+    TYPE_INPUT = 2;
 }
 
 message FieldRule {
