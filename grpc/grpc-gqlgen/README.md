@@ -4,9 +4,9 @@
 
 1. 手でgRPC向けの.proto書く
 1. 手で.protoにgqlgen向けのoptionsを付与する
-1. .protoを元に *.graphql を自動生成する(今は手)
+1. .protoを元に *.graphql を自動生成する
+1. .protoを元に *.gql.go を自動生成する
 1. 通常のgqlgenに色々生成させる
-1. .protoを元に *glue.go を自動生成する(今は手)
 1. ResolverRootを組み立てる
     * めんどいのでwireを使った
 
@@ -20,7 +20,6 @@
 * directiveの対応
 * 共通定義の扱い
 * gqlgen.yml の更新など？
-* message in message とか .protoの仕様がわりと沼
 * Relay Connection Spec周りの自動生成がかなり厳しそう
 * Relay Global Object Identification Spec周りのかみ合わせ大変そう
     * .proto の package + ServiceName + ID をデフォにする…？
@@ -33,11 +32,8 @@
 ### 所感
 
 * gqlgenのPlugin使おうかと思ったけど使う必要があまりなさそう
-* gqlgenのAST組んだらschemaにdumpしてくれる機能ほしい…
-    * introspection schema経由するとdirectiveの情報が落ちてしまう…
 
 ## 作業メモ
-
 
 ```
 $ ./setup.sh
