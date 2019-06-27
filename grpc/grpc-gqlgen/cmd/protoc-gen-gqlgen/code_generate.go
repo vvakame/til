@@ -60,6 +60,15 @@ func (fi *FileInfo) Prepare() error {
 	return nil
 }
 
+func (fi *FileInfo) GoImportPath() string {
+	ss := strings.SplitN(fi.ProtoGoPackage, ";", 2)
+	if len(ss) == 2 {
+		return ss[0]
+	}
+
+	return fi.ProtoGoPackage
+}
+
 func (fi *FileInfo) GoPackageName() string {
 	ss := strings.SplitN(fi.ProtoGoPackage, ";", 2)
 	if len(ss) == 2 {
