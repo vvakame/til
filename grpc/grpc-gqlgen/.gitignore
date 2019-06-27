@@ -4,3 +4,7 @@ bin/
 vendor/
 
 protoc-gen-gqlgen.input.dump
+
+# 内緒ファイルで実験用
+secret/
+secret_generate.sh

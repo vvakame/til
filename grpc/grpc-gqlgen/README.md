@@ -28,6 +28,9 @@
     * oneof
     * map
     * reserved の活用(directive化とか？)
+* Ruleのdestの構文は似非regexp replace的なやつじゃなくてtext/templateにしたほうが圧倒的によさそう
+* 出てきたSchemaをlintに突っ込む
+    * GetHoge とかを変換ルールで Hoge にすると hoge にならず Hoge のままになる… とかを倒したい
 
 ### 所感
 

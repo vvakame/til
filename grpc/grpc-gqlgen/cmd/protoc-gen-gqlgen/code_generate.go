@@ -388,7 +388,7 @@ func (b *Builder) VisitMethodDescriptor(w *Walker, req *descriptor.MethodDescrip
 			for idx, s := range ss[1:] {
 				name = strings.Replace(name, fmt.Sprintf("$%d", idx+1), s, 1)
 			}
-			method.GraphQLAlias = name
+			method.GraphQLAlias = templates.ToGoPrivate(name)
 		}
 
 		switch rule.MethodType {
@@ -399,6 +399,8 @@ func (b *Builder) VisitMethodDescriptor(w *Walker, req *descriptor.MethodDescrip
 		case gqlgen_proto.MethodType_OPERATION_SUBSCRIPTION:
 			method.GraphQLOperationType = GraphQLSubscription
 		}
+
+		break
 	}
 
 	if opts != nil {
@@ -437,7 +439,7 @@ func (b *Builder) VisitMessageDescriptor(w *Walker, req *descriptor.MessageDescr
 			for idx, s := range ss[1:] {
 				name = strings.Replace(name, fmt.Sprintf("$%d", idx+1), s, 1)
 			}
-			messageInfo.GraphQLAlias = name
+			messageInfo.GraphQLAlias = templates.ToGo(name)
 		}
 
 		switch rule.MessageType {
@@ -447,6 +449,8 @@ func (b *Builder) VisitMessageDescriptor(w *Walker, req *descriptor.MessageDescr
 			gqlgen_proto.MessageType_TYPE_INPUT:
 			messageInfo.GraphQLMessageType = rule.MessageType
 		}
+
+		break
 	}
 
 	if opts != nil {
