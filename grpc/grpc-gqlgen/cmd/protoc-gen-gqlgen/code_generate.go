@@ -83,6 +83,7 @@ type MethodRule struct {
 	Src        *regexp.Regexp
 	Dest       string
 	MethodType gqlgen_proto.MethodType
+	Skip       bool
 }
 
 type MessageRule struct {
@@ -104,6 +105,7 @@ type MethodInfo struct {
 
 	GraphQLOperationType GraphQLOperationType
 	GraphQLAlias         string
+	Skip                 bool
 }
 
 func (m *MethodInfo) GraphQLName() string {
@@ -122,6 +124,7 @@ type MessageInfo struct {
 
 	GraphQLAlias       string
 	GraphQLMessageType gqlgen_proto.MessageType
+	Skip   bool
 
 	Fields []*FieldInfo
 }
@@ -190,6 +193,7 @@ type FieldInfo struct {
 	GraphQLAlias    string
 	GraphQLOptional bool
 	GraphQLID       bool
+	Skip            bool
 }
 
 func (f *FieldInfo) GraphQLName() string {
@@ -348,6 +352,7 @@ func (b *Builder) VisitFileDescriptor(w *Walker, req *descriptor.FileDescriptor,
 			Src:        src,
 			Dest:       v.GetDest(),
 			MethodType: v.GetType(),
+			Skip: v.GetSkip(),
 		})
 	}
 
@@ -392,6 +397,10 @@ func (b *Builder) VisitMethodDescriptor(w *Walker, req *descriptor.MethodDescrip
 	b.CurrentMethodInfo = method
 
 	for _, rule := range b.CurrentFileInfo.MethodRules {
+		if rule.Skip {
+			continue
+		}
+
 		ss := rule.Src.FindStringSubmatch(req.GetName())
 		if len(ss) == 0 {
 			continue
@@ -427,6 +436,7 @@ func (b *Builder) VisitMethodDescriptor(w *Walker, req *descriptor.MethodDescrip
 			method.GraphQLOperationType = GraphQLSubscription
 			method.GraphQLAlias = opts.GetSubscription()
 		}
+		method.Skip = opts.GetSkip()
 	}
 
 	b.CurrentServiceInfo.Methods = append(b.CurrentServiceInfo.Methods, method)
@@ -473,6 +483,7 @@ func (b *Builder) VisitMessageDescriptor(w *Walker, req *descriptor.MessageDescr
 		if v := opts.GetType(); v != gqlgen_proto.MessageType_TYPE_UNKNOWN {
 			messageInfo.GraphQLMessageType = v
 		}
+		messageInfo.Skip = opts.GetSkip()
 	}
 
 	if info.IsInput {
@@ -500,6 +511,7 @@ func (b *Builder) VisitFieldDescriptor(w *Walker, req *descriptor.FieldDescripto
 		fieldInfo.GraphQLID = opts.GetId()
 		fieldInfo.GraphQLAlias = opts.GetAlias()
 		fieldInfo.GraphQLOptional = opts.GetOptional()
+		fieldInfo.Skip = opts.GetSkip()
 	}
 
 	b.CurrentMessageInfo.Fields = append(b.CurrentMessageInfo.Fields, fieldInfo)

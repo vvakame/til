@@ -39,12 +39,14 @@ message MethodInferenceRule {
     string src = 1;
     string dest = 2;
     MethodType type = 3;
+    bool skip = 4;
 }
 
 message MessageInferenceRule {
     string src = 1;
     string dest = 2;
     MessageType type = 3;
+    bool skip = 4;
 }
 
 message SchemaRule {
@@ -53,6 +55,7 @@ message SchemaRule {
         string mutation = 2;
         string subscription = 3;
     }
+    bool skip = 4;
     // TODO paging, offset
 }
 
@@ -66,6 +69,7 @@ enum MethodType {
 message MessageRule {
     string alias = 1;
     MessageType type = 2;
+    bool skip = 4;
 }
 
 enum MessageType {
@@ -78,6 +82,7 @@ message FieldRule {
     string alias = 1;
     bool optional = 2;
     bool id = 3;
+    bool skip = 4;
 }
 
 message EnumRule {

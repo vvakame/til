@@ -31,6 +31,10 @@
 * Ruleのdestの構文は似非regexp replace的なやつじゃなくてtext/templateにしたほうが圧倒的によさそう
 * 出てきたSchemaをlintに突っ込む
     * GetHoge とかを変換ルールで Hoge にすると hoge にならず Hoge のままになる… とかを倒したい
+* 名前周り
+    * やっぱりpackage名とService名を組み入れないとフィールド名被りが激しすぎる
+    * デフォルトでは何も出力されない(ignoreされる)側に倒して開発者のお気持ちで公開したほうがいいのでは…
+* Service毎skipするためにServiceOptionsの拡張も必要だわ…
 
 ### 所感
 

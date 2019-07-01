@@ -44,6 +44,9 @@ func (g *schemaGenerator) Generate(ctx context.Context, fileInfos []*FileInfo) (
 
 		for _, service := range fileInfo.Services {
 			for _, method := range service.Methods {
+				if method.Skip {
+					continue
+				}
 				def := &ast.Definition{
 					Kind: ast.Object,
 				}
@@ -90,7 +93,7 @@ func (g *schemaGenerator) Generate(ctx context.Context, fileInfos []*FileInfo) (
 		}
 
 		for _, message := range fileInfo.MessageInfos {
-			if !message.HasField() {
+			if message.Skip || !message.HasField() {
 				continue
 			}
 
@@ -107,6 +110,10 @@ func (g *schemaGenerator) Generate(ctx context.Context, fileInfos []*FileInfo) (
 			}
 
 			for _, fieldInfo := range message.Fields {
+				if fieldInfo.Skip {
+					continue
+				}
+
 				field := &ast.FieldDefinition{
 					Name:      fieldInfo.GraphQLName(),
 					Arguments: nil,
