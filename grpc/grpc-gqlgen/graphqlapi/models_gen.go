@@ -2,6 +2,10 @@
 
 package graphqlapi
 
+type Noop struct {
+	ClientMutationID *string `json:"clientMutationId"`
+}
+
 type PageInfo struct {
 	StartCursor     *string `json:"startCursor"`
 	EndCursor       *string `json:"endCursor"`

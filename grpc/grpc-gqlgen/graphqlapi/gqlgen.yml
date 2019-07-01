@@ -18,6 +18,12 @@ resolver:
 models:
   Timestamp:
     model: github.com/vvakame/til/grpc/grpc-gqlgen/graphqlapi.GraphQLTimestampScalar
+  Date:
+    model: github.com/vvakame/til/grpc/grpc-gqlgen/graphqlapi.GraphQLDateScalar
+  UInt64:
+    model: github.com/vvakame/til/grpc/grpc-gqlgen/graphqlapi.GraphQLUInt64Scalar
+  Int64:
+    model: github.com/vvakame/til/grpc/grpc-gqlgen/graphqlapi.GraphQLInt64Scalar
 
   Todo:
     model: github.com/vvakame/til/grpc/grpc-gqlgen/todopb.Todo

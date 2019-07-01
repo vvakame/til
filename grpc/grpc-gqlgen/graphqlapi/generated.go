@@ -81,6 +81,10 @@ type ComplexityRoot struct {
 		UpdateTodo func(childComplexity int, input todopb.UpdateRequest) int
 	}
 
+	Noop struct {
+		ClientMutationID func(childComplexity int) int
+	}
+
 	PageInfo struct {
 		EndCursor       func(childComplexity int) int
 		HasNextPage     func(childComplexity int) int
@@ -241,6 +245,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.UpdateTodo(childComplexity, args["input"].(todopb.UpdateRequest)), true
+
+	case "Noop.clientMutationId":
+		if e.complexity.Noop.ClientMutationID == nil {
+			break
+		}
+
+		return e.complexity.Noop.ClientMutationID(childComplexity), true
 
 	case "PageInfo.endCursor":
 		if e.complexity.PageInfo.EndCursor == nil {
@@ -460,7 +471,10 @@ func (ec *executionContext) introspectType(name string) (*introspection.Type, er
 }
 
 var parsedSchema = gqlparser.MustLoadSchema(
-	&ast.Source{Name: "../echopb/echo.graphql", Input: `input SayInput {
+	&ast.Source{Name: "../echopb/echo.graphql", Input: `
+
+
+input SayInput {
 	clientMutationId: String
 	messageBody: String!
 }
@@ -488,7 +502,10 @@ extend type Query {
 	saySecond(input: SayInput!): SayPayload!
 }
 `},
-	&ast.Source{Name: "../todopb/todo.graphql", Input: `type Todo {
+	&ast.Source{Name: "../todopb/todo.graphql", Input: `
+
+
+type Todo {
 	id: String!
 	text: String!
 	done: Boolean!
@@ -565,7 +582,14 @@ type PageInfo {
   hasPreviousPage: Boolean!
 }
 
+type Noop {
+  clientMutationId: String
+}
+
 scalar Timestamp
+scalar Date
+scalar UInt64
+scalar Int64
 `},
 )
 
@@ -1040,6 +1064,30 @@ func (ec *executionContext) _Mutation_updateTodo(ctx context.Context, field grap
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
 	return ec.marshalNUpdateTodoPayload2ᚖgithubᚗcomᚋvvakameᚋtilᚋgrpcᚋgrpcᚑgqlgenᚋtodopbᚐUpdateResponse(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Noop_clientMutationId(ctx context.Context, field graphql.CollectedField, obj *Noop) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object:   "Noop",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ClientMutationID, nil
+	})
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _PageInfo_startCursor(ctx context.Context, field graphql.CollectedField, obj *PageInfo) graphql.Marshaler {
@@ -2783,6 +2831,30 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var noopImplementors = []string{"Noop"}
+
+func (ec *executionContext) _Noop(ctx context.Context, sel ast.SelectionSet, obj *Noop) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.RequestContext, sel, noopImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Noop")
+		case "clientMutationId":
+			out.Values[i] = ec._Noop_clientMutationId(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}

@@ -4,6 +4,8 @@ import (
 	"context"
 )
 
+// ------ echo.proto ------
+
 var _ EchoGraphQLInterface = (*echoHandler)(nil)
 
 func NewEchoHandler(cli EchoClient) EchoGraphQLInterface {

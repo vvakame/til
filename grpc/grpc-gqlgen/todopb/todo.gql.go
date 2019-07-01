@@ -9,6 +9,8 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 )
 
+// ------ todo.proto ------
+
 var _ TodoServiceGraphQLInterface = (*todoServiceHandler)(nil)
 
 func NewTodoServiceHandler(cli TodoServiceClient) TodoServiceGraphQLInterface {

@@ -40,3 +40,7 @@ func (srv *echoServiceImpl) Say(ctx context.Context, req *echopb.SayRequest) (*e
 		Received:    ptypes.TimestampNow(),
 	}, nil
 }
+
+func (srv *echoServiceImpl) SaySecond(ctx context.Context, req *echopb.SayRequest) (*echopb.SayResponse, error) {
+	return srv.Say(ctx, req)
+}

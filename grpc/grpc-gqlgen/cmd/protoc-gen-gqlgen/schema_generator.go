@@ -141,10 +141,23 @@ func (g *schemaGenerator) Generate(ctx context.Context, fileInfos []*FileInfo) (
 			return nil, err
 		}
 
-		files = append(files, &plugin.CodeGeneratorResponse_File{
-			Name:    proto.String(fmt.Sprintf("%s.graphql", fileInfo.PackageName)),
-			Content: proto.String(buf.String()),
-		})
+		var file *plugin.CodeGeneratorResponse_File
+
+		fileName := fmt.Sprintf("%s.graphql", fileInfo.PackageName)
+		for _, f := range files {
+			if f.GetName() == fileName {
+				file = f
+				break
+			}
+		}
+		if file == nil {
+			file = &plugin.CodeGeneratorResponse_File{
+				Name: proto.String(fileName),
+			}
+			files = append(files, file)
+		}
+
+		file.Content = proto.String(file.GetContent() + "\n\n\n" + buf.String())
 	}
 
 	if len(mErr) != 0 {
