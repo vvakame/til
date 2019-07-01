@@ -13,4 +13,8 @@ type PageInfo {
   hasPreviousPage: Boolean!
 }
 
+type Noop {
+  clientMutationId: String
+}
+
 scalar Timestamp

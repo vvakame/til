@@ -176,6 +176,10 @@ func (m *MessageInfo) GoName() string {
 	return buf.String()
 }
 
+func (m *MessageInfo) HasField() bool {
+	return len(m.Fields) != 0
+}
+
 type FieldInfo struct {
 	Name        string
 	Type        basedescriptor.FieldDescriptorProto_Type

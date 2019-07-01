@@ -64,14 +64,23 @@ func (g *schemaGenerator) Generate(ctx context.Context, fileInfos []*FileInfo) (
 
 				field := &ast.FieldDefinition{
 					Name: method.GraphQLName(),
-					Arguments: ast.ArgumentDefinitionList{ // Request
+				}
+				if method.RequestMessage.HasField() {
+					field.Arguments = ast.ArgumentDefinitionList{
 						{
 							Name: "input",
 							Type: g.messageInfoToType(method.RequestMessage),
 						},
-					},
-					Type: g.messageInfoToType(method.ResponseMessage),
+					}
 				}
+				if method.ResponseMessage.HasField() {
+					field.Type = g.messageInfoToType(method.ResponseMessage)
+				} else {
+					field.Type = &ast.Type{
+						NamedType: "Noop",
+					}
+				}
+
 				def.Fields = ast.FieldList{
 					field,
 				}
@@ -81,6 +90,9 @@ func (g *schemaGenerator) Generate(ctx context.Context, fileInfos []*FileInfo) (
 		}
 
 		for _, message := range fileInfo.MessageInfos {
+			if !message.HasField() {
+				continue
+			}
 
 			def := &ast.Definition{
 				Name: message.GraphQLName(),
