@@ -2,92 +2,92 @@ syntax = "proto3";
 
 package gqlgen.api;
 
-import "google/protobuf/descriptor.proto";
-
 option go_package = "github.com/vvakame/til/grpc/grpc-gqlgen/gqlgen-proto;gqlgen_proto";
 
+import "google/protobuf/descriptor.proto";
+
 extend google.protobuf.FileOptions {
-    FileRule resolver = 50000;
+  FileRule resolver = 50000;
 }
 
 extend google.protobuf.MethodOptions {
-    SchemaRule schema = 50001;
+  SchemaRule schema = 50001;
 }
 
 extend google.protobuf.MessageOptions {
-    MessageRule type = 50002;
+  MessageRule type = 50002;
 }
 
 extend google.protobuf.FieldOptions {
-    FieldRule field = 50003;
+  FieldRule field = 50003;
 }
 
 extend google.protobuf.EnumOptions {
-    EnumRule enum = 50004;
+  EnumRule enum = 50004;
 }
 
 extend google.protobuf.EnumValueOptions {
-    EnumValueRule enum_value = 50005;
+  EnumValueRule enum_value = 50005;
 }
 
 message FileRule {
-    repeated MethodInferenceRule method_rule = 1;
-    repeated MessageInferenceRule message_rule = 2;
+  repeated MethodInferenceRule method_rule = 1;
+  repeated MessageInferenceRule message_rule = 2;
 }
 
 message MethodInferenceRule {
-    string src = 1;
-    string dest = 2;
-    MethodType type = 3;
-    bool skip = 4;
+  string src = 1;
+  string dest = 2;
+  MethodType type = 3;
+  bool skip = 4;
 }
 
 message MessageInferenceRule {
-    string src = 1;
-    string dest = 2;
-    MessageType type = 3;
-    bool skip = 4;
+  string src = 1;
+  string dest = 2;
+  MessageType type = 3;
+  bool skip = 4;
 }
 
 message SchemaRule {
-    oneof pattern {
-        string query = 1;
-        string mutation = 2;
-        string subscription = 3;
-    }
-    bool skip = 4;
-    // TODO paging, offset
+  oneof pattern {
+    string query = 1;
+    string mutation = 2;
+    string subscription = 3;
+  }
+  bool skip = 4;
+  // TODO paging, offset
+
 }
 
 enum MethodType {
-    OPERATION_UNKNOWN = 0;
-    OPERATION_QUERY = 1;
-    OPERATION_MUTATION = 2;
-    OPERATION_SUBSCRIPTION = 3;
+  OPERATION_UNKNOWN = 0;
+  OPERATION_QUERY = 1;
+  OPERATION_MUTATION = 2;
+  OPERATION_SUBSCRIPTION = 3;
 }
 
 message MessageRule {
-    string alias = 1;
-    MessageType type = 2;
-    bool skip = 4;
+  string alias = 1;
+  MessageType type = 2;
+  bool skip = 4;
 }
 
 enum MessageType {
-    TYPE_UNKNOWN = 0;
-    TYPE_TYPE = 1;
-    TYPE_INPUT = 2;
+  TYPE_UNKNOWN = 0;
+  TYPE_TYPE = 1;
+  TYPE_INPUT = 2;
 }
 
 message FieldRule {
-    string alias = 1;
-    bool optional = 2;
-    bool id = 3;
-    bool skip = 4;
+  string alias = 1;
+  bool optional = 2;
+  bool id = 3;
+  bool skip = 4;
 }
 
 message EnumRule {
-    string alias = 1;
+  string alias = 1;
 }
 
-message EnumValueRule {
-}
+message EnumValueRule {}
