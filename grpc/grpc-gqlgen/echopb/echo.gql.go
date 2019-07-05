@@ -4,7 +4,7 @@ import (
 	"context"
 )
 
-// ------ echo.proto ------
+// ------ echopb/echo.proto ------
 
 var _ EchoGraphQLInterface = (*echoHandler)(nil)
 

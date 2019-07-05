@@ -3,6 +3,8 @@
 bin/
 vendor/
 
+prototool.yaml
+
 protoc-gen-gqlgen.input.dump
 
 # 内緒ファイルで実験用

@@ -9,7 +9,7 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 )
 
-// ------ todo.proto ------
+// ------ todopb/todo.proto ------
 
 var _ TodoServiceGraphQLInterface = (*todoServiceHandler)(nil)
 

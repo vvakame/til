@@ -3,34 +3,35 @@
 cd "$(dirname "$0")"
 
 GATEWAY_PACKAGE_PATH=$(go list -f '{{ .Dir }}' -m github.com/grpc-ecosystem/grpc-gateway)
+export GATEWAY_PACKAGE_PATH
 
 set -x
 
 # Apply tools
 PATH=$(pwd)/bin:$(pwd):$PATH
 export PATH
-command -v protoc-gen-go protoc-gen-grpc-gateway protoc-gen-gqlgen
+command -v protoc-gen-go protoc-gen-grpc-gateway protoc-gen-gqlgen prototool
 
-rm -rf ./echopb ./todopb
-mkdir -p ./echopb ./todopb
-
+# statik
 go generate ./cmd/protoc-gen-gqlgen
 
-protoc -I=. -I="$GATEWAY_PACKAGE_PATH/third_party/googleapis" \
-    --go_out=paths=source_relative:./ \
-    gqlgen-proto/options.proto
+rm -rf ./echopb ./todopb
+# mkdir -p ./echopb ./todopb
 
-protoc -I=. -I="$GATEWAY_PACKAGE_PATH/third_party/googleapis" \
-    --go_out=plugins=grpc,paths=source_relative:./echopb \
-    --grpc-gateway_out=logtostderr=true,paths=source_relative:./echopb \
+envsubst <prototool.base.yaml >prototool.yaml
+
+prototool format -w
+prototool lint
+prototool generate
+
+protoc -I=./proto -I="$GATEWAY_PACKAGE_PATH/third_party/googleapis" \
     --gqlgen_out=:./echopb \
-    echo.proto
-
-protoc -I=. -I="$GATEWAY_PACKAGE_PATH/third_party/googleapis" \
-    --go_out=plugins=grpc,paths=source_relative:./todopb \
-    --grpc-gateway_out=logtostderr=true,paths=source_relative:./todopb \
+    ./proto/echopb/echo.proto
+protoc -I=./proto -I="$GATEWAY_PACKAGE_PATH/third_party/googleapis" \
     --gqlgen_out=:./todopb \
-    todo.proto
+    ./proto/todopb/todo.proto
 
-go generate ./...
 goimports -w ./**/*.gql.go
+
+# wire & gqlgen
+go generate ./...

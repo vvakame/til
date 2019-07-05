@@ -1,0 +1,38 @@
+# https://github.com/uber/prototool/blob/dev/etc/config/example/prototool.yaml
+
+protoc:
+  version: 3.8.0
+  includes:
+    - ${GATEWAY_PACKAGE_PATH}/third_party/googleapis
+    - ./proto
+  allow_unused_imports: true
+
+lint:
+  group: google
+
+generate:
+  go_options:
+    import_path: github.com/vvakame/til/grpc/grpc-gqlgen
+    extra_modifiers:
+      google/api/annotations.proto: google.golang.org/genproto/googleapis/api/annotations
+      google/api/http.proto: google.golang.org/genproto/googleapis/api/annotations
+  plugins:
+    - name: go
+      type: go
+      flags: plugins=grpc,paths=source_relative
+      output: ./
+
+    - name: grpc-gateway
+      type: go
+      flags: logtostderr=true,paths=source_relative
+      output: ./
+
+    # - name: gqlgen
+    #   type: go
+    #   output: ./
+
+    # - name: descriptor_set
+    #   output: ./foobar4
+    #   file_suffix: bin
+    #   include_imports: true
+    #   include_source_info: true

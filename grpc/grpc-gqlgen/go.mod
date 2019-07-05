@@ -23,6 +23,7 @@ require (
 	github.com/k0kubun/colorstring v0.0.0-20150214042306-9440f1994b88 // indirect
 	github.com/k0kubun/pp v3.0.1+incompatible
 	github.com/rakyll/statik v0.1.6
+	github.com/uber/prototool v1.8.0
 	github.com/vektah/gqlparser v1.1.2
 	github.com/vvakame/sdlog v0.0.0-20190523062053-be70263e9c6c
 	go.opencensus.io v0.22.0
