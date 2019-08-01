@@ -22,7 +22,7 @@ func TestReflectFoo(t *testing.T) {
 	}
 	obj := &ReflectFoo{
 		ID:        100,
-		Name:      "SingleFoo",
+		Name:      "Foo",
 		CreatedAt: time.Date(2019, 7, 30, 0, 0, 0, 0, loc),
 	}
 
@@ -56,7 +56,7 @@ func TestReflectFoo(t *testing.T) {
 
 	buf.WriteString("}")
 
-	if v := buf.String(); v != `{"ID":100,"nickname":"SingleFoo","CreatedAt":"2019-07-30T00:00:00+09:00"}` {
+	if v := buf.String(); v != `{"ID":100,"nickname":"Foo","CreatedAt":"2019-07-30T00:00:00+09:00"}` {
 		t.Error("unexpected: %v", v)
 	}
 }
