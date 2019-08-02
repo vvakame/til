@@ -33,7 +33,8 @@ func (obj *Bar) MarshalJSON() ([]byte, error) {
 
 	mv := metago.ValueOf(obj)
 	var i int
-	for _, mf := range mv.Fields() {
+	for idx, mf := range mv.Fields() {
+		_ = idx
 		if i != 0 {
 			buf.WriteString(",")
 		}

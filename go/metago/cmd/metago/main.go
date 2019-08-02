@@ -1,10 +1,16 @@
 package main
 
-import "github.com/vvakame/til/go/metago"
+import (
+	"fmt"
+	"os"
+
+	"github.com/vvakame/til/go/metago"
+)
 
 func main() {
 	err := metago.Process("github.com/vvakame/til/go/metago/internal/testbed")
 	if err != nil {
-		panic(err)
+		_, _ = fmt.Fprint(os.Stderr, err.Error())
+		os.Exit(0)
 	}
 }

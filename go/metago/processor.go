@@ -54,6 +54,8 @@ func Process(patterns ...string) error {
 		return errors.New("some errors occured")
 	}
 
+	var nErrs NodeErrors
+
 	for _, pkg := range pkgs {
 		fmt.Println(pkg.ID, pkg.GoFiles)
 		for _, file := range pkg.Syntax {
@@ -77,12 +79,18 @@ func Process(patterns ...string) error {
 				p.ApplyPost,
 			)
 
+			nErrs = append(nErrs, p.nodeErrors...)
+
 			err := format.Node(os.Stdout, pkg.Fset, file)
 			if err != nil {
 				panic(err)
 			}
 			fmt.Print("\n\n")
 		}
+	}
+
+	if len(nErrs) != 0 {
+		return nErrs
 	}
 
 	return nil
@@ -99,7 +107,7 @@ type metaProcessor struct {
 	// mf → obj.X への変換用 X はわからんので obj 部分を持つ
 	fieldMapping map[*ast.Object]*ast.Object
 
-	nodeErrors []*NodeError
+	nodeErrors NodeErrors
 }
 
 func (p *metaProcessor) ApplyPre(cursor *astutil.Cursor) bool {
@@ -244,6 +252,8 @@ func (p *metaProcessor) isMetagoValueOf(selectorExpr *ast.SelectorExpr) bool {
 }
 
 func (p *metaProcessor) isInlineTemplateFuncDecl(node *ast.FuncDecl) bool {
+	// TODO メソッドは除外する
+
 	for _, params := range node.Type.Params.List {
 		for _, param := range params.Names {
 			if p.isMetagoValue(param) {
@@ -322,7 +332,7 @@ func (p *metaProcessor) checkMetagoFieldRange(node *ast.RangeStmt) bool {
 		return false
 	}
 	if ident.Name != "_" {
-		// TODO indexの展開もそのうちサポートできるといいですね
+		p.Warningf(ident, "index part assignment should be '_'")
 		return false
 	}
 
@@ -333,7 +343,7 @@ func (p *metaProcessor) checkMetagoFieldRange(node *ast.RangeStmt) bool {
 	}
 	if len(assignStmt.Lhs) != 2 {
 		// := の左が2未満だとindexとかしか取ってない
-		// TODO エラーにするべきかも
+		p.Errorf(assignStmt, "value part assignment must required")
 		return false
 	}
 	// _, mf ← の mf 相当の場所の名前取る
@@ -388,8 +398,6 @@ func (p *metaProcessor) checkMetagoFieldRange(node *ast.RangeStmt) bool {
 }
 
 func (p *metaProcessor) checkCallExprWithMetagoValue(node *ast.CallExpr) (*ast.CallExpr, bool) {
-	// TODO 変換ロジックの引き継ぎが必要
-
 	// func fooBarTemplate(mv metago.Value, a, b string) bool 的なやつの変換
 	// 第一引数が metago.Value だったら対象
 
@@ -447,4 +455,22 @@ func (p *metaProcessor) checkCallExprWithMetagoValue(node *ast.CallExpr) (*ast.C
 	}
 
 	return newNode, true
+}
+
+func (p *metaProcessor) Warningf(node ast.Node, format string, a ...interface{}) {
+	p.nodeErrors = append(p.nodeErrors, &NodeError{
+		ErrorLevel: ErrorLevelWarning,
+		Fset:       p.currentPkg.Fset,
+		Node:       node,
+		Message:    fmt.Sprintf(format, a...),
+	})
+}
+
+func (p *metaProcessor) Errorf(node ast.Node, format string, a ...interface{}) {
+	p.nodeErrors = append(p.nodeErrors, &NodeError{
+		ErrorLevel: ErrorLevelError,
+		Fset:       p.currentPkg.Fset,
+		Node:       node,
+		Message:    fmt.Sprintf(format, a...),
+	})
 }
