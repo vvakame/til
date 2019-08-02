@@ -59,16 +59,17 @@ func Process(patterns ...string) error {
 	for _, pkg := range pkgs {
 		fmt.Println(pkg.ID, pkg.GoFiles)
 		for _, file := range pkg.Syntax {
-			if !astutil.UsesImport(file, metagoPackagePath) {
-				continue
+			p := &metaProcessor{
+				currentPkg:        pkg,
+				currentFile:       file,
+				removeNodes:       make(map[ast.Node]bool),
+				valueMapping:      make(map[*ast.Object]*ast.Object),
+				fieldMapping:      make(map[*ast.Object]*ast.Object),
+				fieldBlockMapping: make(map[*ast.BlockStmt]*ast.Object),
 			}
 
-			p := &metaProcessor{
-				currentPkg:   pkg,
-				currentFile:  file,
-				removeNodes:  make(map[ast.Node]bool),
-				valueMapping: make(map[*ast.Object]*ast.Object),
-				fieldMapping: make(map[*ast.Object]*ast.Object),
+			if !astutil.UsesImport(file, metagoPackagePath) {
+				continue
 			}
 
 			// TODO . import してたら殺す
@@ -97,8 +98,9 @@ func Process(patterns ...string) error {
 }
 
 type metaProcessor struct {
-	currentPkg  *packages.Package
-	currentFile *ast.File
+	currentPkg         *packages.Package
+	currentFile        *ast.File
+	currentTargetField *ast.Object
 
 	removeNodes map[ast.Node]bool
 
@@ -106,6 +108,10 @@ type metaProcessor struct {
 	valueMapping map[*ast.Object]*ast.Object
 	// mf → obj.X への変換用 X はわからんので obj 部分を持つ
 	fieldMapping map[*ast.Object]*ast.Object
+	// あるBlockStmt中でどの*ast.Identに紐づくか
+	// { ... } は struct { ID int64 } の `ID` に紐づく！
+	// *ast.IdentのObjをたぐるとフィールドのTypeとかTagも掘れる
+	fieldBlockMapping map[*ast.BlockStmt]*ast.Object
 
 	nodeErrors NodeErrors
 }
@@ -123,37 +129,25 @@ func (p *metaProcessor) ApplyPre(cursor *astutil.Cursor) bool {
 
 	switch node := current.(type) {
 	case *ast.AssignStmt:
-		if p.checkMetagoValueOfAssignStmt(node) {
+		if p.checkMetagoValueOfAssignStmt(cursor, node) {
 			// mv := metago.ValueOf(foo) 系
 			return true
 		}
 
 	case *ast.Ident:
-		if target := p.valueMapping[node.Obj]; target != nil {
-			cursor.Replace(&ast.Ident{
-				Name: target.Name,
-				Obj:  target,
-			})
-			return true
+		if p.checkReplaceTargetIdent(cursor, node) {
+			return false
 		}
 
 	case *ast.RangeStmt:
 		// 特殊対応ポイント
-		if p.checkMetagoFieldRange(node) {
-			cursor.Delete()
+		if p.checkMetagoFieldRange(cursor, node) {
 			// TODO BlockStatementに対して繰り返し処理をアレする
 			return false
 		}
 
 	case *ast.CallExpr:
-		if newCallExpr, ok := p.checkCallExprWithMetagoValue(node); ok {
-			// 操作したNodeには入っていってくれないので自分で歩く必要がある
-			astutil.Apply(
-				newCallExpr,
-				p.ApplyPre,
-				p.ApplyPost,
-			)
-			cursor.Replace(newCallExpr)
+		if p.checkCallExprWithMetagoValue(cursor, node) {
 			return false // replace前のASTを見る必要はない
 		}
 
@@ -164,7 +158,7 @@ func (p *metaProcessor) ApplyPre(cursor *astutil.Cursor) bool {
 		// metago関連だったら…？
 
 	case *ast.FuncDecl:
-		if p.isInlineTemplateFuncDecl(node) {
+		if p.isInlineTemplateFuncDecl(cursor, node) {
 			// 仮引数に metago.Value があったら、展開処理の対象ではないのでskip
 			return false
 		}
@@ -251,7 +245,7 @@ func (p *metaProcessor) isMetagoValueOf(selectorExpr *ast.SelectorExpr) bool {
 	return true
 }
 
-func (p *metaProcessor) isInlineTemplateFuncDecl(node *ast.FuncDecl) bool {
+func (p *metaProcessor) isInlineTemplateFuncDecl(cursor *astutil.Cursor, node *ast.FuncDecl) bool {
 	// TODO メソッドは除外する
 
 	for _, params := range node.Type.Params.List {
@@ -289,9 +283,37 @@ func (p *metaProcessor) extractMetagoBaseVariable(expr ast.Expr) *ast.Ident {
 	return targetIdent
 }
 
+func (p *metaProcessor) checkReplaceTargetIdent(cursor *astutil.Cursor, node *ast.Ident) bool {
+	// mv系の単純な置き換え
+	if target := p.valueMapping[node.Obj]; target != nil {
+		cursor.Replace(&ast.Ident{
+			Name: target.Name,
+			Obj:  target,
+		})
+		return true
+	}
+	// mf系の単純な置き換え
+	if target := p.fieldMapping[node.Obj]; target != nil {
+		field := p.currentTargetField
+		cursor.Replace(&ast.SelectorExpr{
+			X: &ast.Ident{
+				Name: target.Name,
+				Obj:  target,
+			},
+			Sel: &ast.Ident{
+				Name: field.Name,
+				Obj:  field,
+			},
+		})
+		return true
+	}
+
+	return false
+}
+
 // checkMetagoValueOfAssignStmt is capture `mv := metago.ValueOf(foo)` format assignment.
 // it marks up convert rule about `mv` to `foo` and remove these assignment.
-func (p *metaProcessor) checkMetagoValueOfAssignStmt(stmt *ast.AssignStmt) bool {
+func (p *metaProcessor) checkMetagoValueOfAssignStmt(cursor *astutil.Cursor, stmt *ast.AssignStmt) bool {
 	// mv := metago.ValueOf(foo) 系を処理する。
 	// mv と foo の紐付けを覚える。
 	// 該当のassignmentをNode毎削除するようマークする。
@@ -323,7 +345,7 @@ func (p *metaProcessor) checkMetagoValueOfAssignStmt(stmt *ast.AssignStmt) bool 
 	return found
 }
 
-func (p *metaProcessor) checkMetagoFieldRange(node *ast.RangeStmt) bool {
+func (p *metaProcessor) checkMetagoFieldRange(cursor *astutil.Cursor, node *ast.RangeStmt) bool {
 	// for _, mf := range mv.Fields() {
 	// ↑的なヤツをサポートしていく
 
@@ -391,44 +413,67 @@ func (p *metaProcessor) checkMetagoFieldRange(node *ast.RangeStmt) bool {
 	}
 
 	p.fieldMapping[fieldIdent.Obj] = target
+
 	// 大本のfor句は全部捨てる必要がある
-	p.removeNodes[node] = true
+	cursor.Delete()
+
+	// RangeStmtのBody部分をフィールドの数だけコピペする
+	// TODO 今出てくるパターンを決め打ちでサポートしてるだけなのでいい感じにする
+	targetObjDef := target.Decl.(*ast.Field).Type.(*ast.StarExpr).X.(*ast.Ident).Obj
+	defFields := targetObjDef.Decl.(*ast.TypeSpec).Type.(*ast.StructType).Fields
+	for _, field := range defFields.List {
+		for _, name := range field.Names {
+			bk := p.currentTargetField
+
+			bodyStmt := astcopy.BlockStmt(node.Body)
+			p.fieldBlockMapping[bodyStmt] = name.Obj
+			p.currentTargetField = name.Obj
+			astutil.Apply(
+				bodyStmt,
+				p.ApplyPre,
+				p.ApplyPost,
+			)
+			cursor.InsertBefore(bodyStmt)
+
+			p.currentTargetField = bk
+		}
+	}
 
 	return true
 }
 
-func (p *metaProcessor) checkCallExprWithMetagoValue(node *ast.CallExpr) (*ast.CallExpr, bool) {
+func (p *metaProcessor) checkCallExprWithMetagoValue(cursor *astutil.Cursor, node *ast.CallExpr) bool {
 	// func fooBarTemplate(mv metago.Value, a, b string) bool 的なやつの変換
 	// 第一引数が metago.Value だったら対象
 
 	// foo(mv) 形式のみ対応 メソッド類は対応が大変
 	funcName, ok := node.Fun.(*ast.Ident)
 	if !ok {
-		return nil, false
+		return false
 	}
 
 	funcDecl, ok := funcName.Obj.Decl.(*ast.FuncDecl)
 	if !ok {
-		return nil, false
+		return false
 	}
 
 	// 引数無しは対象外
 	if len(funcDecl.Type.Params.List) == 0 {
-		return nil, false
+		return false
 	}
 	// 引数の最初が metago.Value じゃないものは対象外
 	metaValueArg := funcDecl.Type.Params.List[0].Names[0]
 	if !p.isMetagoValue(metaValueArg) {
-		return nil, false
+		return false
 	}
 
 	// 実引数側の数が0ってことはここまで来たらないだろうけど一応
 	if len(node.Args) == 0 {
-		return nil, false
+		return false
 	}
 	arg, ok := node.Args[0].(*ast.Ident)
 	if !ok {
-		return nil, false
+		return false
 	}
 
 	funcDecl = astcopy.FuncDecl(funcDecl)
@@ -439,7 +484,7 @@ func (p *metaProcessor) checkCallExprWithMetagoValue(node *ast.CallExpr) (*ast.C
 
 	// 引数が metago.Value だけならinline展開するやつ
 	// goroutineの境界変わったりするとめんどいので即時実行関数で包む
-	newNode := &ast.CallExpr{
+	newCallExpr := &ast.CallExpr{
 		Fun: &ast.FuncLit{
 			Type: &ast.FuncType{
 				Params: &ast.FieldList{
@@ -454,7 +499,24 @@ func (p *metaProcessor) checkCallExprWithMetagoValue(node *ast.CallExpr) (*ast.C
 		Args: node.Args[1:], // 先頭は metago.Valueなので
 	}
 
-	return newNode, true
+	// 操作したNodeには入っていってくれないので自分で歩く必要がある
+	astutil.Apply(
+		newCallExpr,
+		p.ApplyPre,
+		p.ApplyPost,
+	)
+	cursor.Replace(newCallExpr)
+
+	return true
+}
+
+func (p *metaProcessor) Noticef(node ast.Node, format string, a ...interface{}) {
+	p.nodeErrors = append(p.nodeErrors, &NodeError{
+		ErrorLevel: ErrorLevelNotice,
+		Fset:       p.currentPkg.Fset,
+		Node:       node,
+		Message:    fmt.Sprintf(format, a...),
+	})
 }
 
 func (p *metaProcessor) Warningf(node ast.Node, format string, a ...interface{}) {

@@ -10,14 +10,10 @@ type Value interface {
 
 type Field interface {
 	Name() string
-	StructTag() StructTag
+	StructTagGet(string) string
 	Value() interface{}
 
 	MatchTypeOf(typeHint TypeHint) bool
-}
-
-type StructTag interface {
-	Get(string) string
 }
 
 type TypeHint struct {

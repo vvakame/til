@@ -33,8 +33,7 @@ func (obj *Bar) MarshalJSON() ([]byte, error) {
 
 	mv := metago.ValueOf(obj)
 	var i int
-	for idx, mf := range mv.Fields() {
-		_ = idx
+	for _, mf := range mv.Fields() {
 		if i != 0 {
 			buf.WriteString(",")
 		}
@@ -47,7 +46,7 @@ func (obj *Bar) MarshalJSON() ([]byte, error) {
 
 		propertyName := mf.Name()
 
-		if v := strings.SplitN(mf.StructTag().Get("json"), ",", 2)[0]; v != "" {
+		if v := strings.SplitN(mf.StructTagGet("json"), ",", 2)[0]; v != "" {
 			propertyName = v
 		}
 
@@ -70,6 +69,8 @@ func (obj *Bar) MarshalJSON() ([]byte, error) {
 			}
 			buf.Write(b)
 		}
+
+		i++
 	}
 
 	buf.WriteString("}")
@@ -95,7 +96,7 @@ func marshalJSONTemplate(mv metago.Value) ([]byte, error) {
 
 		propertyName := mf.Name()
 
-		if v := strings.SplitN(mf.StructTag().Get("json"), ",", 2)[0]; v != "" {
+		if v := strings.SplitN(mf.StructTagGet("json"), ",", 2)[0]; v != "" {
 			propertyName = v
 		}
 
@@ -118,6 +119,8 @@ func marshalJSONTemplate(mv metago.Value) ([]byte, error) {
 			}
 			buf.Write(b)
 		}
+
+		i++
 	}
 
 	buf.WriteString("}")
