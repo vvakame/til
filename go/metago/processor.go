@@ -97,8 +97,8 @@ func Process(patterns ...string) error {
 				currentFile:       file,
 				removeNodes:       make(map[ast.Node]bool),
 				replaceNodes:      make(map[ast.Node]ast.Node),
-				valueMapping:      make(map[*ast.Object]*ast.Object),
-				fieldMapping:      make(map[*ast.Object]*ast.Object),
+				valueMapping:      make(map[*ast.Object]ast.Expr),
+				fieldMapping:      make(map[*ast.Object]ast.Expr),
 				fieldBlockMapping: make(map[*ast.BlockStmt]*ast.Object),
 			}
 
@@ -140,9 +140,9 @@ type metaProcessor struct {
 	replaceNodes map[ast.Node]ast.Node
 
 	// mv → obj への変換用
-	valueMapping map[*ast.Object]*ast.Object
+	valueMapping map[*ast.Object]ast.Expr
 	// mf → obj.X への変換用 X はわからんので obj 部分を持つ
-	fieldMapping map[*ast.Object]*ast.Object
+	fieldMapping map[*ast.Object]ast.Expr
 	// あるBlockStmt中でどの*ast.Identに紐づくか
 	// { ... } は struct { ID int64 } の `ID` に紐づく！
 	// *ast.IdentのObjをたぐるとフィールドのTypeとかTagも掘れる
@@ -200,7 +200,10 @@ func (p *metaProcessor) ApplyPre(cursor *astutil.Cursor) bool {
 		}
 
 	case *ast.IfStmt:
-		if p.checkIfStmtWithTypeAssert(cursor, node) {
+		if p.checkIfStmtInInitWithTypeAssert(cursor, node) {
+			return false
+		}
+		if p.checkIfStmtInCondWithTypeAssert(cursor, node) {
 			// TypeAssertExprの置き換えやらで子要素を歩く必要があるのでtrue返す
 			return true
 		}
@@ -393,6 +396,18 @@ func (p *metaProcessor) isCallMetagoFieldName(node *ast.CallExpr) bool {
 	return true
 }
 
+func (p *metaProcessor) isAssignable(expr1 ast.Expr, expr2 ast.Expr) bool {
+	if p.isSameType(expr1, expr2) {
+		return true
+	}
+
+	// TODO ものすごく素晴らしくする
+	// time.Time が json.Marshaler に assign できることがわかると素敵なコードが書けるぞ！
+	// …といっても p.currentPkg.TypesInfo.Uses とかは astcopy との相性が悪くて死だ！
+
+	return false
+}
+
 func (p *metaProcessor) isSameType(expr1 ast.Expr, expr2 ast.Expr) bool {
 	{
 		ident1, ok1 := expr1.(*ast.Ident)
@@ -470,20 +485,14 @@ func (p *metaProcessor) extractMetagoBaseVariable(expr ast.Expr) *ast.Ident {
 func (p *metaProcessor) checkReplaceTargetIdent(cursor *astutil.Cursor, node *ast.Ident) bool {
 	// mv系の単純な置き換え
 	if target := p.valueMapping[node.Obj]; target != nil {
-		cursor.Replace(&ast.Ident{
-			Name: target.Name,
-			Obj:  target,
-		})
+		cursor.Replace(astcopy.Node(target))
 		return true
 	}
 	// mf系の単純な置き換え
 	if target := p.fieldMapping[node.Obj]; target != nil {
 		field := p.currentTargetField
 		cursor.Replace(&ast.SelectorExpr{
-			X: &ast.Ident{
-				Name: target.Name,
-				Obj:  target,
-			},
+			X: target,
 			Sel: &ast.Ident{
 				Name: field.Name,
 				Obj:  field,
@@ -520,7 +529,10 @@ func (p *metaProcessor) checkMetagoValueOfAssignStmt(cursor *astutil.Cursor, stm
 		}
 
 		found = true
-		p.valueMapping[ident.Obj] = targetIdent.Obj
+		p.valueMapping[ident.Obj] = &ast.Ident{
+			Name: targetIdent.Name,
+			Obj:  targetIdent.Obj,
+		}
 
 		p.removeNodes[lhs] = true
 		p.removeNodes[rhs] = true
@@ -602,8 +614,15 @@ func (p *metaProcessor) checkMetagoFieldRange(cursor *astutil.Cursor, node *ast.
 	cursor.Delete()
 
 	// RangeStmtのBody部分をフィールドの数だけコピペする
-	// TODO 今出てくるパターンを決め打ちでサポートしてるだけなのでいい感じにする
-	targetObjDef := target.Decl.(*ast.Field).Type.(*ast.StarExpr).X.(*ast.Ident).Obj
+	var targetObjDef *ast.Object
+	switch targetNode := target.(type) {
+	case *ast.Ident:
+		// TODO 今出てくるパターンを決め打ちでサポートしてるだけなのでいい感じにする
+		// ↓は foo *Foo 的なやつの *Foo から Foo の定義を取ろうとしている
+		targetObjDef = targetNode.Obj.Decl.(*ast.Field).Type.(*ast.StarExpr).X.(*ast.Ident).Obj
+	default:
+		panic("unknown type")
+	}
 	defFields := targetObjDef.Decl.(*ast.TypeSpec).Type.(*ast.StructType).Fields
 	for _, field := range defFields.List {
 		for _, name := range field.Names {
@@ -626,10 +645,91 @@ func (p *metaProcessor) checkMetagoFieldRange(cursor *astutil.Cursor, node *ast.
 	return true
 }
 
-func (p *metaProcessor) checkIfStmtWithTypeAssert(cursor *astutil.Cursor, node *ast.IfStmt) bool {
+func (p *metaProcessor) checkIfStmtInInitWithTypeAssert(cursor *astutil.Cursor, node *ast.IfStmt) bool {
+	// if v, ok := mf.Value().(time.Time); ok { ... } 系
+	// condがokの参照か !ok か ok == false 以外の場合怒る
+	if node.Init == nil {
+		return false
+	}
+
+	assignStmt, ok := node.Init.(*ast.AssignStmt)
+	if !ok {
+		return false
+	}
+
+	// mf.Value().(time.Time) 的なやつかチェック
+	if len(assignStmt.Rhs) != 1 {
+		return false
+	}
+	typeAssertExpr, ok := assignStmt.Rhs[0].(*ast.TypeAssertExpr)
+	if !ok {
+		return false
+	}
+	callExpr, ok := typeAssertExpr.X.(*ast.CallExpr)
+	if !ok {
+		return false
+	}
+	if !p.isCallMetagoFieldValue(callExpr) {
+		return false
+	}
+
+	// v, ok := 的なやつかチェック
+	if len(assignStmt.Lhs) != 2 {
+		p.Errorf(assignStmt, "lhs assignment should be 2")
+		return false
+	}
+
+	varIdent, ok := assignStmt.Lhs[0].(*ast.Ident)
+	if !ok {
+		p.Errorf(assignStmt.Lhs[0], "var assignment should be ident")
+		return false
+	}
+	okIdent, ok := assignStmt.Lhs[1].(*ast.Ident)
+	if !ok {
+		p.Errorf(assignStmt.Lhs[1], "ok assignment should be ident")
+		return false
+	}
+
+	// IfStmtでスコープに新しい変数が導入されるので置き換えルールを登録
+	p.valueMapping[varIdent.Obj] = &ast.SelectorExpr{
+		X: p.fieldMapping[callExpr.Fun.(*ast.SelectorExpr).X.(*ast.Ident).Obj],
+		Sel: &ast.Ident{
+			Name: p.currentTargetField.Name,
+			Obj:  p.currentTargetField,
+		},
+	}
+
+	_, ok = node.Cond.(*ast.Ident)
+	// TODO この辺もうちょっと柔軟性をもたせる
+	if !ok {
+		p.Errorf(node.Cond, "must be '%s'", okIdent.Name)
+		return false
+	}
+
+	if p.isAssignable(typeAssertExpr.Type, p.currentTargetField.Decl.(*ast.Field).Type) {
+		// Bodyが評価される & if全体を置き換え
+		astutil.Apply(
+			node.Body,
+			p.ApplyPre,
+			p.ApplyPost,
+		)
+		cursor.Replace(node.Body)
+	} else if node.Else != nil {
+		// Elseが評価される & if全体を置き換え
+		astutil.Apply(
+			node.Else,
+			p.ApplyPre,
+			p.ApplyPost,
+		)
+		cursor.Replace(node.Else)
+	}
+
+	return true
+}
+
+func (p *metaProcessor) checkIfStmtInCondWithTypeAssert(cursor *astutil.Cursor, node *ast.IfStmt) bool {
 	// if mf.Value().(time.Time).IsZero() { ... } 系のハンドリング
 	// condで、もしvalueの型とassert先がマッチしてたらBlockStmt残し、それ以外は削除
-	// if v, ok := mf.Value().(time.Time); ok && v.IsZero() { ... } 系のハンドリングもできそうなのでやったほうがいい気はする… けどめんどいので後回し
 
 	var typeAssertExpr *ast.TypeAssertExpr
 	ast.Walk(astVisitorFunc(func(node ast.Node) bool {
@@ -640,7 +740,6 @@ func (p *metaProcessor) checkIfStmtWithTypeAssert(cursor *astutil.Cursor, node *
 		}
 		return true
 	}), node.Cond)
-
 	if typeAssertExpr == nil {
 		return true
 	}
@@ -759,10 +858,7 @@ func (p *metaProcessor) checkUseMetagoFieldValue(cursor *astutil.Cursor, node *a
 	}
 
 	cursor.Replace(&ast.SelectorExpr{
-		X: &ast.Ident{
-			Name: target.Name,
-			Obj:  target,
-		},
+		X: target,
 		Sel: &ast.Ident{
 			Name: p.currentTargetField.Name,
 			Obj:  p.currentTargetField,

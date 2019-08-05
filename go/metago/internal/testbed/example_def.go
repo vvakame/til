@@ -51,15 +51,14 @@ func (obj *Bar) MarshalJSON() ([]byte, error) {
 		buf.WriteString(propertyName)
 		buf.WriteString(`":`)
 
-		switch v := mf.Value().(type) {
-		case json.Marshaler:
+		if v, ok := mf.Value().(time.Time); ok {
+			// TODO 本当は .(json.Marshaler) したい isAssignable 参照
 			b, err := v.MarshalJSON()
 			if err != nil {
 				return nil, err
 			}
 			buf.Write(b)
-
-		default:
+		} else {
 			b, err := json.Marshal(v)
 			if err != nil {
 				return nil, err
