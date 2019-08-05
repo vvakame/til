@@ -12,10 +12,4 @@ type Field interface {
 	Name() string
 	StructTagGet(string) string
 	Value() interface{}
-
-	MatchTypeOf(typeHint TypeHint) bool
-}
-
-type TypeHint struct {
-	Receiver interface{}
 }

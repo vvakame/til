@@ -10,6 +10,7 @@ import (
 	"os"
 	"reflect"
 	"runtime"
+	"strconv"
 	"strings"
 
 	"github.com/go-toolsmith/astcopy"
@@ -20,7 +21,11 @@ import (
 const metagoPackagePath = "github.com/vvakame/til/go/metago"
 
 var valueTypeString string
+var fieldTypeString string
 var valueOfTypeString string
+var fieldNameMethodName string
+var fieldValueMethodName string
+var fieldStructTagGetMethodName string
 
 const valueFieldMethodName = "Fields"
 
@@ -30,8 +35,36 @@ func init() {
 		valueTypeString = reflect.ValueOf(&v).Elem().Type().Name()
 	}
 	{
+		var f Field
+		fieldTypeString = reflect.ValueOf(&f).Elem().Type().Name()
+	}
+	{
 		s := runtime.FuncForPC(reflect.ValueOf(ValueOf).Pointer()).Name()
 		valueOfTypeString = strings.TrimPrefix(s, metagoPackagePath+".")
+	}
+	{
+		var f Field
+		method, ok := reflect.TypeOf(&f).Elem().MethodByName("Name")
+		if !ok {
+			panic("metago.Field#Name method is missing")
+		}
+		fieldNameMethodName = method.Name
+	}
+	{
+		var f Field
+		method, ok := reflect.TypeOf(&f).Elem().MethodByName("Value")
+		if !ok {
+			panic("metago.Field#Value method is missing")
+		}
+		fieldValueMethodName = method.Name
+	}
+	{
+		var f Field
+		method, ok := reflect.TypeOf(&f).Elem().MethodByName("StructTagGet")
+		if !ok {
+			panic("metago.Field#StructTagGet method is missing")
+		}
+		fieldStructTagGetMethodName = method.Name
 	}
 }
 
@@ -63,6 +96,7 @@ func Process(patterns ...string) error {
 				currentPkg:        pkg,
 				currentFile:       file,
 				removeNodes:       make(map[ast.Node]bool),
+				replaceNodes:      make(map[ast.Node]ast.Node),
 				valueMapping:      make(map[*ast.Object]*ast.Object),
 				fieldMapping:      make(map[*ast.Object]*ast.Object),
 				fieldBlockMapping: make(map[*ast.BlockStmt]*ast.Object),
@@ -102,7 +136,8 @@ type metaProcessor struct {
 	currentFile        *ast.File
 	currentTargetField *ast.Object
 
-	removeNodes map[ast.Node]bool
+	removeNodes  map[ast.Node]bool
+	replaceNodes map[ast.Node]ast.Node
 
 	// mv → obj への変換用
 	valueMapping map[*ast.Object]*ast.Object
@@ -126,6 +161,10 @@ func (p *metaProcessor) ApplyPre(cursor *astutil.Cursor) bool {
 		cursor.Delete()
 		return false
 	}
+	if n := p.replaceNodes[current]; n != nil {
+		cursor.Replace(n)
+		return false // TODO これでええか？
+	}
 
 	switch node := current.(type) {
 	case *ast.AssignStmt:
@@ -147,15 +186,25 @@ func (p *metaProcessor) ApplyPre(cursor *astutil.Cursor) bool {
 		}
 
 	case *ast.CallExpr:
-		if p.checkCallExprWithMetagoValue(cursor, node) {
+		if p.checkInlineTemplateCallExpr(cursor, node) {
+			return false // replace前のASTを見る必要はない
+		}
+		if p.checkUseMetagoFieldValue(cursor, node) {
+			return false // replace前のASTを見る必要はない
+		}
+		if p.checkUseMetagoFieldName(cursor, node) {
+			return false // replace前のASTを見る必要はない
+		}
+		if p.checkUseMetagoStructTagGet(cursor, node) {
 			return false // replace前のASTを見る必要はない
 		}
 
-	case *ast.CompositeLit:
-	// 特殊対応ポイント
-
-	case *ast.TypeAssertExpr:
-		// metago関連だったら…？
+	case *ast.IfStmt:
+		if p.checkIfStmtWithTypeAssert(cursor, node) {
+			// TypeAssertExprの置き換えやらで子要素を歩く必要があるのでtrue返す
+			return true
+		}
+		return true
 
 	case *ast.FuncDecl:
 		if p.isInlineTemplateFuncDecl(cursor, node) {
@@ -192,6 +241,30 @@ func (p *metaProcessor) ApplyPost(cursor *astutil.Cursor) bool {
 	return true
 }
 
+func (p *metaProcessor) relateToMetagoPackage(ident *ast.Ident) bool {
+	// [mv] ← metago packageですか？ とか
+	// mv.[Value]() ← metago packageですか？ とか
+	v := p.currentPkg.TypesInfo.Defs[ident]
+	if v == nil {
+		return false
+	}
+	t := v.Type()
+	tn, ok := t.(*types.Named)
+	if !ok {
+		return false
+	}
+	typeName := tn.Obj()
+	typePkg := typeName.Pkg()
+	if typePkg == nil {
+		return false
+	}
+	if typePkg.Path() != metagoPackagePath {
+		return false
+	}
+
+	return true
+}
+
 func (p *metaProcessor) isMetagoValue(ident *ast.Ident) bool {
 	// var ident metago.Value ← true
 	// var ident FooBar ← false
@@ -212,6 +285,33 @@ func (p *metaProcessor) isMetagoValue(ident *ast.Ident) bool {
 	if typePkg.Path() != metagoPackagePath {
 		return false
 	} else if typeName.Name() != valueTypeString {
+		return false
+	}
+
+	return true
+}
+
+func (p *metaProcessor) isMetagoField(ident *ast.Ident) bool {
+	// var ident metago.Field ← true
+	// var ident FooBar ← false
+
+	v := p.currentPkg.TypesInfo.Defs[ident]
+	if v == nil {
+		return false
+	}
+	t := v.Type()
+	tn, ok := t.(*types.Named)
+	if !ok {
+		return false
+	}
+	typeName := tn.Obj()
+	typePkg := typeName.Pkg()
+	if typePkg == nil {
+		return false
+	}
+	if typePkg.Path() != metagoPackagePath {
+		return false
+	} else if typeName.Name() != fieldTypeString {
 		return false
 	}
 
@@ -243,6 +343,90 @@ func (p *metaProcessor) isMetagoValueOf(selectorExpr *ast.SelectorExpr) bool {
 	}
 
 	return true
+}
+
+func (p *metaProcessor) isCallMetagoFieldValue(node *ast.CallExpr) bool {
+	// mf.Value() 系かどうか
+	selectorExpr, ok := node.Fun.(*ast.SelectorExpr)
+	if !ok {
+		return false
+	}
+
+	objIdent, ok := selectorExpr.X.(*ast.Ident)
+	if !ok {
+		return false
+	}
+
+	target := p.fieldMapping[objIdent.Obj]
+	if target == nil {
+		return false
+	}
+
+	if selectorExpr.Sel.Name != fieldValueMethodName {
+		return false
+	}
+
+	return true
+}
+
+func (p *metaProcessor) isCallMetagoFieldName(node *ast.CallExpr) bool {
+	// mf.Name() 系かどうか
+	selectorExpr, ok := node.Fun.(*ast.SelectorExpr)
+	if !ok {
+		return false
+	}
+
+	objIdent, ok := selectorExpr.X.(*ast.Ident)
+	if !ok {
+		return false
+	}
+
+	target := p.fieldMapping[objIdent.Obj]
+	if target == nil {
+		return false
+	}
+
+	if selectorExpr.Sel.Name != fieldNameMethodName {
+		return false
+	}
+
+	return true
+}
+
+func (p *metaProcessor) isSameType(expr1 ast.Expr, expr2 ast.Expr) bool {
+	{
+		ident1, ok1 := expr1.(*ast.Ident)
+		ident2, ok2 := expr2.(*ast.Ident)
+		if ok1 && ok2 {
+			if ident1.Obj == nil && ident2.Obj == nil {
+				return ident1.Name == ident2.Name
+			}
+			// TODO
+			return false
+
+		} else if ok1 {
+			return false
+		} else if ok2 {
+			return false
+		}
+	}
+	{
+		sel1, ok1 := expr1.(*ast.SelectorExpr)
+		sel2, ok2 := expr2.(*ast.SelectorExpr)
+		if ok1 && ok2 {
+			if p.isSameType(sel1.X, sel2.X) && p.isSameType(sel1.Sel, sel2.Sel) {
+				return true
+			}
+			return false
+
+		} else if ok1 {
+			return false
+		} else if ok2 {
+			return false
+		}
+	}
+
+	panic("unreachable")
 }
 
 func (p *metaProcessor) isInlineTemplateFuncDecl(cursor *astutil.Cursor, node *ast.FuncDecl) bool {
@@ -442,7 +626,50 @@ func (p *metaProcessor) checkMetagoFieldRange(cursor *astutil.Cursor, node *ast.
 	return true
 }
 
-func (p *metaProcessor) checkCallExprWithMetagoValue(cursor *astutil.Cursor, node *ast.CallExpr) bool {
+func (p *metaProcessor) checkIfStmtWithTypeAssert(cursor *astutil.Cursor, node *ast.IfStmt) bool {
+	// if mf.Value().(time.Time).IsZero() { ... } 系のハンドリング
+	// condで、もしvalueの型とassert先がマッチしてたらBlockStmt残し、それ以外は削除
+	// if v, ok := mf.Value().(time.Time); ok && v.IsZero() { ... } 系のハンドリングもできそうなのでやったほうがいい気はする… けどめんどいので後回し
+
+	var typeAssertExpr *ast.TypeAssertExpr
+	ast.Walk(astVisitorFunc(func(node ast.Node) bool {
+		found, ok := node.(*ast.TypeAssertExpr)
+		if ok {
+			typeAssertExpr = found
+			return false
+		}
+		return true
+	}), node.Cond)
+
+	if typeAssertExpr == nil {
+		return true
+	}
+
+	callExpr, ok := typeAssertExpr.X.(*ast.CallExpr)
+	if !ok {
+		return false
+	}
+	if !p.isCallMetagoFieldValue(callExpr) {
+		return false
+	}
+
+	targetField := p.currentTargetField
+	if targetField == nil {
+		p.Errorf(callExpr, "invalid context. not in metago.Field range statement")
+		return false
+	}
+
+	if !p.isSameType(typeAssertExpr.Type, targetField.Decl.(*ast.Field).Type) {
+		cursor.Delete()
+		return false
+	}
+
+	p.replaceNodes[typeAssertExpr] = callExpr
+
+	return true
+}
+
+func (p *metaProcessor) checkInlineTemplateCallExpr(cursor *astutil.Cursor, node *ast.CallExpr) bool {
 	// func fooBarTemplate(mv metago.Value, a, b string) bool 的なやつの変換
 	// 第一引数が metago.Value だったら対象
 
@@ -508,6 +735,126 @@ func (p *metaProcessor) checkCallExprWithMetagoValue(cursor *astutil.Cursor, nod
 	cursor.Replace(newCallExpr)
 
 	return true
+}
+
+func (p *metaProcessor) checkUseMetagoFieldValue(cursor *astutil.Cursor, node *ast.CallExpr) bool {
+	// mf.Value() 系を obj.Foo 的なのに置き換える
+	selectorExpr, ok := node.Fun.(*ast.SelectorExpr)
+	if !ok {
+		return false
+	}
+
+	objIdent, ok := selectorExpr.X.(*ast.Ident)
+	if !ok {
+		return false
+	}
+
+	target := p.fieldMapping[objIdent.Obj]
+	if target == nil {
+		return false
+	}
+
+	if selectorExpr.Sel.Name != fieldValueMethodName {
+		return false
+	}
+
+	cursor.Replace(&ast.SelectorExpr{
+		X: &ast.Ident{
+			Name: target.Name,
+			Obj:  target,
+		},
+		Sel: &ast.Ident{
+			Name: p.currentTargetField.Name,
+			Obj:  p.currentTargetField,
+		},
+	})
+
+	return false
+}
+
+func (p *metaProcessor) checkUseMetagoFieldName(cursor *astutil.Cursor, node *ast.CallExpr) bool {
+	// mf.Name() 系を "Foo" 的なのに置き換える
+	if !p.isCallMetagoFieldName(node) {
+		return false
+	}
+
+	cursor.Replace(&ast.BasicLit{
+		Kind:  token.STRING,
+		Value: strconv.Quote(p.currentTargetField.Name),
+	})
+
+	return false
+}
+
+func (p *metaProcessor) checkUseMetagoStructTagGet(cursor *astutil.Cursor, node *ast.CallExpr) bool {
+	// mf.Name() 系を "Foo" 的なのに置き換える
+	selectorExpr, ok := node.Fun.(*ast.SelectorExpr)
+	if !ok {
+		return false
+	}
+
+	objIdent, ok := selectorExpr.X.(*ast.Ident)
+	if !ok {
+		return false
+	}
+
+	target := p.fieldMapping[objIdent.Obj]
+	if target == nil {
+		return false
+	}
+
+	if selectorExpr.Sel.Name != fieldStructTagGetMethodName {
+		return false
+	}
+
+	if len(node.Args) != 1 {
+		p.Errorf(node, "string literal argument must required")
+		return false
+	}
+
+	basicLit, ok := node.Args[0].(*ast.BasicLit)
+	if !ok || basicLit.Kind != token.STRING {
+		p.Errorf(node.Args[0], "string literal argument must required")
+		return false
+	}
+
+	tagName, err := strconv.Unquote(basicLit.Value)
+	if err != nil {
+		p.Errorf(node.Args[0], "unexpected string literal format. %s: %s", basicLit.Value, err.Error())
+		return false
+	}
+
+	targetField := p.currentTargetField.Decl.(*ast.Field)
+	if targetField.Tag == nil {
+		cursor.Replace(&ast.BasicLit{
+			Kind:  token.STRING,
+			Value: `""`,
+		})
+		return false
+	}
+	structTagValue, err := strconv.Unquote(targetField.Tag.Value)
+	if err != nil {
+		p.Errorf(targetField, "unexpected string literal format. %s: %s", targetField.Tag.Value, err.Error())
+		return false
+	}
+
+	tagValue := reflect.StructTag(structTagValue).Get(tagName)
+
+	cursor.Replace(&ast.BasicLit{
+		Kind:  token.STRING,
+		Value: strconv.Quote(tagValue),
+	})
+
+	return false
+}
+
+func (p *metaProcessor) Debugf(node ast.Node, format string, a ...interface{}) {
+	p.nodeErrors = append(p.nodeErrors, &NodeError{
+		ErrorLevel: ErrorLevelDebug,
+		Fset:       p.currentPkg.Fset,
+		Node:       node,
+		Message:    fmt.Sprintf(format, a...),
+	})
 }
 
 func (p *metaProcessor) Noticef(node ast.Node, format string, a ...interface{}) {

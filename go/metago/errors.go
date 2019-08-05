@@ -15,6 +15,7 @@ const (
 	ErrorLevelError ErrorLevel = iota
 	ErrorLevelWarning
 	ErrorLevelNotice
+	ErrorLevelDebug
 )
 
 var _ error = (NodeErrors)(nil)

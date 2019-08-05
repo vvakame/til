@@ -38,16 +38,13 @@ func (obj *Bar) MarshalJSON() ([]byte, error) {
 			buf.WriteString(",")
 		}
 
-		if mf.MatchTypeOf(metago.TypeHint{Receiver: time.Time{}}) {
-			if mf.Value().(time.Time).IsZero() {
-				continue
-			}
+		if mf.Value().(time.Time).IsZero() {
+			continue
 		}
 
 		propertyName := mf.Name()
-
-		if v := strings.SplitN(mf.StructTagGet("json"), ",", 2)[0]; v != "" {
-			propertyName = v
+		if v := mf.StructTagGet("json"); v != "" {
+			propertyName = strings.SplitN(v, ",", 2)[0]
 		}
 
 		buf.WriteString(`"`)
@@ -63,7 +60,7 @@ func (obj *Bar) MarshalJSON() ([]byte, error) {
 			buf.Write(b)
 
 		default:
-			b, err := json.Marshal(mf.Value())
+			b, err := json.Marshal(v)
 			if err != nil {
 				return nil, err
 			}
@@ -88,16 +85,13 @@ func marshalJSONTemplate(mv metago.Value) ([]byte, error) {
 			buf.WriteString(",")
 		}
 
-		if mf.MatchTypeOf(metago.TypeHint{Receiver: time.Time{}}) {
-			if mf.Value().(time.Time).IsZero() {
-				continue
-			}
+		if mf.Value().(time.Time).IsZero() {
+			continue
 		}
 
 		propertyName := mf.Name()
-
-		if v := strings.SplitN(mf.StructTagGet("json"), ",", 2)[0]; v != "" {
-			propertyName = v
+		if v := mf.StructTagGet("json"); v != "" {
+			propertyName = strings.SplitN(v, ",", 2)[0]
 		}
 
 		buf.WriteString(`"`)
@@ -113,7 +107,7 @@ func marshalJSONTemplate(mv metago.Value) ([]byte, error) {
 			buf.Write(b)
 
 		default:
-			b, err := json.Marshal(mf.Value())
+			b, err := json.Marshal(v)
 			if err != nil {
 				return nil, err
 			}
