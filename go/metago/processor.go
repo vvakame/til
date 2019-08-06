@@ -184,16 +184,16 @@ func (p *metaProcessor) ApplyPre(cursor *astutil.Cursor) bool {
 
 	case *ast.CallExpr:
 		if p.checkInlineTemplateCallExpr(cursor, node) {
-			return false // replace前のASTを見る必要はない
+			return false
 		}
 		if p.checkUseMetagoFieldValue(cursor, node) {
-			return false // replace前のASTを見る必要はない
+			return false
 		}
 		if p.checkUseMetagoFieldName(cursor, node) {
-			return false // replace前のASTを見る必要はない
+			return false
 		}
 		if p.checkUseMetagoStructTagGet(cursor, node) {
-			return false // replace前のASTを見る必要はない
+			return false
 		}
 
 	case *ast.IfStmt:
@@ -776,7 +776,13 @@ func (p *metaProcessor) checkIfStmtInCondWithTypeAssert(cursor *astutil.Cursor, 
 		return false
 	}
 
-	p.replaceNodes[typeAssertExpr] = callExpr
+	p.replaceNodes[typeAssertExpr] = &ast.SelectorExpr{
+		X: p.fieldMapping[callExpr.Fun.(*ast.SelectorExpr).X.(*ast.Ident).Obj],
+		Sel: &ast.Ident{
+			Name: p.currentTargetField.Name,
+			Obj:  p.currentTargetField,
+		},
+	}
 
 	return true
 }
