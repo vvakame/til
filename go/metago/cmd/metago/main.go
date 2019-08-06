@@ -8,9 +8,22 @@ import (
 )
 
 func main() {
-	err := metago.Process("github.com/vvakame/til/go/metago/internal/testbed")
+	p, err := metago.NewProcessor(&metago.Config{
+		TargetPackages: []string{
+			"github.com/vvakame/til/go/metago/internal/testbed/basic",
+		},
+	})
+	if err != nil {
+		panic(err)
+	}
+	result, err := p.Process()
 	if err != nil {
 		_, _ = fmt.Fprint(os.Stderr, err.Error())
-		os.Exit(0)
+		os.Exit(1)
+	}
+
+	for _, fileResult := range result.Results {
+		fmt.Println(fileResult.Package.String())
+		fmt.Println(fileResult.GeneratedCode)
 	}
 }
