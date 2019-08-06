@@ -135,9 +135,13 @@ type metaProcessor struct {
 	currentPkg         *packages.Package
 	currentFile        *ast.File
 	currentTargetField *ast.Object
+	currentBlockStmt   *ast.BlockStmt
 
-	removeNodes  map[ast.Node]bool
-	replaceNodes map[ast.Node]ast.Node
+	removeNodes           map[ast.Node]bool
+	replaceNodes          map[ast.Node]ast.Node
+	gotoCounter           int
+	requiredContinueLabel []string
+	requiredBreakLabel    []string
 
 	// mv → obj への変換用
 	valueMapping map[*ast.Object]ast.Expr
@@ -201,8 +205,7 @@ func (p *metaProcessor) ApplyPre(cursor *astutil.Cursor) bool {
 			return false
 		}
 		if p.checkIfStmtInCondWithTypeAssert(cursor, node) {
-			// TypeAssertExprの置き換えやらで子要素を歩く必要があるのでtrue返す
-			return true
+			return false
 		}
 
 	case *ast.TypeSwitchStmt:
@@ -215,6 +218,33 @@ func (p *metaProcessor) ApplyPre(cursor *astutil.Cursor) bool {
 			// 仮引数に metago.Value があったら、展開処理の対象ではないのでskip
 			return false
 		}
+
+	case *ast.BranchStmt:
+		switch node.Tok {
+		case token.CONTINUE:
+			labelName := fmt.Sprintf("metagoGoto%d", p.gotoCounter)
+			p.gotoCounter++
+			p.requiredContinueLabel = append(p.requiredContinueLabel, labelName)
+			cursor.Replace(&ast.BranchStmt{
+				Tok: token.GOTO,
+				Label: &ast.Ident{
+					Name: labelName,
+				},
+			})
+		case token.BREAK:
+			labelName := fmt.Sprintf("metagoGoto%d", p.gotoCounter)
+			p.gotoCounter++
+			p.requiredBreakLabel = append(p.requiredBreakLabel, labelName)
+			cursor.Replace(&ast.BranchStmt{
+				Tok: token.GOTO,
+				Label: &ast.Ident{
+					Name: labelName,
+				},
+			})
+		}
+
+	case *ast.BlockStmt:
+		p.currentBlockStmt = node
 	}
 
 	return true
@@ -650,10 +680,28 @@ func (p *metaProcessor) checkMetagoFieldRange(cursor *astutil.Cursor, node *ast.
 				p.ApplyPost,
 			)
 			cursor.InsertBefore(bodyStmt)
+			for _, labelName := range p.requiredContinueLabel {
+				cursor.InsertBefore(&ast.LabeledStmt{
+					Label: &ast.Ident{
+						Name: labelName,
+					},
+					Stmt: &ast.EmptyStmt{},
+				})
+			}
+			p.requiredContinueLabel = nil
 
 			p.currentTargetField = bk
 		}
 	}
+	for _, labelName := range p.requiredBreakLabel {
+		cursor.InsertAfter(&ast.LabeledStmt{
+			Label: &ast.Ident{
+				Name: labelName,
+			},
+			Stmt: &ast.EmptyStmt{},
+		})
+	}
+	p.requiredBreakLabel = nil
 
 	return true
 }
@@ -754,7 +802,7 @@ func (p *metaProcessor) checkIfStmtInCondWithTypeAssert(cursor *astutil.Cursor, 
 		return true
 	}), node.Cond)
 	if typeAssertExpr == nil {
-		return true
+		return false
 	}
 
 	callExpr, ok := typeAssertExpr.X.(*ast.CallExpr)
@@ -773,7 +821,7 @@ func (p *metaProcessor) checkIfStmtInCondWithTypeAssert(cursor *astutil.Cursor, 
 
 	if !p.isSameType(typeAssertExpr.Type, targetField.Decl.(*ast.Field).Type) {
 		cursor.Delete()
-		return false
+		return true // 子をApplyされたくない
 	}
 
 	p.replaceNodes[typeAssertExpr] = &ast.SelectorExpr{
@@ -783,6 +831,28 @@ func (p *metaProcessor) checkIfStmtInCondWithTypeAssert(cursor *astutil.Cursor, 
 			Obj:  p.currentTargetField,
 		},
 	}
+
+	// 呼び出し元でreturn falseするので必要なモノを自分でApplyしてやる必要がある
+	astutil.Apply(
+		node.Init,
+		p.ApplyPre,
+		p.ApplyPost,
+	)
+	astutil.Apply(
+		node.Cond,
+		p.ApplyPre,
+		p.ApplyPost,
+	)
+	astutil.Apply(
+		node.Body,
+		p.ApplyPre,
+		p.ApplyPost,
+	)
+	astutil.Apply(
+		node.Else,
+		p.ApplyPre,
+		p.ApplyPost,
+	)
 
 	return true
 }
