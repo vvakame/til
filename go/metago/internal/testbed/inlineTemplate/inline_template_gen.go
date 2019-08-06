@@ -9,6 +9,7 @@ package inlineTemplate
 import (
 	"bytes"
 	"encoding/json"
+	"strconv"
 	"strings"
 	"time"
 
@@ -44,11 +45,7 @@ func (foo *Foo) MarshalJSON() ([]byte, error) {
 			buf.WriteString(`":`)
 			{
 
-				b, err := json.Marshal(foo.ID)
-				if err != nil {
-					return nil, err
-				}
-				buf.Write(b)
+				buf.Write([]byte(strconv.FormatInt(foo.ID, 10)))
 			}
 
 			i++
@@ -69,11 +66,7 @@ func (foo *Foo) MarshalJSON() ([]byte, error) {
 			buf.WriteString(`":`)
 			{
 
-				b, err := json.Marshal(foo.Name)
-				if err != nil {
-					return nil, err
-				}
-				buf.Write(b)
+				buf.Write([]byte(strconv.Quote(foo.Name)))
 			}
 
 			i++
@@ -140,20 +133,16 @@ func marshalJSONTemplate(mv metago.Value) ([]byte, error) {
 		buf.WriteString(`":`)
 
 		switch v := mf.Value().(type) {
+		case int64:
+			buf.Write([]byte(strconv.FormatInt(v, 10)))
+		case string:
+			buf.Write([]byte(strconv.Quote(v)))
 		case time.Time:
 			b, err := v.MarshalJSON()
 			if err != nil {
 				return nil, err
 			}
 			buf.Write(b)
-
-		case json.Marshaler:
-			b, err := v.MarshalJSON()
-			if err != nil {
-				return nil, err
-			}
-			buf.Write(b)
-
 		default:
 			b, err := json.Marshal(v)
 			if err != nil {
