@@ -163,13 +163,12 @@ func (p *metaProcessor) ApplyPre(cursor *astutil.Cursor) bool {
 	}
 	if n := p.replaceNodes[current]; n != nil {
 		cursor.Replace(n)
-		return false // TODO これでええか？
+		return false
 	}
 
 	switch node := current.(type) {
 	case *ast.AssignStmt:
 		if p.checkMetagoValueOfAssignStmt(cursor, node) {
-			// mv := metago.ValueOf(foo) 系
 			return true
 		}
 
@@ -179,9 +178,7 @@ func (p *metaProcessor) ApplyPre(cursor *astutil.Cursor) bool {
 		}
 
 	case *ast.RangeStmt:
-		// 特殊対応ポイント
 		if p.checkMetagoFieldRange(cursor, node) {
-			// TODO BlockStatementに対して繰り返し処理をアレする
 			return false
 		}
 
@@ -207,7 +204,11 @@ func (p *metaProcessor) ApplyPre(cursor *astutil.Cursor) bool {
 			// TypeAssertExprの置き換えやらで子要素を歩く必要があるのでtrue返す
 			return true
 		}
-		return true
+
+	case *ast.TypeSwitchStmt:
+		if p.checkTypeSwitchStmt(cursor, node) {
+			return false
+		}
 
 	case *ast.FuncDecl:
 		if p.isInlineTemplateFuncDecl(cursor, node) {
@@ -404,6 +405,9 @@ func (p *metaProcessor) isAssignable(expr1 ast.Expr, expr2 ast.Expr) bool {
 	// TODO ものすごく素晴らしくする
 	// time.Time が json.Marshaler に assign できることがわかると素敵なコードが書けるぞ！
 	// …といっても p.currentPkg.TypesInfo.Uses とかは astcopy との相性が悪くて死だ！
+	// https://golang.org/pkg/go/types/#AssignableTo
+	// https://golang.org/pkg/go/types/#Info.TypeOf
+	// ↑この辺ちゃう？ってtenntennさんが言ってた
 
 	return false
 }
@@ -414,11 +418,20 @@ func (p *metaProcessor) isSameType(expr1 ast.Expr, expr2 ast.Expr) bool {
 		ident2, ok2 := expr2.(*ast.Ident)
 		if ok1 && ok2 {
 			if ident1.Obj == nil && ident2.Obj == nil {
-				return ident1.Name == ident2.Name
+				type1 := types.Universe.Lookup(ident1.Name)
+				type2 := types.Universe.Lookup(ident2.Name)
+				if type1 != nil && type2 != nil {
+					return type1 == type2
+				} else if type1 == nil && type2 == nil {
+					// TODO package の ident の場合の比較が甘い…！
+					// import hoge "hoge" と import h "hoge" で hoge と h 比較した時にtrueにならない
+					return ident1.Name == ident2.Name
+				}
+				return false
+			} else if ident1.Obj == ident2.Obj {
+				return true
 			}
-			// TODO
 			return false
-
 		} else if ok1 {
 			return false
 		} else if ok2 {
@@ -445,7 +458,7 @@ func (p *metaProcessor) isSameType(expr1 ast.Expr, expr2 ast.Expr) bool {
 }
 
 func (p *metaProcessor) isInlineTemplateFuncDecl(cursor *astutil.Cursor, node *ast.FuncDecl) bool {
-	// TODO メソッドは除外する
+	// TODO func (obj *Foo) Template(mv metago.Value) 的なメソッドは除外する
 
 	for _, params := range node.Type.Params.List {
 		for _, param := range params.Names {
@@ -475,7 +488,7 @@ func (p *metaProcessor) extractMetagoBaseVariable(expr ast.Expr) *ast.Ident {
 	arg1 := callExpr.Args[0]
 	targetIdent, ok := arg1.(*ast.Ident)
 	if !ok {
-		// TODO エラーにするべきかも
+		p.Errorf(arg1, "argument must be ident")
 		return nil
 	}
 
@@ -700,7 +713,7 @@ func (p *metaProcessor) checkIfStmtInInitWithTypeAssert(cursor *astutil.Cursor, 
 	}
 
 	_, ok = node.Cond.(*ast.Ident)
-	// TODO この辺もうちょっと柔軟性をもたせる
+	// TODO この辺もうちょっと柔軟性をもたせる 静的にboolに還元できる範囲であれば許容してあげたい
 	if !ok {
 		p.Errorf(node.Cond, "must be '%s'", okIdent.Name)
 		return false
@@ -764,6 +777,79 @@ func (p *metaProcessor) checkIfStmtInCondWithTypeAssert(cursor *astutil.Cursor, 
 	}
 
 	p.replaceNodes[typeAssertExpr] = callExpr
+
+	return true
+}
+
+func (p *metaProcessor) checkTypeSwitchStmt(cursor *astutil.Cursor, node *ast.TypeSwitchStmt) bool {
+	assignStmt, ok := node.Assign.(*ast.AssignStmt)
+	if !ok {
+		return false
+	}
+
+	// mf.Value().(type) 的なやつかチェック
+	if len(assignStmt.Rhs) != 1 {
+		return false
+	}
+	typeAssertExpr, ok := assignStmt.Rhs[0].(*ast.TypeAssertExpr)
+	if !ok {
+		return false
+	}
+	if typeAssertExpr.Type != nil {
+		p.Errorf(typeAssertExpr, "unknown type assert expr. must be use foo.(type)")
+		return false
+	}
+	callExpr, ok := typeAssertExpr.X.(*ast.CallExpr)
+	if !ok {
+		return false
+	}
+	if !p.isCallMetagoFieldValue(callExpr) {
+		return false
+	}
+
+	// 新しい変数が導入される場合そのマッピングルールを記録
+	if len(assignStmt.Lhs) != 1 {
+		p.Errorf(assignStmt, "var assignment must required")
+		return false
+	}
+	varIdent, ok := assignStmt.Lhs[0].(*ast.Ident)
+	if !ok {
+		p.Errorf(assignStmt.Lhs[0], "var assignment should be ident")
+		return false
+	}
+	p.valueMapping[varIdent.Obj] = &ast.SelectorExpr{
+		X: p.fieldMapping[callExpr.Fun.(*ast.SelectorExpr).X.(*ast.Ident).Obj],
+		Sel: &ast.Ident{
+			Name: p.currentTargetField.Name,
+			Obj:  p.currentTargetField,
+		},
+	}
+
+	var targetBody []ast.Stmt // nil と len == 0 を区別する
+	for _, stmt := range node.Body.List {
+		switch stmt := stmt.(type) {
+		case *ast.CaseClause:
+			if targetBody == nil && len(stmt.List) == 0 {
+				// 長さ 0 は default
+				targetBody = stmt.Body
+			} else {
+				for _, typeExpr := range stmt.List {
+					if p.isAssignable(typeExpr, p.currentTargetField.Decl.(*ast.Field).Type) {
+						targetBody = stmt.Body
+					}
+				}
+			}
+
+		default:
+			panic("unreachable")
+		}
+	}
+
+	newBlock := &ast.BlockStmt{
+		List: targetBody,
+	}
+	astutil.Apply(newBlock, p.ApplyPre, p.ApplyPost)
+	cursor.Replace(newBlock)
 
 	return true
 }

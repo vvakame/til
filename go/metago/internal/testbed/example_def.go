@@ -98,6 +98,13 @@ func marshalJSONTemplate(mv metago.Value) ([]byte, error) {
 		buf.WriteString(`":`)
 
 		switch v := mf.Value().(type) {
+		case time.Time:
+			b, err := v.MarshalJSON()
+			if err != nil {
+				return nil, err
+			}
+			buf.Write(b)
+
 		case json.Marshaler:
 			b, err := v.MarshalJSON()
 			if err != nil {
