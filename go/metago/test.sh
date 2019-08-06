@@ -20,6 +20,7 @@ goimports -w $targets
 
 # shellcheck disable=SC2086
 go test $packages -p 1 -coverpkg="$(go list -m)/..." -covermode=atomic -coverprofile=coverage.txt "$@"
+go tool cover -html=./coverage.txt -o cover.html
 
 go build ./internal/testbed/...
 go build -tags metago ./internal/testbed/...

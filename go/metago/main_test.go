@@ -1,6 +1,7 @@
 package metago_test
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -43,7 +44,10 @@ func TestProcessor(t *testing.T) {
 				t.Fatal(err)
 			}
 			result, err := p.Process()
-			if err != nil {
+			if result != nil {
+				// テスト継続可
+
+			} else if err != nil {
 				if result != nil {
 					for _, pErr := range result.CompileErrors {
 						t.Error(pErr)
@@ -57,35 +61,73 @@ func TestProcessor(t *testing.T) {
 				baseFileName := strings.TrimSuffix(filepath.Base(fileResult.FilePath), ".go")
 
 				t.Run(baseFileName, func(t *testing.T) {
-					expectedCode := fileResult.GeneratedCode
+					t.Run("code", func(t *testing.T) {
+						if fileResult.GeneratedCode == "" {
+							t.Skip()
+						}
 
-					generatedFilePath := path.Join(fixturePath, fileInfo.Name(), fmt.Sprintf("%s_gen.go", baseFileName))
-					b, err := ioutil.ReadFile(generatedFilePath)
-					if *update || os.IsNotExist(err) {
-						t.Logf("update %s", generatedFilePath)
-						err = ioutil.WriteFile(generatedFilePath, []byte(expectedCode), 0666)
+						expectedCode := fileResult.GeneratedCode
+						generatedFilePath := path.Join(fixturePath, fileInfo.Name(), fmt.Sprintf("%s_gen.go", baseFileName))
+						b, err := ioutil.ReadFile(generatedFilePath)
+						if *update || os.IsNotExist(err) {
+							t.Logf("update %s", generatedFilePath)
+							err = ioutil.WriteFile(generatedFilePath, []byte(expectedCode), 0666)
+							if err != nil {
+								t.Fatal(err)
+							}
+							b = []byte(expectedCode)
+						} else if err != nil {
+							t.Fatal(err)
+						}
+
+						if expectedCode == string(b) {
+							return
+						}
+
+						diff := difflib.UnifiedDiff{
+							A:       difflib.SplitLines(expectedCode),
+							B:       difflib.SplitLines(string(b)),
+							Context: 5,
+						}
+						d, err := difflib.GetUnifiedDiffString(diff)
 						if err != nil {
 							t.Fatal(err)
 						}
-						b = []byte(expectedCode)
-					} else if err != nil {
-						t.Fatal(err)
-					}
+						t.Error(d)
+					})
+					t.Run("diagnostic", func(t *testing.T) {
+						expectedBytes, err := json.MarshalIndent(fileResult.Errors, "", "  ")
+						if err != nil {
+							t.Fatal(err)
+						}
+						diagnosticFilePath := path.Join(fixturePath, fileInfo.Name(), fmt.Sprintf("%s_diagnostic.json", baseFileName))
+						b, err := ioutil.ReadFile(diagnosticFilePath)
+						if *update || os.IsNotExist(err) {
+							t.Logf("update %s", diagnosticFilePath)
+							err = ioutil.WriteFile(diagnosticFilePath, expectedBytes, 0666)
+							if err != nil {
+								t.Fatal(err)
+							}
+							b = expectedBytes
+						} else if err != nil {
+							t.Fatal(err)
+						}
 
-					if expectedCode == string(b) {
-						return
-					}
+						if string(expectedBytes) == string(b) {
+							return
+						}
 
-					diff := difflib.UnifiedDiff{
-						A:       difflib.SplitLines(expectedCode),
-						B:       difflib.SplitLines(string(b)),
-						Context: 5,
-					}
-					d, err := difflib.GetUnifiedDiffString(diff)
-					if err != nil {
-						t.Fatal(err)
-					}
-					t.Error(d)
+						diff := difflib.UnifiedDiff{
+							A:       difflib.SplitLines(string(expectedBytes)),
+							B:       difflib.SplitLines(string(b)),
+							Context: 5,
+						}
+						d, err := difflib.GetUnifiedDiffString(diff)
+						if err != nil {
+							t.Fatal(err)
+						}
+						t.Error(d)
+					})
 				})
 			}
 		})

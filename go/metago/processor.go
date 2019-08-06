@@ -121,6 +121,7 @@ func (p *metaProcessor) Process() (*Result, error) {
 
 	result := &Result{}
 	for _, pkg := range pkgs {
+	file:
 		for idx, file := range pkg.Syntax {
 			p.currentPkg = pkg
 			p.currentFile = file
@@ -142,7 +143,19 @@ func (p *metaProcessor) Process() (*Result, error) {
 			}
 			result.Results = append(result.Results, fileResult)
 
-			// TODO . import してたら殺す
+			// . import してたら殺す
+			for _, importSpec := range file.Imports {
+				importPath, err := strconv.Unquote(importSpec.Path.Value)
+				if err != nil {
+					return nil, err
+				}
+				if metagoPackagePath == importPath && importSpec.Name != nil && importSpec.Name.Name == "." {
+					p.Errorf(importSpec.Name, "don't use '.' import")
+					fileResult.Errors = append(fileResult.Errors, p.nodeErrors...)
+					p.nodeErrors = nil
+					continue file
+				}
+			}
 
 			for _, commentGroup := range file.Comments {
 				// FileのCommentsは自動では歩かれないので自分でやる
@@ -183,7 +196,7 @@ func (p *metaProcessor) Process() (*Result, error) {
 		}
 	}
 	if len(nErrs) != 0 {
-		return nil, nErrs
+		return result, nErrs
 	}
 
 	return result, nil
