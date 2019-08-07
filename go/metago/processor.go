@@ -51,8 +51,16 @@ type metaProcessor struct {
 	nodeErrors NodeErrors
 }
 
-func (p *metaProcessor) Process() (*Result, error) {
-	cfg := &packages.Config{
+func (p *metaProcessor) Process(cfg *Config) (*Result, error) {
+	p.cfg = cfg
+	p.removeNodes = make(map[ast.Node]bool)
+	p.replaceNodes = make(map[ast.Node]ast.Node)
+	p.valueMapping = make(map[*ast.Object]ast.Expr)
+	p.fieldMapping = make(map[*ast.Object]ast.Expr)
+	p.requiredBreakLabel = nil
+	p.requiredContinueLabel = nil
+
+	pkgCfg := &packages.Config{
 		Mode: packages.NeedName |
 			packages.NeedFiles |
 			packages.NeedImports |
@@ -62,7 +70,7 @@ func (p *metaProcessor) Process() (*Result, error) {
 			packages.NeedTypesInfo,
 		BuildFlags: []string{"-tags", metagoBuildTag},
 	}
-	pkgs, err := packages.Load(cfg, p.cfg.TargetPackages...)
+	pkgs, err := packages.Load(pkgCfg, p.cfg.TargetPackages...)
 	if err != nil {
 		return nil, err
 	}
@@ -86,10 +94,6 @@ func (p *metaProcessor) Process() (*Result, error) {
 			}
 			if len(p.requiredBreakLabel) != 0 {
 				panic("unknown state about requiredBreakLabel")
-			}
-
-			if !astutil.UsesImport(file, metagoPackagePath) {
-				continue
 			}
 
 			fileResult := &FileResult{
@@ -244,11 +248,6 @@ func (p *metaProcessor) ApplyPost(cursor *astutil.Cursor) bool {
 
 	current := cursor.Node()
 	if current == nil {
-		return true
-	}
-
-	if p.removeNodes[current] {
-		cursor.Delete()
 		return true
 	}
 
@@ -963,6 +962,11 @@ func (p *metaProcessor) checkInlineTemplateCallExpr(cursor *astutil.Cursor, node
 	// foo(mv) 形式のみ対応 メソッド類は対応が大変
 	funcName, ok := node.Fun.(*ast.Ident)
 	if !ok {
+		return false
+	}
+
+	if funcName.Obj == nil {
+		// panic("foo") とかが該当
 		return false
 	}
 

@@ -38,16 +38,9 @@ type FileResult struct {
 }
 
 type Processor interface {
-	Process() (*Result, error)
+	Process(cfg *Config) (*Result, error)
 }
 
-func NewProcessor(cfg *Config) (Processor, error) {
-	p := &metaProcessor{
-		cfg:          cfg,
-		removeNodes:  make(map[ast.Node]bool),
-		replaceNodes: make(map[ast.Node]ast.Node),
-		valueMapping: make(map[*ast.Object]ast.Expr),
-		fieldMapping: make(map[*ast.Object]ast.Expr),
-	}
-	return p, nil
+func NewProcessor() (Processor, error) {
+	return &metaProcessor{}, nil
 }

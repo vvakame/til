@@ -1,8 +1,8 @@
 //+build metago
 
-// basic usage.
+// metago import with '.' .
 
-package metaGoDotImport
+package metagoDotImport2
 
 import (
 	"bytes"

@@ -8,15 +8,15 @@ import (
 )
 
 func main() {
-	p, err := metago.NewProcessor(&metago.Config{
+	p, err := metago.NewProcessor()
+	if err != nil {
+		panic(err)
+	}
+	result, err := p.Process(&metago.Config{
 		TargetPackages: []string{
 			"github.com/vvakame/til/go/metago/internal/testbed/basic",
 		},
 	})
-	if err != nil {
-		panic(err)
-	}
-	result, err := p.Process()
 	if err != nil {
 		_, _ = fmt.Fprint(os.Stderr, err.Error())
 		os.Exit(1)

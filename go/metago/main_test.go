@@ -35,15 +35,15 @@ func TestProcessor(t *testing.T) {
 		packagePath := path.Join(basePath, fixturePath, fileInfo.Name())
 
 		t.Run(packagePath, func(t *testing.T) {
-			p, err := metago.NewProcessor(&metago.Config{
+			p, err := metago.NewProcessor()
+			if err != nil {
+				t.Fatal(err)
+			}
+			result, err := p.Process(&metago.Config{
 				TargetPackages: []string{
 					packagePath,
 				},
 			})
-			if err != nil {
-				t.Fatal(err)
-			}
-			result, err := p.Process()
 			if result != nil {
 				// テスト継続可
 
