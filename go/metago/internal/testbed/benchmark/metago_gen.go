@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/vvakame/til/go/metago"
@@ -24,107 +25,90 @@ type FooMetago struct {
 	CreatedAt time.Time
 }
 
+var bufferPool sync.Pool
+var propertyNameCache map[string]string
+
 func (obj *FooMetago) MarshalJSON() ([]byte, error) {
-	buf := bytes.NewBuffer(make([]byte, 0, 1024))
+	var buf *bytes.Buffer
+	if v := bufferPool.Get(); v != nil {
+		buf = v.(*bytes.Buffer)
+		buf.Reset()
+	} else {
+		buf = &bytes.Buffer{}
+	}
+	if propertyNameCache == nil {
+		propertyNameCache = make(map[string]string)
+	}
+
 	buf.WriteString("{")
 
 	var i int
 	{
-
-		if i != 0 {
-			buf.WriteString(",")
-		}
-
 		propertyName := "ID"
-		if v := ""; v != "" {
-			propertyName = strings.SplitN(v, ",", 2)[0]
+		quotedPropertyName, ok := propertyNameCache[propertyName]
+		if !ok {
+			quotedPropertyName = strconv.Quote(propertyName)
+			propertyNameCache[propertyName] = quotedPropertyName
 		}
-
-		buf.WriteString(strconv.Quote(propertyName))
+		buf.WriteString(quotedPropertyName)
 		buf.WriteString(":")
-		{
-
-			buf.WriteString(strconv.FormatInt(obj.ID, 10))
-		}
-
+		buf.WriteString(strconv.FormatInt(obj.ID, 10))
 		i++
 	}
 	{
-
-		if i != 0 {
-			buf.WriteString(",")
-		}
-
+		buf.WriteString(",")
 		propertyName := "Kind"
-		if v := ""; v != "" {
-			propertyName = strings.SplitN(v, ",", 2)[0]
+		quotedPropertyName, ok := propertyNameCache[propertyName]
+		if !ok {
+			quotedPropertyName = strconv.Quote(propertyName)
+			propertyNameCache[propertyName] = quotedPropertyName
 		}
-
-		buf.WriteString(strconv.Quote(propertyName))
+		buf.WriteString(quotedPropertyName)
 		buf.WriteString(":")
-		{
-
-			buf.WriteString(strconv.Quote(obj.Kind))
-		}
-
+		buf.WriteString(strconv.Quote(obj.Kind))
 		i++
 	}
 	{
-
-		if i != 0 {
-			buf.WriteString(",")
-		}
-
+		buf.WriteString(",")
 		propertyName := "Name"
 		if v := "nickname"; v != "" {
 			propertyName = strings.SplitN(v, ",", 2)[0]
 		}
-
-		buf.WriteString(strconv.Quote(propertyName))
-		buf.WriteString(":")
-		{
-
-			buf.WriteString(strconv.Quote(obj.Name))
+		quotedPropertyName, ok := propertyNameCache[propertyName]
+		if !ok {
+			quotedPropertyName = strconv.Quote(propertyName)
+			propertyNameCache[propertyName] = quotedPropertyName
 		}
-
+		buf.WriteString(quotedPropertyName)
+		buf.WriteString(":")
+		buf.WriteString(strconv.Quote(obj.Name))
 		i++
 	}
 	{
-
-		if i != 0 {
-			buf.WriteString(",")
-		}
-
+		buf.WriteString(",")
 		propertyName := "Age"
-		if v := ""; v != "" {
-			propertyName = strings.SplitN(v, ",", 2)[0]
+		quotedPropertyName, ok := propertyNameCache[propertyName]
+		if !ok {
+			quotedPropertyName = strconv.Quote(propertyName)
+			propertyNameCache[propertyName] = quotedPropertyName
 		}
-
-		buf.WriteString(strconv.Quote(propertyName))
+		buf.WriteString(quotedPropertyName)
 		buf.WriteString(":")
-		{
-
-			buf.WriteString(strconv.Itoa(obj.Age))
-		}
-
+		buf.WriteString(strconv.Itoa(obj.Age))
 		i++
 	}
 	{
 		if obj.CreatedAt.IsZero() {
 			goto metagoGoto0
-
 		}
-
-		if i != 0 {
-			buf.WriteString(",")
-		}
-
+		buf.WriteString(",")
 		propertyName := "CreatedAt"
-		if v := ""; v != "" {
-			propertyName = strings.SplitN(v, ",", 2)[0]
+		quotedPropertyName, ok := propertyNameCache[propertyName]
+		if !ok {
+			quotedPropertyName = strconv.Quote(propertyName)
+			propertyNameCache[propertyName] = quotedPropertyName
 		}
-
-		buf.WriteString(strconv.Quote(propertyName))
+		buf.WriteString(quotedPropertyName)
 		buf.WriteString(":")
 		{
 
@@ -134,13 +118,14 @@ func (obj *FooMetago) MarshalJSON() ([]byte, error) {
 			}
 			buf.Write(b)
 		}
-
-		i++
 	}
 metagoGoto0:
 	;
-
 	buf.WriteString("}")
 
-	return buf.Bytes(), nil
+	b := buf.Bytes()
+
+	bufferPool.Put(buf)
+
+	return b, nil
 }

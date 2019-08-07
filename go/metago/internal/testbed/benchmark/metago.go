@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/vvakame/til/go/metago"
@@ -22,8 +23,21 @@ type FooMetago struct {
 	CreatedAt time.Time
 }
 
+var bufferPool sync.Pool
+var propertyNameCache map[string]string
+
 func (obj *FooMetago) MarshalJSON() ([]byte, error) {
-	buf := bytes.NewBuffer(make([]byte, 0, 1024))
+	var buf *bytes.Buffer
+	if v := bufferPool.Get(); v != nil {
+		buf = v.(*bytes.Buffer)
+		buf.Reset()
+	} else {
+		buf = &bytes.Buffer{}
+	}
+	if propertyNameCache == nil {
+		propertyNameCache = make(map[string]string)
+	}
+
 	buf.WriteString("{")
 
 	mv := metago.ValueOf(obj)
@@ -41,8 +55,13 @@ func (obj *FooMetago) MarshalJSON() ([]byte, error) {
 		if v := mf.StructTagGet("json"); v != "" {
 			propertyName = strings.SplitN(v, ",", 2)[0]
 		}
+		quotedPropertyName, ok := propertyNameCache[propertyName]
+		if !ok {
+			quotedPropertyName = strconv.Quote(propertyName)
+			propertyNameCache[propertyName] = quotedPropertyName
+		}
 
-		buf.WriteString(strconv.Quote(propertyName))
+		buf.WriteString(quotedPropertyName)
 		buf.WriteString(":")
 
 		switch v := mf.Value().(type) {
@@ -65,5 +84,9 @@ func (obj *FooMetago) MarshalJSON() ([]byte, error) {
 
 	buf.WriteString("}")
 
-	return buf.Bytes(), nil
+	b := buf.Bytes()
+
+	bufferPool.Put(buf)
+
+	return b, nil
 }
