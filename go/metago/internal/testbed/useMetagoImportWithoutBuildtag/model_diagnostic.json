@@ -1,0 +1,6 @@
+[
+  {
+    "level": "notice",
+    "message": "internal/testbed/useMetagoImportWithoutBuildtag/model.go:3:1: this file has metago buildtag but doesn't use metago package. ignored"
+  }
+]

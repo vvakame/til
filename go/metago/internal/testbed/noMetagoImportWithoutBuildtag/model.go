@@ -1,5 +1,3 @@
-//+build metago
-
 // no metago import.
 
 package noMetagoImportWithBuildtag

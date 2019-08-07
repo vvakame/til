@@ -2,7 +2,7 @@
 
 // metago import with '.' .
 
-package metagoDotImport2
+package metagoDotImport
 
 import (
 	"bytes"

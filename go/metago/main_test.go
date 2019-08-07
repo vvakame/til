@@ -96,7 +96,7 @@ func TestProcessor(t *testing.T) {
 						t.Error(d)
 					})
 					t.Run("diagnostic", func(t *testing.T) {
-						expectedBytes, err := json.MarshalIndent(fileResult.Errors, "", "  ")
+						actualBytes, err := json.MarshalIndent(fileResult.Errors, "", "  ")
 						if err != nil {
 							t.Fatal(err)
 						}
@@ -104,22 +104,22 @@ func TestProcessor(t *testing.T) {
 						b, err := ioutil.ReadFile(diagnosticFilePath)
 						if *update || os.IsNotExist(err) {
 							t.Logf("update %s", diagnosticFilePath)
-							err = ioutil.WriteFile(diagnosticFilePath, expectedBytes, 0666)
+							err = ioutil.WriteFile(diagnosticFilePath, actualBytes, 0666)
 							if err != nil {
 								t.Fatal(err)
 							}
-							b = expectedBytes
+							b = actualBytes
 						} else if err != nil {
 							t.Fatal(err)
 						}
 
-						if string(expectedBytes) == string(b) {
+						if string(actualBytes) == string(b) {
 							return
 						}
 
 						diff := difflib.UnifiedDiff{
-							A:       difflib.SplitLines(string(expectedBytes)),
-							B:       difflib.SplitLines(string(b)),
+							A:       difflib.SplitLines(string(b)),
+							B:       difflib.SplitLines(string(actualBytes)),
 							Context: 5,
 						}
 						d, err := difflib.GetUnifiedDiffString(diff)

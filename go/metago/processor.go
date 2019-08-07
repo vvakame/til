@@ -37,6 +37,7 @@ type metaProcessor struct {
 	currentTargetField *ast.Object
 	currentBlockStmt   *ast.BlockStmt
 
+	hasMetagoBuildTag     bool
 	removeNodes           map[ast.Node]bool
 	replaceNodes          map[ast.Node]ast.Node
 	gotoCounter           int
@@ -87,6 +88,7 @@ func (p *metaProcessor) Process(cfg *Config) (*Result, error) {
 	for _, pkg := range pkgs {
 	file:
 		for idx, file := range pkg.Syntax {
+			p.hasMetagoBuildTag = false
 			p.currentPkg = pkg
 			p.currentFile = file
 			if len(p.requiredContinueLabel) != 0 {
@@ -102,6 +104,8 @@ func (p *metaProcessor) Process(cfg *Config) (*Result, error) {
 				FilePath: pkg.GoFiles[idx], // TODO これほんとうに安全？
 			}
 			result.Results = append(result.Results, fileResult)
+
+			useMetagoPackage := astutil.UsesImport(file, metagoPackagePath)
 
 			// . import してたら殺す
 			for _, importSpec := range file.Imports {
@@ -131,6 +135,16 @@ func (p *metaProcessor) Process(cfg *Config) (*Result, error) {
 				p.ApplyPre,
 				p.ApplyPost,
 			)
+
+			if !p.hasMetagoBuildTag {
+				if useMetagoPackage {
+					p.Noticef(file, "this file has %s buildtag but doesn't use metago package. ignored", metagoBuildTag)
+				}
+				fileResult.Errors = append(fileResult.Errors, p.nodeErrors...)
+				p.nodeErrors = nil
+
+				continue
+			}
 
 			fileResult.Errors = append(fileResult.Errors, p.nodeErrors...)
 			p.nodeErrors = nil
@@ -518,6 +532,7 @@ func (p *metaProcessor) checkMetagoBuildTagComment(cursor *astutil.Cursor, node 
 		return false
 	}
 
+	p.hasMetagoBuildTag = true
 	cursor.Delete()
 	return true
 }

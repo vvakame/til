@@ -87,9 +87,9 @@ func (nErr *NodeError) MarshalJSON() ([]byte, error) {
 		case ErrorLevelWarning:
 			buf.Write([]byte(strconv.Quote("warning")))
 		case ErrorLevelNotice:
-			buf.Write([]byte(strconv.Quote("error")))
+			buf.Write([]byte(strconv.Quote("notice")))
 		case ErrorLevelDebug:
-			buf.Write([]byte(strconv.Quote("error")))
+			buf.Write([]byte(strconv.Quote("debug")))
 		default:
 			buf.Write([]byte(strconv.Quote("unknown")))
 		}
