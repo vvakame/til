@@ -5,8 +5,8 @@ package benchmark
 import (
 	"strconv"
 	"strings"
+	"sync"
 	"time"
-	"unsafe"
 
 	"github.com/vvakame/til/go/metago"
 )
@@ -22,16 +22,20 @@ type FooMetago struct {
 	CreatedAt time.Time
 }
 
+var bufferPool *sync.Pool = &sync.Pool{
+	New: func() interface{} {
+		return make([]byte, 0, 100)
+	},
+}
 var propertyNameCache map[string]string
 
 func (obj *FooMetago) MarshalJSON() ([]byte, error) {
-	var buf strings.Builder
-	buf.Grow(1024)
+	buf := bufferPool.Get().([]byte)
 	if propertyNameCache == nil {
 		propertyNameCache = make(map[string]string)
 	}
 
-	buf.WriteString("{")
+	buf = append(buf, "{"...)
 
 	mv := metago.ValueOf(obj)
 	var i int
@@ -41,7 +45,7 @@ func (obj *FooMetago) MarshalJSON() ([]byte, error) {
 		}
 
 		if i != 0 {
-			buf.WriteString(",")
+			buf = append(buf, ","...)
 		}
 
 		propertyName := mf.Name()
@@ -54,29 +58,31 @@ func (obj *FooMetago) MarshalJSON() ([]byte, error) {
 			propertyNameCache[propertyName] = quotedPropertyName
 		}
 
-		buf.WriteString(quotedPropertyName)
-		buf.WriteString(":")
+		buf = append(buf, quotedPropertyName...)
+		buf = append(buf, ":"...)
 
 		switch v := mf.Value().(type) {
 		case int64:
-			buf.WriteString(strconv.FormatInt(v, 10))
+			buf = strconv.AppendInt(buf, v, 10)
 		case int:
-			buf.WriteString(strconv.Itoa(v))
+			buf = strconv.AppendInt(buf, int64(v), 10)
 		case string:
-			buf.WriteString(strconv.Quote(v))
+			buf = strconv.AppendQuote(buf, v)
 		case time.Time:
 			b, err := v.MarshalJSON()
 			if err != nil {
 				return nil, err
 			}
-			buf.Write(b)
+			buf = append(buf, b...)
 		}
 
 		i++
 	}
 
-	buf.WriteString("}")
+	buf = append(buf, "}"...)
+	ret := make([]byte, len(buf))
+	copy(ret, buf)
+	bufferPool.Put(buf[:0])
 
-	s := buf.String()
-	return *(*[]byte)(unsafe.Pointer(&s)), nil
+	return ret, nil
 }

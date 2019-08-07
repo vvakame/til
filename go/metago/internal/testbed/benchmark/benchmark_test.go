@@ -16,7 +16,10 @@ func BenchmarkMetago(b *testing.B) {
 	}
 
 	for i := 0; i < b.N; i++ {
-		_, _ = json.Marshal(foo)
+		_, err := json.Marshal(foo)
+		if err != nil {
+			b.Error(err)
+		}
 	}
 }
 
@@ -30,7 +33,10 @@ func BenchmarkMetago_callMarshalJSON(b *testing.B) {
 	}
 
 	for i := 0; i < b.N; i++ {
-		_, _ = foo.MarshalJSON()
+		_, err := foo.MarshalJSON()
+		if err != nil {
+			b.Error(err)
+		}
 	}
 }
 
@@ -44,7 +50,10 @@ func BenchmarkVanilla(b *testing.B) {
 	}
 
 	for i := 0; i < b.N; i++ {
-		_, _ = json.Marshal(foo)
+		_, err := json.Marshal(foo)
+		if err != nil {
+			b.Error(err)
+		}
 	}
 }
 
@@ -58,6 +67,9 @@ func BenchmarkVanillaHandImpl(b *testing.B) {
 	}
 
 	for i := 0; i < b.N; i++ {
-		_, _ = json.Marshal(foo)
+		_, err := json.Marshal(foo)
+		if err != nil {
+			b.Error(err)
+		}
 	}
 }

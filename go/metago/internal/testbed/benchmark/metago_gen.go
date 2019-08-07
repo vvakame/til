@@ -7,8 +7,8 @@ package benchmark
 import (
 	"strconv"
 	"strings"
+	"sync"
 	"time"
-	"unsafe"
 
 	"github.com/vvakame/til/go/metago"
 )
@@ -24,22 +24,26 @@ type FooMetago struct {
 	CreatedAt time.Time
 }
 
+var bufferPool *sync.Pool = &sync.Pool{
+	New: func() interface{} {
+		return make([]byte, 0, 100)
+	},
+}
 var propertyNameCache map[string]string
 
 func (obj *FooMetago) MarshalJSON() ([]byte, error) {
-	var buf strings.Builder
-	buf.Grow(1024)
+	buf := bufferPool.Get().([]byte)
 	if propertyNameCache == nil {
 		propertyNameCache = make(map[string]string)
 	}
 
-	buf.WriteString("{")
+	buf = append(buf, "{"...)
 
 	var i int
 	{
 
 		if i != 0 {
-			buf.WriteString(",")
+			buf = append(buf, ","...)
 		}
 
 		propertyName := "ID"
@@ -52,11 +56,11 @@ func (obj *FooMetago) MarshalJSON() ([]byte, error) {
 			propertyNameCache[propertyName] = quotedPropertyName
 		}
 
-		buf.WriteString(quotedPropertyName)
-		buf.WriteString(":")
+		buf = append(buf, quotedPropertyName...)
+		buf = append(buf, ":"...)
 		{
 
-			buf.WriteString(strconv.FormatInt(obj.ID, 10))
+			buf = strconv.AppendInt(buf, obj.ID, 10)
 		}
 
 		i++
@@ -64,7 +68,7 @@ func (obj *FooMetago) MarshalJSON() ([]byte, error) {
 	{
 
 		if i != 0 {
-			buf.WriteString(",")
+			buf = append(buf, ","...)
 		}
 
 		propertyName := "Kind"
@@ -77,11 +81,11 @@ func (obj *FooMetago) MarshalJSON() ([]byte, error) {
 			propertyNameCache[propertyName] = quotedPropertyName
 		}
 
-		buf.WriteString(quotedPropertyName)
-		buf.WriteString(":")
+		buf = append(buf, quotedPropertyName...)
+		buf = append(buf, ":"...)
 		{
 
-			buf.WriteString(strconv.Quote(obj.Kind))
+			buf = strconv.AppendQuote(buf, obj.Kind)
 		}
 
 		i++
@@ -89,7 +93,7 @@ func (obj *FooMetago) MarshalJSON() ([]byte, error) {
 	{
 
 		if i != 0 {
-			buf.WriteString(",")
+			buf = append(buf, ","...)
 		}
 
 		propertyName := "Name"
@@ -102,11 +106,11 @@ func (obj *FooMetago) MarshalJSON() ([]byte, error) {
 			propertyNameCache[propertyName] = quotedPropertyName
 		}
 
-		buf.WriteString(quotedPropertyName)
-		buf.WriteString(":")
+		buf = append(buf, quotedPropertyName...)
+		buf = append(buf, ":"...)
 		{
 
-			buf.WriteString(strconv.Quote(obj.Name))
+			buf = strconv.AppendQuote(buf, obj.Name)
 		}
 
 		i++
@@ -114,7 +118,7 @@ func (obj *FooMetago) MarshalJSON() ([]byte, error) {
 	{
 
 		if i != 0 {
-			buf.WriteString(",")
+			buf = append(buf, ","...)
 		}
 
 		propertyName := "Age"
@@ -127,11 +131,11 @@ func (obj *FooMetago) MarshalJSON() ([]byte, error) {
 			propertyNameCache[propertyName] = quotedPropertyName
 		}
 
-		buf.WriteString(quotedPropertyName)
-		buf.WriteString(":")
+		buf = append(buf, quotedPropertyName...)
+		buf = append(buf, ":"...)
 		{
 
-			buf.WriteString(strconv.Itoa(obj.Age))
+			buf = strconv.AppendInt(buf, int64(obj.Age), 10)
 		}
 
 		i++
@@ -143,7 +147,7 @@ func (obj *FooMetago) MarshalJSON() ([]byte, error) {
 		}
 
 		if i != 0 {
-			buf.WriteString(",")
+			buf = append(buf, ","...)
 		}
 
 		propertyName := "CreatedAt"
@@ -156,15 +160,15 @@ func (obj *FooMetago) MarshalJSON() ([]byte, error) {
 			propertyNameCache[propertyName] = quotedPropertyName
 		}
 
-		buf.WriteString(quotedPropertyName)
-		buf.WriteString(":")
+		buf = append(buf, quotedPropertyName...)
+		buf = append(buf, ":"...)
 		{
 
 			b, err := obj.CreatedAt.MarshalJSON()
 			if err != nil {
 				return nil, err
 			}
-			buf.Write(b)
+			buf = append(buf, b...)
 		}
 
 		i++
@@ -172,8 +176,10 @@ func (obj *FooMetago) MarshalJSON() ([]byte, error) {
 metagoGoto0:
 	;
 
-	buf.WriteString("}")
+	buf = append(buf, "}"...)
+	ret := make([]byte, len(buf))
+	copy(ret, buf)
+	bufferPool.Put(buf[:0])
 
-	s := buf.String()
-	return *(*[]byte)(unsafe.Pointer(&s)), nil
+	return ret, nil
 }
