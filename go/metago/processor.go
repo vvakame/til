@@ -361,11 +361,19 @@ func (p *metaProcessor) isMetagoValueOf(selectorExpr *ast.SelectorExpr) bool {
 		return false
 	}
 	var found bool
-	for _, pkg := range p.currentPkg.Types.Imports() {
-		if pkg.Path() != metagoPackagePath {
+	for _, importSpec := range p.currentFile.Imports {
+		pkgPath, err := strconv.Unquote(importSpec.Path.Value)
+		if err != nil {
+			panic(err)
+		}
+		if pkgPath != metagoPackagePath {
 			continue
 		}
-		if pkg.Name() == lhsIdent.Name {
+		if importSpec.Name != nil && importSpec.Name.Name == lhsIdent.Name {
+			found = true
+			break
+		}
+		if pkg := p.currentPkg.Imports[pkgPath]; pkg != nil && pkg.Name == lhsIdent.Name {
 			found = true
 			break
 		}
