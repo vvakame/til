@@ -47,3 +47,17 @@ func BenchmarkVanilla(b *testing.B) {
 		_, _ = json.Marshal(foo)
 	}
 }
+
+func BenchmarkVanillaHandImpl(b *testing.B) {
+	foo := &FooVanillaHandImpl{
+		ID:        100,
+		Kind:      "NFC",
+		Name:      "Yukari",
+		Age:       4,
+		CreatedAt: time.Now(),
+	}
+
+	for i := 0; i < b.N; i++ {
+		_, _ = json.Marshal(foo)
+	}
+}

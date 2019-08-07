@@ -3,11 +3,10 @@
 package benchmark
 
 import (
-	"bytes"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
+	"unsafe"
 
 	"github.com/vvakame/til/go/metago"
 )
@@ -23,17 +22,11 @@ type FooMetago struct {
 	CreatedAt time.Time
 }
 
-var bufferPool sync.Pool
 var propertyNameCache map[string]string
 
 func (obj *FooMetago) MarshalJSON() ([]byte, error) {
-	var buf *bytes.Buffer
-	if v := bufferPool.Get(); v != nil {
-		buf = v.(*bytes.Buffer)
-		buf.Reset()
-	} else {
-		buf = &bytes.Buffer{}
-	}
+	var buf strings.Builder
+	buf.Grow(1024)
 	if propertyNameCache == nil {
 		propertyNameCache = make(map[string]string)
 	}
@@ -84,9 +77,6 @@ func (obj *FooMetago) MarshalJSON() ([]byte, error) {
 
 	buf.WriteString("}")
 
-	b := buf.Bytes()
-
-	bufferPool.Put(buf)
-
-	return b, nil
+	s := buf.String()
+	return *(*[]byte)(unsafe.Pointer(&s)), nil
 }
