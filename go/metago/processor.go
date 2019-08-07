@@ -514,7 +514,7 @@ outer:
 
 	if node.Recv != nil {
 		p.Errorf(node, "method (function with receiver) can't become inline template")
-		return false
+		return true // 子方向の展開処理されるとコンパイルエラーになりがちなので
 	}
 
 	return true
