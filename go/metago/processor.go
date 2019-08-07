@@ -219,9 +219,7 @@ func (p *metaProcessor) ApplyPre(cursor *astutil.Cursor) bool {
 
 	switch node := current.(type) {
 	case *ast.Comment:
-		if node.Text == fmt.Sprintf("//+build %s", metagoBuildTag) {
-			// TODO メソッド切り出し
-			cursor.Delete()
+		if p.checkMetagoBuildTagComment(cursor, node) {
 			return false
 		}
 
@@ -274,28 +272,8 @@ func (p *metaProcessor) ApplyPre(cursor *astutil.Cursor) bool {
 		}
 
 	case *ast.BranchStmt:
-		// TODO メソッド切り出し
-		switch node.Tok {
-		case token.CONTINUE:
-			labelName := fmt.Sprintf("metagoGoto%d", p.gotoCounter)
-			p.gotoCounter++
-			p.requiredContinueLabel = append(p.requiredContinueLabel, labelName)
-			cursor.Replace(&ast.BranchStmt{
-				Tok: token.GOTO,
-				Label: &ast.Ident{
-					Name: labelName,
-				},
-			})
-		case token.BREAK:
-			labelName := fmt.Sprintf("metagoGoto%d", p.gotoCounter)
-			p.gotoCounter++
-			p.requiredBreakLabel = append(p.requiredBreakLabel, labelName)
-			cursor.Replace(&ast.BranchStmt{
-				Tok: token.GOTO,
-				Label: &ast.Ident{
-					Name: labelName,
-				},
-			})
+		if p.checkInRangeBranchStmt(cursor, node) {
+			return false
 		}
 
 	case *ast.BlockStmt:
@@ -578,6 +556,15 @@ func (p *metaProcessor) extractMetagoBaseVariable(expr ast.Expr) *ast.Ident {
 	}
 
 	return targetIdent
+}
+
+func (p *metaProcessor) checkMetagoBuildTagComment(cursor *astutil.Cursor, node *ast.Comment) bool {
+	if node.Text != fmt.Sprintf("//+build %s", metagoBuildTag) {
+		return false
+	}
+
+	cursor.Delete()
+	return true
 }
 
 func (p *metaProcessor) checkReplaceTargetIdent(cursor *astutil.Cursor, node *ast.Ident) bool {
@@ -981,6 +968,35 @@ func (p *metaProcessor) checkTypeSwitchStmt(cursor *astutil.Cursor, node *ast.Ty
 	}
 	astutil.Apply(newBlock, p.ApplyPre, p.ApplyPost)
 	cursor.Replace(newBlock)
+
+	return true
+}
+
+func (p *metaProcessor) checkInRangeBranchStmt(cursor *astutil.Cursor, node *ast.BranchStmt) bool {
+	switch node.Tok {
+	case token.CONTINUE:
+		labelName := fmt.Sprintf("metagoGoto%d", p.gotoCounter)
+		p.gotoCounter++
+		p.requiredContinueLabel = append(p.requiredContinueLabel, labelName)
+		cursor.Replace(&ast.BranchStmt{
+			Tok: token.GOTO,
+			Label: &ast.Ident{
+				Name: labelName,
+			},
+		})
+	case token.BREAK:
+		labelName := fmt.Sprintf("metagoGoto%d", p.gotoCounter)
+		p.gotoCounter++
+		p.requiredBreakLabel = append(p.requiredBreakLabel, labelName)
+		cursor.Replace(&ast.BranchStmt{
+			Tok: token.GOTO,
+			Label: &ast.Ident{
+				Name: labelName,
+			},
+		})
+	default:
+		return false
+	}
 
 	return true
 }
