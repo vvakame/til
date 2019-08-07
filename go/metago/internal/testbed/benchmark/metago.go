@@ -5,8 +5,8 @@ package benchmark
 import (
 	"strconv"
 	"strings"
-	"sync"
 	"time"
+	"unsafe"
 
 	"github.com/vvakame/til/go/metago"
 )
@@ -22,20 +22,32 @@ type FooMetago struct {
 	CreatedAt time.Time
 }
 
-var bufferPool *sync.Pool = &sync.Pool{
-	New: func() interface{} {
-		return make([]byte, 0, 100)
-	},
-}
 var propertyNameCache map[string]string
 
 func (obj *FooMetago) MarshalJSON() ([]byte, error) {
-	buf := bufferPool.Get().([]byte)
+	// 実装方法メモ
+	//   * bytes.Buffer 作戦 string → []byte のキャストでメモリコピー発生するのを避けるのがだるい
+	//     * sync.Pool とかで使い回すとちょっと性能向上
+	//     * buf.Reset とかでメモリの再確保を切り詰められる
+	//   * strings.Builder
+	//     * bytes.Buffer と Reset の実装がことなるので使いまわしに向いてない
+	//   * []byte + append(buf, foo...) でひたすらがんばる
+	//     * 一番速い
+	//     * strconv.AppendQuote とか案外活用できるものがたくさんある
+	//     * 読みづらい
+	// json.Marshalメモ
+	//   * json.Marshal(obj) と obj.MarshalJSON() の結果は等価ではない
+	//     * compactとか呼ばれるので
+	//     * 前者は結果の []byte が本当にJSONか検証されて出てくる
+	//   * 自前 MarshalJSON+json.Marshal は実装無し素json.Marshalに速度的には勝つのは難しい
+	//     * 上記の理由により…
+
+	var buf strings.Builder
 	if propertyNameCache == nil {
 		propertyNameCache = make(map[string]string)
 	}
 
-	buf = append(buf, "{"...)
+	buf.WriteString("{")
 
 	mv := metago.ValueOf(obj)
 	var i int
@@ -45,7 +57,7 @@ func (obj *FooMetago) MarshalJSON() ([]byte, error) {
 		}
 
 		if i != 0 {
-			buf = append(buf, ","...)
+			buf.WriteString(",")
 		}
 
 		propertyName := mf.Name()
@@ -58,31 +70,29 @@ func (obj *FooMetago) MarshalJSON() ([]byte, error) {
 			propertyNameCache[propertyName] = quotedPropertyName
 		}
 
-		buf = append(buf, quotedPropertyName...)
-		buf = append(buf, ":"...)
+		buf.WriteString(quotedPropertyName)
+		buf.WriteString(":")
 
 		switch v := mf.Value().(type) {
 		case int64:
-			buf = strconv.AppendInt(buf, v, 10)
+			buf.WriteString(strconv.FormatInt(v, 10))
 		case int:
-			buf = strconv.AppendInt(buf, int64(v), 10)
+			buf.WriteString(strconv.Itoa(v))
 		case string:
-			buf = strconv.AppendQuote(buf, v)
+			buf.WriteString(strconv.Quote(v))
 		case time.Time:
 			b, err := v.MarshalJSON()
 			if err != nil {
 				return nil, err
 			}
-			buf = append(buf, b...)
+			buf.Write(b)
 		}
 
 		i++
 	}
 
-	buf = append(buf, "}"...)
-	ret := make([]byte, len(buf))
-	copy(ret, buf)
-	bufferPool.Put(buf[:0])
+	buf.WriteString("}")
 
-	return ret, nil
+	s := buf.String()
+	return *(*[]byte)(unsafe.Pointer(&s)), nil
 }
