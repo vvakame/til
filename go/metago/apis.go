@@ -43,12 +43,11 @@ type Processor interface {
 
 func NewProcessor(cfg *Config) (Processor, error) {
 	p := &metaProcessor{
-		cfg:               cfg,
-		removeNodes:       make(map[ast.Node]bool),
-		replaceNodes:      make(map[ast.Node]ast.Node),
-		valueMapping:      make(map[*ast.Object]ast.Expr),
-		fieldMapping:      make(map[*ast.Object]ast.Expr),
-		fieldBlockMapping: make(map[*ast.BlockStmt]*ast.Object),
+		cfg:          cfg,
+		removeNodes:  make(map[ast.Node]bool),
+		replaceNodes: make(map[ast.Node]ast.Node),
+		valueMapping: make(map[*ast.Object]ast.Expr),
+		fieldMapping: make(map[*ast.Object]ast.Expr),
 	}
 	return p, nil
 }

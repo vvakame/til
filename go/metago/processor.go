@@ -85,12 +85,8 @@ type metaProcessor struct {
 
 	// mv → obj への変換用
 	valueMapping map[*ast.Object]ast.Expr
-	// mf → obj.X への変換用 X はわからんので obj 部分を持つ
+	// mf → obj.X への変換用 X 部分はBlockStmtに潜っていくまでわからんので obj 部分を持つ
 	fieldMapping map[*ast.Object]ast.Expr
-	// あるBlockStmt中でどの*ast.Identに紐づくか
-	// { ... } は struct { ID int64 } の `ID` に紐づく！
-	// *ast.IdentのObjをたぐるとフィールドのTypeとかTagも掘れる
-	fieldBlockMapping map[*ast.BlockStmt]*ast.Object
 
 	nodeErrors NodeErrors
 }
@@ -714,7 +710,6 @@ func (p *metaProcessor) checkMetagoFieldRange(cursor *astutil.Cursor, node *ast.
 			bk := p.currentTargetField
 
 			bodyStmt := astcopy.BlockStmt(node.Body)
-			p.fieldBlockMapping[bodyStmt] = name.Obj
 			p.currentTargetField = name.Obj
 			astutil.Apply(
 				bodyStmt,
