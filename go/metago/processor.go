@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"go/ast"
+	"go/constant"
 	"go/format"
 	"go/token"
 	"go/types"
@@ -794,14 +795,42 @@ func (p *metaProcessor) checkIfStmtInInitWithTypeAssert(cursor *astutil.Cursor, 
 		},
 	}
 
-	_, ok = node.Cond.(*ast.Ident)
-	// TODO この辺もうちょっと柔軟性をもたせる 静的にboolに還元できる範囲であれば許容してあげたい
-	if !ok {
-		p.Errorf(node.Cond, "must be '%s'", okIdent.Name)
-		return false
+	// Cond 部分が静的にboolに評価できるかやってみる
+	var condBoolValue bool
+	{
+		var buf bytes.Buffer
+		err := format.Node(&buf, token.NewFileSet(), node.Cond)
+		if err != nil {
+			panic(err)
+		}
+		tmpPkg := types.NewPackage("main", "main")
+		okVar := types.NewConst(
+			token.NoPos,
+			tmpPkg,
+			okIdent.Name,
+			types.Universe.Lookup("true").Type(),
+			constant.MakeBool(true),
+		)
+		tmpPkg.Scope().Insert(okVar)
+		ret, err := types.Eval(token.NewFileSet(), tmpPkg, token.NoPos, buf.String())
+		if err != nil {
+			p.Errorf(node.Cond, "cond can't evaluate statically: %s", err.Error())
+			return false
+		}
+		_ = ret
+		retType, ok := ret.Type.(*types.Basic)
+		if !ok {
+			p.Errorf(node.Cond, "cond is not evaluate to bool")
+			return false
+		}
+		if retType.Kind() != types.UntypedBool {
+			p.Errorf(node.Cond, "cond is not evaluate to bool")
+			return false
+		}
+		condBoolValue = constant.BoolVal(ret.Value)
 	}
 
-	if p.isAssignable(typeAssertExpr.Type, p.currentTargetField.Decl.(*ast.Field).Type) {
+	if condBoolValue == p.isAssignable(typeAssertExpr.Type, p.currentTargetField.Decl.(*ast.Field).Type) {
 		// Bodyが評価される & if全体を置き換え
 		astutil.Apply(
 			node.Body,
