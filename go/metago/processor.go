@@ -9,9 +9,7 @@ import (
 	"go/token"
 	"go/types"
 	"reflect"
-	"runtime"
 	"strconv"
-	"strings"
 
 	"github.com/go-toolsmith/astcopy"
 	"golang.org/x/tools/go/ast/astutil"
@@ -21,53 +19,15 @@ import (
 const metagoBuildTag = "metago"
 const metagoPackagePath = "github.com/vvakame/til/go/metago"
 
-var valueTypeString string
-var fieldTypeString string
-var valueOfTypeString string
-var fieldNameMethodName string
-var fieldValueMethodName string
-var fieldStructTagGetMethodName string
-
-const valueFieldMethodName = "Fields"
-
-func init() {
-	{
-		var v Value
-		valueTypeString = reflect.ValueOf(&v).Elem().Type().Name()
-	}
-	{
-		var f Field
-		fieldTypeString = reflect.ValueOf(&f).Elem().Type().Name()
-	}
-	{
-		s := runtime.FuncForPC(reflect.ValueOf(ValueOf).Pointer()).Name()
-		valueOfTypeString = strings.TrimPrefix(s, metagoPackagePath+".")
-	}
-	{
-		var f Field
-		method, ok := reflect.TypeOf(&f).Elem().MethodByName("Name")
-		if !ok {
-			panic("metago.Field#Name method is missing")
-		}
-		fieldNameMethodName = method.Name
-	}
-	{
-		var f Field
-		method, ok := reflect.TypeOf(&f).Elem().MethodByName("Value")
-		if !ok {
-			panic("metago.Field#Value method is missing")
-		}
-		fieldValueMethodName = method.Name
-	}
-	{
-		var f Field
-		method, ok := reflect.TypeOf(&f).Elem().MethodByName("StructTagGet")
-		if !ok {
-			panic("metago.Field#StructTagGet method is missing")
-		}
-		fieldStructTagGetMethodName = method.Name
-	}
-}
+const (
+	valueOfFuncNameString       = "ValueOf"      // metago.[ValueOf](obj)
+	valueTypeString             = "Value"        // metago.[Value]
+	fieldTypeString             = "Field"        // metago.[Field]
+	valueFieldsMethodName       = "Fields"       // mv.[Fields]()
+	fieldNameMethodName         = "Name"         // mf.[Name]()
+	fieldValueMethodName        = "Value"        // mf.[Value]()
+	fieldStructTagGetMethodName = "StructTagGet" // mf.[StructTagGet]("json")
+)
 
 type metaProcessor struct {
 	cfg *Config
@@ -401,7 +361,7 @@ func (p *metaProcessor) isMetagoValueOf(selectorExpr *ast.SelectorExpr) bool {
 		return false
 	}
 
-	if selectorExpr.Sel.Name != valueOfTypeString {
+	if selectorExpr.Sel.Name != valueOfFuncNameString {
 		return false
 	}
 
@@ -685,7 +645,7 @@ func (p *metaProcessor) checkMetagoFieldRange(cursor *astutil.Cursor, node *ast.
 		return false
 	}
 	// Fields 部分が Fields 以外だったら処理対象ではない
-	if selectorExpr.Sel.Name != valueFieldMethodName {
+	if selectorExpr.Sel.Name != valueFieldsMethodName {
 		return false
 	}
 
