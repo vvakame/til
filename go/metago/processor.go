@@ -498,17 +498,26 @@ func (p *metaProcessor) isSameType(expr1 ast.Expr, expr2 ast.Expr) bool {
 }
 
 func (p *metaProcessor) isInlineTemplateFuncDecl(cursor *astutil.Cursor, node *ast.FuncDecl) bool {
-	// TODO func (obj *Foo) Template(mv metago.Value) 的なメソッドは除外する
-
+	var found bool
+outer:
 	for _, params := range node.Type.Params.List {
 		for _, param := range params.Names {
 			if p.isMetagoValue(param) {
-				return true
+				found = true
+				break outer
 			}
 		}
 	}
+	if !found {
+		return false
+	}
 
-	return false
+	if node.Recv != nil {
+		p.Errorf(node, "method (function with receiver) can't become inline template")
+		return false
+	}
+
+	return true
 }
 
 func (p *metaProcessor) extractMetagoBaseVariable(expr ast.Expr) *ast.Ident {
