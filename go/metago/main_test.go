@@ -66,26 +66,26 @@ func TestProcessor(t *testing.T) {
 							t.Skip()
 						}
 
-						expectedCode := fileResult.GeneratedCode
+						actualCode := fileResult.GeneratedCode
 						generatedFilePath := path.Join(fixturePath, fileInfo.Name(), fmt.Sprintf("%s_gen.go", baseFileName))
 						b, err := ioutil.ReadFile(generatedFilePath)
 						if *update || os.IsNotExist(err) {
 							t.Logf("update %s", generatedFilePath)
-							err = ioutil.WriteFile(generatedFilePath, []byte(expectedCode), 0666)
+							err = ioutil.WriteFile(generatedFilePath, []byte(actualCode), 0666)
 							if err != nil {
 								t.Fatal(err)
 							}
-							b = []byte(expectedCode)
+							b = []byte(actualCode)
 						} else if err != nil {
 							t.Fatal(err)
 						}
 
-						if expectedCode == string(b) {
+						if actualCode == string(b) {
 							return
 						}
 
 						diff := difflib.UnifiedDiff{
-							A:       difflib.SplitLines(expectedCode),
+							A:       difflib.SplitLines(actualCode),
 							B:       difflib.SplitLines(string(b)),
 							Context: 5,
 						}

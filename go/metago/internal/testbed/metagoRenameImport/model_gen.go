@@ -12,12 +12,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	foobar "github.com/vvakame/til/go/metago"
 )
-
-// TODO 無くても動くように
-var _ foobar.Value = nil
 
 type Foo struct {
 	ID        int64

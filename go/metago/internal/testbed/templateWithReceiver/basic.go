@@ -14,9 +14,6 @@ import (
 	"github.com/vvakame/til/go/metago"
 )
 
-// TODO 無くても動くように
-var _ metago.Value = nil
-
 type Foo struct {
 	ID        int64
 	Name      string `json:"nickname"`

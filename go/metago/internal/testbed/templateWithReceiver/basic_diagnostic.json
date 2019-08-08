@@ -1,6 +1,6 @@
 [
   {
     "level": "error",
-    "message": "internal/testbed/templateWithReceiver/basic.go:31:1: method (function with receiver) can't become inline template"
+    "message": "internal/testbed/templateWithReceiver/basic.go:28:1: method (function with receiver) can't become inline template"
   }
 ]

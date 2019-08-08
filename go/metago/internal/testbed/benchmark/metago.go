@@ -11,9 +11,6 @@ import (
 	"github.com/vvakame/til/go/metago"
 )
 
-// TODO 無くても動くように
-var _ metago.Value = nil
-
 type FooMetago struct {
 	ID        int64
 	Kind      string

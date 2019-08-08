@@ -139,6 +139,25 @@ func (p *metaProcessor) Process(cfg *Config) (*Result, error) {
 				p.ApplyPost,
 			)
 
+			// clean-up ununsed import
+			for _, importSpec := range file.Imports {
+				if importSpec.Name != nil && importSpec.Name.Name == "_" {
+					continue
+				}
+
+				importPath, err := strconv.Unquote(importSpec.Path.Value)
+				if err != nil {
+					return nil, err
+				}
+				if !astutil.UsesImport(file, importPath) {
+					var importName string
+					if importSpec.Name != nil {
+						importName = importSpec.Name.Name
+					}
+					astutil.DeleteNamedImport(pkg.Fset, file, importName, importPath)
+				}
+			}
+
 			if !p.hasMetagoBuildTag {
 				if useMetagoPackage {
 					p.Noticef(file, "this file has %s buildtag but doesn't use metago package. ignored", metagoBuildTag)
