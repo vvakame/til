@@ -12,7 +12,7 @@ import (
 	"reflect"
 	"strconv"
 
-	"github.com/go-toolsmith/astcopy"
+	"github.com/vvakame/astcopy"
 	"golang.org/x/tools/go/ast/astutil"
 	"golang.org/x/tools/go/packages"
 )
@@ -39,6 +39,7 @@ type metaProcessor struct {
 	currentBlockStmt   *ast.BlockStmt
 
 	hasMetagoBuildTag     bool
+	copyNodeMap           astcopy.CopyNodeMap
 	removeNodes           map[ast.Node]bool
 	replaceNodes          map[ast.Node]ast.Node
 	gotoCounter           int
@@ -55,6 +56,7 @@ type metaProcessor struct {
 
 func (p *metaProcessor) Process(cfg *Config) (*Result, error) {
 	p.cfg = cfg
+	p.copyNodeMap = make(astcopy.CopyNodeMap)
 	p.removeNodes = make(map[ast.Node]bool)
 	p.replaceNodes = make(map[ast.Node]ast.Node)
 	p.valueMapping = make(map[*ast.Object]ast.Expr)
@@ -564,7 +566,7 @@ func (p *metaProcessor) checkMetagoBuildTagComment(cursor *astutil.Cursor, node 
 func (p *metaProcessor) checkReplaceTargetIdent(cursor *astutil.Cursor, node *ast.Ident) bool {
 	// mv系の単純な置き換え
 	if target := p.valueMapping[node.Obj]; target != nil {
-		cursor.Replace(astcopy.Node(target))
+		cursor.Replace(astcopy.Node(target, p.copyNodeMap))
 		return true
 	}
 	// mf系の単純な置き換え
@@ -707,7 +709,7 @@ func (p *metaProcessor) checkMetagoFieldRange(cursor *astutil.Cursor, node *ast.
 		for _, name := range field.Names {
 			bk := p.currentTargetField
 
-			bodyStmt := astcopy.BlockStmt(node.Body)
+			bodyStmt := astcopy.BlockStmt(node.Body, p.copyNodeMap)
 			p.currentTargetField = name.Obj
 			astutil.Apply(
 				bodyStmt,
@@ -1061,7 +1063,7 @@ func (p *metaProcessor) checkInlineTemplateCallExpr(cursor *astutil.Cursor, node
 		return false
 	}
 
-	funcDecl = astcopy.FuncDecl(funcDecl)
+	funcDecl = astcopy.FuncDecl(funcDecl, p.copyNodeMap)
 
 	// 実引数側の mv がマッピングされる先を 仮引数側の mv にも継承させる
 	// *ast.Ident#Obj はコピーされないので metaValueArg 取り直さなくても大丈夫
