@@ -44,8 +44,7 @@ func (obj *Foo) MarshalJSON() ([]byte, error) {
 		buf.WriteString(strconv.Quote(propertyName))
 		buf.WriteString(":")
 
-		if v, ok := mf.Value().(time.Time); ok {
-			// TODO 本当は .(json.Marshaler) したい isAssignable 参照
+		if v, ok := mf.Value().(json.Marshaler); ok {
 			b, err := v.MarshalJSON()
 			if err != nil {
 				return nil, err

@@ -286,30 +286,6 @@ func (p *metaProcessor) ApplyPost(cursor *astutil.Cursor) bool {
 	return true
 }
 
-func (p *metaProcessor) relateToMetagoPackage(ident *ast.Ident) bool {
-	// [mv] ← metago packageですか？ とか
-	// mv.[Value]() ← metago packageですか？ とか
-	v := p.currentPkg.TypesInfo.Defs[ident]
-	if v == nil {
-		return false
-	}
-	t := v.Type()
-	tn, ok := t.(*types.Named)
-	if !ok {
-		return false
-	}
-	typeName := tn.Obj()
-	typePkg := typeName.Pkg()
-	if typePkg == nil {
-		return false
-	}
-	if typePkg.Path() != metagoPackagePath {
-		return false
-	}
-
-	return true
-}
-
 func (p *metaProcessor) isMetagoValue(ident *ast.Ident) bool {
 	// var ident metago.Value ← true
 	// var ident FooBar ← false
@@ -330,33 +306,6 @@ func (p *metaProcessor) isMetagoValue(ident *ast.Ident) bool {
 	if typePkg.Path() != metagoPackagePath {
 		return false
 	} else if typeName.Name() != valueTypeString {
-		return false
-	}
-
-	return true
-}
-
-func (p *metaProcessor) isMetagoField(ident *ast.Ident) bool {
-	// var ident metago.Field ← true
-	// var ident FooBar ← false
-
-	v := p.currentPkg.TypesInfo.Defs[ident]
-	if v == nil {
-		return false
-	}
-	t := v.Type()
-	tn, ok := t.(*types.Named)
-	if !ok {
-		return false
-	}
-	typeName := tn.Obj()
-	typePkg := typeName.Pkg()
-	if typePkg == nil {
-		return false
-	}
-	if typePkg.Path() != metagoPackagePath {
-		return false
-	} else if typeName.Name() != fieldTypeString {
 		return false
 	}
 
@@ -447,63 +396,20 @@ func (p *metaProcessor) isCallMetagoFieldName(node *ast.CallExpr) bool {
 }
 
 func (p *metaProcessor) isAssignable(expr1 ast.Expr, expr2 ast.Expr) bool {
-	if p.isSameType(expr1, expr2) {
-		return true
+	t1 := p.currentPkg.TypesInfo.TypeOf(expr1)
+	if t1 == nil {
+		t1 = p.currentPkg.TypesInfo.TypeOf(p.copyNodeMap[expr1].(ast.Expr))
+	}
+	t2 := p.currentPkg.TypesInfo.TypeOf(expr2)
+	if t2 == nil {
+		t2 = p.currentPkg.TypesInfo.TypeOf(p.copyNodeMap[expr2].(ast.Expr))
 	}
 
-	// TODO ものすごく素晴らしくする
-	// time.Time が json.Marshaler に assign できることがわかると素敵なコードが書けるぞ！
-	// …といっても p.currentPkg.TypesInfo.Uses とかは astcopy との相性が悪くて死だ！
-	// https://golang.org/pkg/go/types/#AssignableTo
-	// https://golang.org/pkg/go/types/#Info.TypeOf
-	// ↑この辺ちゃう？ってtenntennさんが言ってた
-
-	return false
-}
-
-func (p *metaProcessor) isSameType(expr1 ast.Expr, expr2 ast.Expr) bool {
-	{
-		ident1, ok1 := expr1.(*ast.Ident)
-		ident2, ok2 := expr2.(*ast.Ident)
-		if ok1 && ok2 {
-			if ident1.Obj == nil && ident2.Obj == nil {
-				type1 := types.Universe.Lookup(ident1.Name)
-				type2 := types.Universe.Lookup(ident2.Name)
-				if type1 != nil && type2 != nil {
-					return type1 == type2
-				} else if type1 == nil && type2 == nil {
-					// TODO package の ident の場合の比較が甘い…！
-					// import hoge "hoge" と import h "hoge" で hoge と h 比較した時にtrueにならない
-					return ident1.Name == ident2.Name
-				}
-				return false
-			} else if ident1.Obj == ident2.Obj {
-				return true
-			}
-			return false
-		} else if ok1 {
-			return false
-		} else if ok2 {
-			return false
-		}
-	}
-	{
-		sel1, ok1 := expr1.(*ast.SelectorExpr)
-		sel2, ok2 := expr2.(*ast.SelectorExpr)
-		if ok1 && ok2 {
-			if p.isSameType(sel1.X, sel2.X) && p.isSameType(sel1.Sel, sel2.Sel) {
-				return true
-			}
-			return false
-
-		} else if ok1 {
-			return false
-		} else if ok2 {
-			return false
-		}
+	if !types.AssignableTo(t1, t2) {
+		return false
 	}
 
-	panic("unreachable")
+	return true
 }
 
 func (p *metaProcessor) isInlineTemplateFuncDecl(cursor *astutil.Cursor, node *ast.FuncDecl) bool {
@@ -832,7 +738,7 @@ func (p *metaProcessor) checkIfStmtInInitWithTypeAssert(cursor *astutil.Cursor, 
 		condBoolValue = constant.BoolVal(ret.Value)
 	}
 
-	if condBoolValue == p.isAssignable(typeAssertExpr.Type, p.currentTargetField.Decl.(*ast.Field).Type) {
+	if condBoolValue == p.isAssignable(p.currentTargetField.Decl.(*ast.Field).Type, typeAssertExpr.Type) {
 		// Bodyが評価される & if全体を置き換え
 		astutil.Apply(
 			node.Body,
@@ -884,7 +790,7 @@ func (p *metaProcessor) checkIfStmtInCondWithTypeAssert(cursor *astutil.Cursor, 
 		return false
 	}
 
-	if !p.isSameType(typeAssertExpr.Type, targetField.Decl.(*ast.Field).Type) {
+	if !p.isAssignable(targetField.Decl.(*ast.Field).Type, typeAssertExpr.Type) {
 		cursor.Delete()
 		return true // 子をApplyされたくない
 	}
@@ -975,7 +881,7 @@ func (p *metaProcessor) checkTypeSwitchStmt(cursor *astutil.Cursor, node *ast.Ty
 				targetBody = stmt.Body
 			} else {
 				for _, typeExpr := range stmt.List {
-					if p.isAssignable(typeExpr, p.currentTargetField.Decl.(*ast.Field).Type) {
+					if p.isAssignable(p.currentTargetField.Decl.(*ast.Field).Type, typeExpr) {
 						targetBody = stmt.Body
 					}
 				}

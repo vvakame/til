@@ -45,8 +45,6 @@ func (obj *Foo) MarshalJSON() ([]byte, error) {
 		buf.WriteString(strconv.Quote(propertyName))
 		buf.WriteString(":")
 
-		// TODO 本当は .(json.Marshaler) したい isAssignable 参照
-
 		{
 			b, err := json.Marshal(obj.ID)
 			if err != nil {
@@ -101,7 +99,6 @@ func (obj *Foo) MarshalJSON() ([]byte, error) {
 		buf.WriteString(":")
 
 		{
-
 			b, err := obj.CreatedAt.MarshalJSON()
 			if err != nil {
 				return nil, err
