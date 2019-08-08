@@ -535,10 +535,7 @@ func (p *metaProcessor) checkMetagoValueOfAssignStmt(cursor *astutil.Cursor, stm
 		}
 
 		found = true
-		p.valueMapping[ident.Obj] = &ast.Ident{
-			Name: targetIdent.Name,
-			Obj:  targetIdent.Obj,
-		}
+		p.valueMapping[ident.Obj] = astcopy.Ident(targetIdent, p.copyNodeMap)
 
 		p.removeNodes[lhs] = true
 		p.removeNodes[rhs] = true
@@ -629,6 +626,11 @@ func (p *metaProcessor) checkMetagoFieldRange(cursor *astutil.Cursor, node *ast.
 	default:
 		panic("unknown type")
 	}
+	if targetObjDef == nil {
+		p.Errorf(target, "can't extract fields from %s", xIdent.Name)
+		return true
+	}
+
 	defFields := targetObjDef.Decl.(*ast.TypeSpec).Type.(*ast.StructType).Fields
 	for _, field := range defFields.List {
 		for _, name := range field.Names {
