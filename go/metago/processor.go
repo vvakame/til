@@ -139,6 +139,16 @@ func (p *metaProcessor) Process(cfg *Config) (*Result, error) {
 				p.ApplyPost,
 			)
 
+			// 長さ0のものが残ってると astutil.DeleteNamedImport で panic になる
+			var newComments []*ast.CommentGroup
+			for _, comments := range file.Comments {
+				if len(comments.List) == 0 {
+					continue
+				}
+				newComments = append(newComments, comments)
+			}
+			file.Comments = newComments
+
 			// clean-up ununsed import
 			for _, importSpec := range file.Imports {
 				if importSpec.Name != nil && importSpec.Name.Name == "_" {
@@ -467,7 +477,7 @@ func (p *metaProcessor) checkMetagoBuildTagComment(cursor *astutil.Cursor, node 
 func (p *metaProcessor) checkReplaceTargetIdent(cursor *astutil.Cursor, node *ast.Ident) bool {
 	// mv系の単純な置き換え
 	if target := p.valueMapping[node.Obj]; target != nil {
-		cursor.Replace(astcopy.Node(target, p.copyNodeMap))
+		cursor.Replace(target)
 		return true
 	}
 	// mf系の単純な置き換え
@@ -535,7 +545,9 @@ func (p *metaProcessor) checkMetagoValueOfAssignStmt(cursor *astutil.Cursor, stm
 		}
 
 		found = true
-		p.valueMapping[ident.Obj] = astcopy.Ident(targetIdent, p.copyNodeMap)
+		targetIdent = astcopy.Ident(targetIdent, p.copyNodeMap)
+		targetIdent.NamePos = token.NoPos // formatした時に見た目が崩れるのを防ぐ
+		p.valueMapping[ident.Obj] = targetIdent
 
 		p.removeNodes[lhs] = true
 		p.removeNodes[rhs] = true
@@ -616,23 +628,61 @@ func (p *metaProcessor) checkMetagoFieldRange(cursor *astutil.Cursor, node *ast.
 	// 大本のfor句は全部捨てる必要がある
 	cursor.Delete()
 
-	// RangeStmtのBody部分をフィールドの数だけコピペする
-	var targetObjDef *ast.Object
-	switch targetNode := target.(type) {
-	case *ast.Ident:
-		// TODO 今出てくるパターンを決め打ちでサポートしてるだけなのでいい感じにする
-		// ↓は foo *Foo 的なやつの *Foo から Foo の定義を取ろうとしている
-		targetObjDef = targetNode.Obj.Decl.(*ast.Field).Type.(*ast.StarExpr).X.(*ast.Ident).Obj
-	default:
-		panic("unknown type")
+	var exprToStructType func(node ast.Expr) *ast.StructType
+	var objToStructType func(node *ast.Object) *ast.StructType
+	exprToStructType = func(node ast.Expr) *ast.StructType {
+		switch node := node.(type) {
+		case *ast.Ident:
+			return objToStructType(node.Obj)
+		case *ast.StarExpr:
+			return exprToStructType(node.X)
+		case *ast.CallExpr:
+			if funcIdent, ok := node.Fun.(*ast.Ident); ok && funcIdent.Name == "new" && funcIdent.Obj == nil {
+				// new(Foo) の対応
+				return exprToStructType(node.Args[0])
+			}
+			// TODO 関数呼び出しによる定義の拡充
+			return nil
+		case *ast.UnaryExpr:
+			if node.Op != token.AND {
+				panic("unknown op")
+			}
+			return exprToStructType(node.X)
+		case *ast.CompositeLit:
+			return exprToStructType(node.Type)
+		case *ast.StructType:
+			return node
+		default:
+			panic("unknown type")
+		}
 	}
-	if targetObjDef == nil {
+	objToStructType = func(node *ast.Object) *ast.StructType {
+		switch decl := node.Decl.(type) {
+		case *ast.Field:
+			return exprToStructType(decl.Type)
+		case *ast.AssignStmt:
+			if len(decl.Lhs) != 1 || len(decl.Rhs) != 1 {
+				p.Errorf(target, "assignment stmt of var definition must be 1 by 1")
+				return nil
+			}
+			return exprToStructType(decl.Rhs[0])
+		case *ast.TypeSpec:
+			return exprToStructType(decl.Type)
+		case *ast.ValueSpec:
+			return exprToStructType(decl.Type)
+		default:
+			panic("unknown type")
+		}
+	}
+
+	// RangeStmtのBody部分をフィールドの数だけコピペする
+	structType := exprToStructType(target)
+	if structType == nil {
 		p.Errorf(target, "can't extract fields from %s", xIdent.Name)
 		return true
 	}
 
-	defFields := targetObjDef.Decl.(*ast.TypeSpec).Type.(*ast.StructType).Fields
-	for _, field := range defFields.List {
+	for _, field := range structType.Fields.List {
 		for _, name := range field.Names {
 			bk := p.currentTargetField
 
