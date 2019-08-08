@@ -435,30 +435,6 @@ outer:
 	return true
 }
 
-func (p *metaProcessor) extractMetagoBaseVariable(expr ast.Expr) *ast.Ident {
-	callExpr, ok := expr.(*ast.CallExpr)
-	if !ok {
-		return nil
-	}
-	selectorExpr, ok := callExpr.Fun.(*ast.SelectorExpr)
-	if !ok {
-		return nil
-	}
-
-	if !p.isMetagoValueOf(selectorExpr) {
-		return nil
-	}
-
-	arg1 := callExpr.Args[0]
-	targetIdent, ok := arg1.(*ast.Ident)
-	if !ok {
-		p.Errorf(arg1, "argument must be ident")
-		return nil
-	}
-
-	return targetIdent
-}
-
 func (p *metaProcessor) checkMetagoBuildTagComment(cursor *astutil.Cursor, node *ast.Comment) bool {
 	if node.Text != fmt.Sprintf("//+build %s", metagoBuildTag) {
 		return false
@@ -496,7 +472,31 @@ func (p *metaProcessor) checkReplaceTargetIdent(cursor *astutil.Cursor, node *as
 func (p *metaProcessor) checkMetagoValueOfAssignStmt(cursor *astutil.Cursor, stmt *ast.AssignStmt) bool {
 	// mv := metago.ValueOf(foo) 系を処理する。
 	// mv と foo の紐付けを覚える。
-	// 該当のassignmentをNode毎削除するようマークする。
+
+	extractMetagoBaseVariable := func(expr ast.Expr) *ast.Ident {
+		// metago.ValueOf(foo) から foo を切り出す
+		callExpr, ok := expr.(*ast.CallExpr)
+		if !ok {
+			return nil
+		}
+		selectorExpr, ok := callExpr.Fun.(*ast.SelectorExpr)
+		if !ok {
+			return nil
+		}
+
+		if !p.isMetagoValueOf(selectorExpr) {
+			return nil
+		}
+
+		arg1 := callExpr.Args[0]
+		targetIdent, ok := arg1.(*ast.Ident)
+		if !ok {
+			p.Errorf(arg1, "argument must be ident")
+			return nil
+		}
+
+		return targetIdent
+	}
 
 	var found bool
 	for idx, lhs := range stmt.Lhs {
@@ -509,9 +509,9 @@ func (p *metaProcessor) checkMetagoValueOfAssignStmt(cursor *astutil.Cursor, stm
 		}
 
 		rhs := stmt.Rhs[idx]
-		targetIdent := p.extractMetagoBaseVariable(rhs)
+		targetIdent := extractMetagoBaseVariable(rhs)
 		if targetIdent == nil {
-			// TODO なんらかの警告を出したほうがよさそう
+			p.Errorf(rhs, "definition of 'metago.Value' variable must be introduced from metago.ValueOf(obj)")
 			continue
 		}
 
