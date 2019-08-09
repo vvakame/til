@@ -255,6 +255,9 @@ func (p *metaProcessor) ApplyPre(cursor *astutil.Cursor) bool {
 		if p.checkReplaceTargetIdent(cursor, node) {
 			return false
 		}
+		if p.checkUnimportedPackage(cursor, node) {
+			return false
+		}
 
 	case *ast.RangeStmt:
 		if p.checkMetagoFieldRange(cursor, node) {
@@ -483,6 +486,31 @@ func (p *metaProcessor) checkReplaceTargetIdent(cursor *astutil.Cursor, node *as
 	}
 
 	return false
+}
+
+func (p *metaProcessor) checkUnimportedPackage(cursor *astutil.Cursor, node *ast.Ident) bool {
+	base := p.copyNodeMap[node]
+	if base == nil {
+		// コピーされてなければ元のコードにあったものなのでimportは揃ってる
+		return false
+	}
+
+	// 今見てるIdentがパッケージを指してなかったら気にしない
+	obj := p.currentPkg.TypesInfo.ObjectOf(base.(*ast.Ident))
+	pkgName, ok := obj.(*types.PkgName)
+	if !ok {
+		return false
+	}
+
+	importPkg := pkgName.Imported()
+	var importName string
+	if importPkg.Name() != node.Name {
+		importName = node.Name
+	}
+	// 現状使ってるか使ってないかを調べずにとりあえず追加する
+	astutil.AddNamedImport(p.currentPkg.Fset, p.currentFile, importName, importPkg.Path())
+
+	return true
 }
 
 // checkMetagoValueOfAssignStmt is capture `mv := metago.ValueOf(foo)` format assignment.
@@ -1027,14 +1055,23 @@ func (p *metaProcessor) checkInlineTemplateCallExpr(cursor *astutil.Cursor, node
 		return false
 	}
 
-	if funcName.Obj == nil {
-		// panic("foo") とかが該当
-		// TODO ↑ 嘘でしょ
+	obj := p.currentPkg.TypesInfo.ObjectOf(funcName)
+	if obj == nil {
 		return false
 	}
 
-	funcDecl, ok := funcName.Obj.Decl.(*ast.FuncDecl)
-	if !ok {
+	var funcDecl *ast.FuncDecl
+	for _, file := range p.currentPkg.Syntax {
+		path, exact := astutil.PathEnclosingInterval(file, obj.Pos(), obj.Pos())
+		if !exact {
+			continue
+		}
+
+		funcDecl = path[1].(*ast.FuncDecl)
+		break
+	}
+
+	if funcDecl == nil {
 		return false
 	}
 

@@ -14,7 +14,7 @@ func main() {
 	}
 	result, err := p.Process(&metago.Config{
 		TargetPackages: []string{
-			"github.com/vvakame/til/go/metago/internal/testbed/basic",
+			"github.com/vvakame/til/go/metago/internal/testbed/separateFiles",
 		},
 	})
 	if err != nil {
