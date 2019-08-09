@@ -36,7 +36,6 @@ type metaProcessor struct {
 	currentPkg         *packages.Package
 	currentFile        *ast.File
 	currentTargetField *ast.Object
-	currentBlockStmt   *ast.BlockStmt
 
 	hasMetagoBuildTag     bool
 	copyNodeMap           astcopy.CopyNodeMap
@@ -287,9 +286,6 @@ func (p *metaProcessor) ApplyPre(cursor *astutil.Cursor) bool {
 		if p.checkInRangeBranchStmt(cursor, node) {
 			return false
 		}
-
-	case *ast.BlockStmt:
-		p.currentBlockStmt = node
 	}
 
 	return true
