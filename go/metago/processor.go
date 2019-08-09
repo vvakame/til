@@ -23,19 +23,31 @@ const metagoPackagePath = "github.com/vvakame/til/go/metago"
 const (
 	valueOfFuncNameString       = "ValueOf"      // metago.[ValueOf](obj)
 	valueTypeString             = "Value"        // metago.[Value]
-	fieldTypeString             = "Field"        // metago.[Field]
 	valueFieldsMethodName       = "Fields"       // mv.[Fields]()
 	fieldNameMethodName         = "Name"         // mf.[Name]()
 	fieldValueMethodName        = "Value"        // mf.[Value]()
 	fieldStructTagGetMethodName = "StructTagGet" // mf.[StructTagGet]("json")
 )
 
+type fieldInfo struct {
+	recvExpr   ast.Expr
+	recvType   *types.Struct
+	fieldIndex int
+}
+
+func (f *fieldInfo) Field() *types.Var {
+	return f.recvType.Field(f.fieldIndex)
+}
+
+func (f *fieldInfo) Tag() string {
+	return f.recvType.Tag(f.fieldIndex)
+}
+
 type metaProcessor struct {
 	cfg *Config
 
-	currentPkg         *packages.Package
-	currentFile        *ast.File
-	currentTargetField *ast.Object
+	currentPkg  *packages.Package
+	currentFile *ast.File
 
 	hasMetagoBuildTag     bool
 	copyNodeMap           astcopy.CopyNodeMap
@@ -45,10 +57,10 @@ type metaProcessor struct {
 	requiredContinueLabel []string
 	requiredBreakLabel    []string
 
-	// mv → obj への変換用
+	// mv → obj への変換用 *ast.Object は mv のもの
 	valueMapping map[*ast.Object]ast.Expr
-	// mf → obj.X への変換用 X 部分はBlockStmtに潜っていくまでわからんので obj 部分を持つ
-	fieldMapping map[*ast.Object]ast.Expr
+	// mf → obj.X への変換用 *ast.Object は mf のもの
+	fieldMapping map[*ast.Object]*fieldInfo
 
 	nodeErrors NodeErrors
 }
@@ -59,7 +71,7 @@ func (p *metaProcessor) Process(cfg *Config) (*Result, error) {
 	p.removeNodes = make(map[ast.Node]bool)
 	p.replaceNodes = make(map[ast.Node]ast.Node)
 	p.valueMapping = make(map[*ast.Object]ast.Expr)
-	p.fieldMapping = make(map[*ast.Object]ast.Expr)
+	p.fieldMapping = make(map[*ast.Object]*fieldInfo)
 	p.requiredBreakLabel = nil
 	p.requiredContinueLabel = nil
 
@@ -420,23 +432,6 @@ func (p *metaProcessor) isCallMetagoFieldName(node *ast.CallExpr) bool {
 	return true
 }
 
-func (p *metaProcessor) isAssignable(expr1 ast.Expr, expr2 ast.Expr) bool {
-	t1 := p.currentPkg.TypesInfo.TypeOf(expr1)
-	if t1 == nil {
-		t1 = p.currentPkg.TypesInfo.TypeOf(p.copyNodeMap[expr1].(ast.Expr))
-	}
-	t2 := p.currentPkg.TypesInfo.TypeOf(expr2)
-	if t2 == nil {
-		t2 = p.currentPkg.TypesInfo.TypeOf(p.copyNodeMap[expr2].(ast.Expr))
-	}
-
-	if !types.AssignableTo(t1, t2) {
-		return false
-	}
-
-	return true
-}
-
 func (p *metaProcessor) isInlineTemplateFuncDecl(cursor *astutil.Cursor, node *ast.FuncDecl) bool {
 	var found bool
 outer:
@@ -477,13 +472,11 @@ func (p *metaProcessor) checkReplaceTargetIdent(cursor *astutil.Cursor, node *as
 		return true
 	}
 	// mf系の単純な置き換え
-	if target := p.fieldMapping[node.Obj]; target != nil {
-		field := p.currentTargetField
+	if fi := p.fieldMapping[node.Obj]; fi != nil {
 		cursor.Replace(&ast.SelectorExpr{
-			X: target,
+			X: fi.recvExpr,
 			Sel: &ast.Ident{
-				Name: field.Name,
-				Obj:  field,
+				Name: fi.Field().Name(),
 			},
 		})
 		return true
@@ -619,8 +612,6 @@ func (p *metaProcessor) checkMetagoFieldRange(cursor *astutil.Cursor, node *ast.
 		return false
 	}
 
-	p.fieldMapping[fieldIdent.Obj] = target
-
 	// 大本のfor句は全部捨てる必要がある
 	cursor.Delete()
 
@@ -678,31 +669,42 @@ func (p *metaProcessor) checkMetagoFieldRange(cursor *astutil.Cursor, node *ast.
 		return true
 	}
 
-	for _, field := range structType.Fields.List {
-		for _, name := range field.Names {
-			bk := p.currentTargetField
-
-			bodyStmt := astcopy.BlockStmt(node.Body, p.copyNodeMap)
-			p.currentTargetField = name.Obj
-			astutil.Apply(
-				bodyStmt,
-				p.ApplyPre,
-				p.ApplyPost,
-			)
-			cursor.InsertBefore(bodyStmt)
-			for _, labelName := range p.requiredContinueLabel {
-				cursor.InsertBefore(&ast.LabeledStmt{
-					Label: &ast.Ident{
-						Name: labelName,
-					},
-					Stmt: &ast.EmptyStmt{},
-				})
-			}
-			p.requiredContinueLabel = nil
-
-			p.currentTargetField = bk
-		}
+	structTypeTypes := p.currentPkg.TypesInfo.TypeOf(structType)
+	if structTypeTypes == nil {
+		return false
 	}
+	structTypeTypes2, ok := structTypeTypes.(*types.Struct)
+	if !ok {
+		return false
+	}
+
+	for i := 0; i < structTypeTypes2.NumFields(); i++ {
+		p.fieldMapping[fieldIdent.Obj] = &fieldInfo{
+			recvExpr:   target,
+			recvType:   structTypeTypes2,
+			fieldIndex: i,
+		}
+
+		bodyStmt := astcopy.BlockStmt(node.Body, p.copyNodeMap)
+		astutil.Apply(
+			bodyStmt,
+			p.ApplyPre,
+			p.ApplyPost,
+		)
+		cursor.InsertBefore(bodyStmt)
+
+		for _, labelName := range p.requiredContinueLabel {
+			cursor.InsertBefore(&ast.LabeledStmt{
+				Label: &ast.Ident{
+					Name: labelName,
+				},
+				Stmt: &ast.EmptyStmt{},
+			})
+		}
+		p.requiredContinueLabel = nil
+	}
+	delete(p.fieldMapping, fieldIdent.Obj)
+
 	for _, labelName := range p.requiredBreakLabel {
 		cursor.InsertAfter(&ast.LabeledStmt{
 			Label: &ast.Ident{
@@ -762,11 +764,15 @@ func (p *metaProcessor) checkIfStmtInInitWithTypeAssert(cursor *astutil.Cursor, 
 	}
 
 	// IfStmtでスコープに新しい変数が導入されるので置き換えルールを登録
+	fi := p.fieldMapping[callExpr.Fun.(*ast.SelectorExpr).X.(*ast.Ident).Obj]
+	if fi == nil {
+		p.Errorf(callExpr, "invalid context. not in metago.Field range statement")
+		return false
+	}
 	p.valueMapping[varIdent.Obj] = &ast.SelectorExpr{
-		X: p.fieldMapping[callExpr.Fun.(*ast.SelectorExpr).X.(*ast.Ident).Obj],
+		X: fi.recvExpr,
 		Sel: &ast.Ident{
-			Name: p.currentTargetField.Name,
-			Obj:  p.currentTargetField,
+			Name: fi.Field().Name(),
 		},
 	}
 
@@ -805,7 +811,10 @@ func (p *metaProcessor) checkIfStmtInInitWithTypeAssert(cursor *astutil.Cursor, 
 		condBoolValue = constant.BoolVal(ret.Value)
 	}
 
-	if condBoolValue == p.isAssignable(p.currentTargetField.Decl.(*ast.Field).Type, typeAssertExpr.Type) {
+	// fi が存在している == 常にコピーされたコンテキストの中
+	targetType := p.currentPkg.TypesInfo.TypeOf(p.copyNodeMap[typeAssertExpr.Type].(ast.Expr))
+
+	if condBoolValue == types.AssignableTo(fi.Field().Type(), targetType) {
 		// Bodyが評価される & if全体を置き換え
 		astutil.Apply(
 			node.Body,
@@ -851,22 +860,24 @@ func (p *metaProcessor) checkIfStmtInCondWithTypeAssert(cursor *astutil.Cursor, 
 		return false
 	}
 
-	targetField := p.currentTargetField
-	if targetField == nil {
+	fi := p.fieldMapping[callExpr.Fun.(*ast.SelectorExpr).X.(*ast.Ident).Obj]
+	if fi == nil {
 		p.Errorf(callExpr, "invalid context. not in metago.Field range statement")
 		return false
 	}
 
-	if !p.isAssignable(targetField.Decl.(*ast.Field).Type, typeAssertExpr.Type) {
+	// fi が存在している == 常にコピーされたコンテキストの中
+	targetType := p.currentPkg.TypesInfo.TypeOf(p.copyNodeMap[typeAssertExpr.Type].(ast.Expr))
+
+	if !types.AssignableTo(fi.Field().Type(), targetType) {
 		cursor.Delete()
 		return true // 子をApplyされたくない
 	}
 
 	p.replaceNodes[typeAssertExpr] = &ast.SelectorExpr{
-		X: p.fieldMapping[callExpr.Fun.(*ast.SelectorExpr).X.(*ast.Ident).Obj],
+		X: fi.recvExpr,
 		Sel: &ast.Ident{
-			Name: p.currentTargetField.Name,
-			Obj:  p.currentTargetField,
+			Name: fi.Field().Name(),
 		},
 	}
 
@@ -931,11 +942,17 @@ func (p *metaProcessor) checkTypeSwitchStmt(cursor *astutil.Cursor, node *ast.Ty
 		p.Errorf(assignStmt.Lhs[0], "var assignment should be ident")
 		return false
 	}
+
+	fi := p.fieldMapping[callExpr.Fun.(*ast.SelectorExpr).X.(*ast.Ident).Obj]
+	if fi == nil {
+		p.Errorf(callExpr, "invalid context. not in metago.Field range statement")
+		return false
+	}
+
 	p.valueMapping[varIdent.Obj] = &ast.SelectorExpr{
-		X: p.fieldMapping[callExpr.Fun.(*ast.SelectorExpr).X.(*ast.Ident).Obj],
+		X: fi.recvExpr,
 		Sel: &ast.Ident{
-			Name: p.currentTargetField.Name,
-			Obj:  p.currentTargetField,
+			Name: fi.Field().Name(),
 		},
 	}
 
@@ -948,7 +965,10 @@ func (p *metaProcessor) checkTypeSwitchStmt(cursor *astutil.Cursor, node *ast.Ty
 				targetBody = stmt.Body
 			} else {
 				for _, typeExpr := range stmt.List {
-					if p.isAssignable(p.currentTargetField.Decl.(*ast.Field).Type, typeExpr) {
+					// fi が存在している == 常にコピーされたコンテキストの中
+					targetType := p.currentPkg.TypesInfo.TypeOf(p.copyNodeMap[typeExpr].(ast.Expr))
+
+					if types.AssignableTo(fi.Field().Type(), targetType) {
 						targetBody = stmt.Body
 					}
 				}
@@ -1009,6 +1029,7 @@ func (p *metaProcessor) checkInlineTemplateCallExpr(cursor *astutil.Cursor, node
 
 	if funcName.Obj == nil {
 		// panic("foo") とかが該当
+		// TODO ↑ 嘘でしょ
 		return false
 	}
 
@@ -1082,8 +1103,8 @@ func (p *metaProcessor) checkUseMetagoFieldValue(cursor *astutil.Cursor, node *a
 		return false
 	}
 
-	target := p.fieldMapping[objIdent.Obj]
-	if target == nil {
+	fi := p.fieldMapping[objIdent.Obj]
+	if fi == nil {
 		return false
 	}
 
@@ -1092,10 +1113,9 @@ func (p *metaProcessor) checkUseMetagoFieldValue(cursor *astutil.Cursor, node *a
 	}
 
 	cursor.Replace(&ast.SelectorExpr{
-		X: target,
+		X: fi.recvExpr,
 		Sel: &ast.Ident{
-			Name: p.currentTargetField.Name,
-			Obj:  p.currentTargetField,
+			Name: fi.Field().Name(),
 		},
 	})
 
@@ -1108,9 +1128,14 @@ func (p *metaProcessor) checkUseMetagoFieldName(cursor *astutil.Cursor, node *as
 		return false
 	}
 
+	fi := p.fieldMapping[node.Fun.(*ast.SelectorExpr).X.(*ast.Ident).Obj]
+	if fi == nil {
+		return false
+	}
+
 	cursor.Replace(&ast.BasicLit{
 		Kind:  token.STRING,
-		Value: strconv.Quote(p.currentTargetField.Name),
+		Value: strconv.Quote(fi.Field().Name()),
 	})
 
 	return false
@@ -1128,8 +1153,8 @@ func (p *metaProcessor) checkUseMetagoStructTagGet(cursor *astutil.Cursor, node 
 		return false
 	}
 
-	target := p.fieldMapping[objIdent.Obj]
-	if target == nil {
+	fi := p.fieldMapping[objIdent.Obj]
+	if fi == nil {
 		return false
 	}
 
@@ -1154,25 +1179,18 @@ func (p *metaProcessor) checkUseMetagoStructTagGet(cursor *astutil.Cursor, node 
 		return false
 	}
 
-	targetField := p.currentTargetField.Decl.(*ast.Field)
-	if targetField.Tag == nil {
+	targetTag := fi.Tag()
+	if targetTag == "" {
 		cursor.Replace(&ast.BasicLit{
 			Kind:  token.STRING,
 			Value: `""`,
 		})
 		return false
 	}
-	structTagValue, err := strconv.Unquote(targetField.Tag.Value)
-	if err != nil {
-		p.Errorf(targetField, "unexpected string literal format. %s: %s", targetField.Tag.Value, err.Error())
-		return false
-	}
-
-	tagValue := reflect.StructTag(structTagValue).Get(tagName)
 
 	cursor.Replace(&ast.BasicLit{
 		Kind:  token.STRING,
-		Value: strconv.Quote(tagValue),
+		Value: strconv.Quote(reflect.StructTag(targetTag).Get(tagName)),
 	})
 
 	return false
