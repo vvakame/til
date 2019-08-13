@@ -49,6 +49,7 @@ type metaProcessor struct {
 
 	currentPkg  *packages.Package
 	currentFile *ast.File
+	walkingPkg  *packages.Package
 
 	hasMetagoBuildTag     bool
 	copyNodeMap           astcopy.CopyNodeMap
@@ -230,7 +231,7 @@ func (p *metaProcessor) Process(cfg *Config) (*Result, error) {
 			file.Comments = newComments
 
 			// clean-up ununsed import
-			for _, importSpec := range file.Imports {
+			for _, importSpec := range append([]*ast.ImportSpec(nil), file.Imports...) {
 				if importSpec.Name != nil && importSpec.Name.Name == "_" {
 					continue
 				}
@@ -1148,33 +1149,47 @@ func (p *metaProcessor) checkInlineTemplateCallExpr(cursor *astutil.Cursor, node
 		return false
 	}
 
-	var findFuncDef func(pkg *packages.Package) (*ast.FuncType, *ast.BlockStmt)
-	findFuncDef = func(pkg *packages.Package) (*ast.FuncType, *ast.BlockStmt) {
+	var findFuncDef func(pkg *packages.Package) (*packages.Package, *ast.FuncType, *ast.BlockStmt)
+	findFuncDef = func(pkg *packages.Package) (*packages.Package, *ast.FuncType, *ast.BlockStmt) {
 		for _, file := range pkg.Syntax {
 			path, exact := astutil.PathEnclosingInterval(file, obj.Pos(), obj.Pos())
 			if exact {
-				funcDecl := path[1].(*ast.FuncDecl)
-				return funcDecl.Type, funcDecl.Body
+				funcDecl, ok := path[1].(*ast.FuncDecl)
+				if !ok {
+					continue
+				}
+				return pkg, funcDecl.Type, funcDecl.Body
 			}
 		}
 
 		for _, nextPkg := range pkg.Imports {
-			funcType, funcBody := findFuncDef(nextPkg)
+			defPkg, funcType, funcBody := findFuncDef(nextPkg)
 			if funcType != nil {
-				return funcType, funcBody
+				return defPkg, funcType, funcBody
 			}
 		}
 
-		return nil, nil
+		return nil, nil, nil
 	}
 
-	funcType, funcBody := findFuncDef(p.currentPkg)
+	defPkg, funcType, funcBody := findFuncDef(p.currentPkg)
 	if funcType == nil {
 		return false
+	}
+	{ // TODO ここが利用されるようなテストケースちゃんと書く (currentPkg以外で警告とかエラーになってログに出るようなケース)
+		bk := p.walkingPkg
+		p.walkingPkg = defPkg
+		defer func() {
+			p.walkingPkg = bk
+		}()
 	}
 
 	// 引数無しは対象外
 	if len(funcType.Params.List) == 0 {
+		return false
+	}
+	// 引数が名前を持たない場合展開用ではない
+	if len(funcType.Params.List[0].Names) == 0 {
 		return false
 	}
 	// 引数の最初が metago.Value じゃないものは対象外
@@ -1206,9 +1221,7 @@ func (p *metaProcessor) checkInlineTemplateCallExpr(cursor *astutil.Cursor, node
 				Params: &ast.FieldList{
 					List: funcType.Params.List[1:], // 先頭は metago.Valueなので
 				},
-				Results: &ast.FieldList{
-					List: funcType.Results.List,
-				},
+				Results: astcopy.FieldList(funcType.Results, p.copyNodeMap),
 			},
 			Body: funcBody,
 		},
@@ -1277,7 +1290,7 @@ func (p *metaProcessor) checkUseMetagoFieldName(cursor *astutil.Cursor, node *as
 }
 
 func (p *metaProcessor) checkUseMetagoStructTagGet(cursor *astutil.Cursor, node *ast.CallExpr) bool {
-	// mf.Name() 系を "Foo" 的なのに置き換える
+	// mf.StructTagGet("json") 系を ",omitempty" 的なのに置き換える
 	selectorExpr, ok := node.Fun.(*ast.SelectorExpr)
 	if !ok {
 		return false
@@ -1332,36 +1345,52 @@ func (p *metaProcessor) checkUseMetagoStructTagGet(cursor *astutil.Cursor, node 
 }
 
 func (p *metaProcessor) Debugf(node ast.Node, format string, a ...interface{}) {
+	pkg := p.currentPkg
+	if p.walkingPkg != nil {
+		pkg = p.walkingPkg
+	}
 	p.nodeErrors = append(p.nodeErrors, &NodeError{
 		ErrorLevel: ErrorLevelDebug,
-		Fset:       p.currentPkg.Fset,
+		Pkg:        pkg,
 		Node:       node,
 		Message:    fmt.Sprintf(format, a...),
 	})
 }
 
 func (p *metaProcessor) Noticef(node ast.Node, format string, a ...interface{}) {
+	pkg := p.currentPkg
+	if p.walkingPkg != nil {
+		pkg = p.walkingPkg
+	}
 	p.nodeErrors = append(p.nodeErrors, &NodeError{
 		ErrorLevel: ErrorLevelNotice,
-		Fset:       p.currentPkg.Fset,
+		Pkg:        pkg,
 		Node:       node,
 		Message:    fmt.Sprintf(format, a...),
 	})
 }
 
 func (p *metaProcessor) Warningf(node ast.Node, format string, a ...interface{}) {
+	pkg := p.currentPkg
+	if p.walkingPkg != nil {
+		pkg = p.walkingPkg
+	}
 	p.nodeErrors = append(p.nodeErrors, &NodeError{
 		ErrorLevel: ErrorLevelWarning,
-		Fset:       p.currentPkg.Fset,
+		Pkg:        pkg,
 		Node:       node,
 		Message:    fmt.Sprintf(format, a...),
 	})
 }
 
 func (p *metaProcessor) Errorf(node ast.Node, format string, a ...interface{}) {
+	pkg := p.currentPkg
+	if p.walkingPkg != nil {
+		pkg = p.walkingPkg
+	}
 	p.nodeErrors = append(p.nodeErrors, &NodeError{
 		ErrorLevel: ErrorLevelError,
-		Fset:       p.currentPkg.Fset,
+		Pkg:        pkg,
 		Node:       node,
 		Message:    fmt.Sprintf(format, a...),
 	})

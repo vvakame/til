@@ -5,10 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"go/ast"
-	"go/token"
 	"os"
 	"path/filepath"
 	"strconv"
+
+	"golang.org/x/tools/go/packages"
 )
 
 type ErrorLevel int
@@ -27,8 +28,8 @@ type NodeErrors []*NodeError
 
 type NodeError struct {
 	ErrorLevel ErrorLevel
-	Fset       *token.FileSet `json:"-"`
-	Node       ast.Node       `json:"-"`
+	Pkg        *packages.Package
+	Node       ast.Node `json:"-"`
 	Message    string
 }
 
@@ -67,7 +68,7 @@ func (nErr *NodeError) Error() string {
 		panic(err)
 	}
 
-	pos := nErr.Fset.Position(nErr.Node.Pos())
+	pos := nErr.Pkg.Fset.Position(nErr.Node.Pos())
 	errPath, err := filepath.Rel(cwd, pos.Filename)
 	if err != nil {
 		panic(err)

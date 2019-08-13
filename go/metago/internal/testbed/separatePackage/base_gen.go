@@ -11,8 +11,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/vvakame/til/go/metago/internal/testbed/separatePackage/separatePackageSub"
 )
 
 type Foo struct {
