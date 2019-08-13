@@ -14,7 +14,7 @@ func main() {
 	}
 	result, err := p.Process(&metago.Config{
 		TargetPackages: []string{
-			"github.com/vvakame/til/go/metago/internal/testbed/separateFiles",
+			"github.com/vvakame/til/go/metago/internal/testbed/separatePackage",
 		},
 	})
 	if err != nil {
@@ -25,5 +25,8 @@ func main() {
 	for _, fileResult := range result.Results {
 		fmt.Println(fileResult.Package.String())
 		fmt.Println(fileResult.GeneratedCode)
+		for _, nErr := range fileResult.Errors {
+			fmt.Println(nErr.Error())
+		}
 	}
 }

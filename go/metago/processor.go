@@ -44,7 +44,8 @@ func (f *fieldInfo) Tag() string {
 }
 
 type metaProcessor struct {
-	cfg *Config
+	cfg       *Config
+	typesInfo *types.Info
 
 	currentPkg  *packages.Package
 	currentFile *ast.File
@@ -67,6 +68,7 @@ type metaProcessor struct {
 
 func (p *metaProcessor) Process(cfg *Config) (*Result, error) {
 	p.cfg = cfg
+	p.typesInfo = &types.Info{}
 	p.copyNodeMap = make(astcopy.CopyNodeMap)
 	p.removeNodes = make(map[ast.Node]bool)
 	p.replaceNodes = make(map[ast.Node]ast.Node)
@@ -96,6 +98,73 @@ func (p *metaProcessor) Process(cfg *Config) (*Result, error) {
 	})
 	if len(errs) != 0 {
 		return &Result{CompileErrors: errs}, errors.New("some errors occured")
+	}
+
+	{ // merge typesInfo
+		mergedPkg := make(map[string]bool)
+		var mergePkgTypes func(pkg *packages.Package)
+		mergePkgTypes = func(pkg *packages.Package) {
+			if mergedPkg[pkg.PkgPath] {
+				return
+			}
+			mergedPkg[pkg.PkgPath] = true
+			if pkg.TypesInfo.Types != nil {
+				if p.typesInfo.Types == nil {
+					p.typesInfo.Types = make(map[ast.Expr]types.TypeAndValue)
+				}
+				for k, v := range pkg.TypesInfo.Types {
+					p.typesInfo.Types[k] = v
+				}
+			}
+			if pkg.TypesInfo.Defs != nil {
+				if p.typesInfo.Defs == nil {
+					p.typesInfo.Defs = make(map[*ast.Ident]types.Object)
+				}
+				for k, v := range pkg.TypesInfo.Defs {
+					p.typesInfo.Defs[k] = v
+				}
+			}
+			if pkg.TypesInfo.Uses != nil {
+				if p.typesInfo.Uses == nil {
+					p.typesInfo.Uses = make(map[*ast.Ident]types.Object)
+				}
+				for k, v := range pkg.TypesInfo.Uses {
+					p.typesInfo.Uses[k] = v
+				}
+			}
+			if pkg.TypesInfo.Implicits != nil {
+				if p.typesInfo.Implicits == nil {
+					p.typesInfo.Implicits = make(map[ast.Node]types.Object)
+				}
+				for k, v := range pkg.TypesInfo.Implicits {
+					p.typesInfo.Implicits[k] = v
+				}
+			}
+			if pkg.TypesInfo.Selections != nil {
+				if p.typesInfo.Selections == nil {
+					p.typesInfo.Selections = make(map[*ast.SelectorExpr]*types.Selection)
+				}
+				for k, v := range pkg.TypesInfo.Selections {
+					p.typesInfo.Selections[k] = v
+				}
+			}
+			if pkg.TypesInfo.Scopes != nil {
+				if p.typesInfo.Scopes == nil {
+					p.typesInfo.Scopes = make(map[ast.Node]*types.Scope)
+				}
+				for k, v := range pkg.TypesInfo.Scopes {
+					p.typesInfo.Scopes[k] = v
+				}
+			}
+			// InitOrder はコピーできない
+
+			for _, nextPkg := range pkg.Imports {
+				mergePkgTypes(nextPkg)
+			}
+		}
+		for _, pkg := range pkgs {
+			mergePkgTypes(pkg)
+		}
 	}
 
 	result := &Result{}
@@ -329,7 +398,7 @@ func (p *metaProcessor) ApplyPost(cursor *astutil.Cursor) bool {
 func (p *metaProcessor) isMetagoValue(ident *ast.Ident) bool {
 	// var ident metago.Value ← true
 	// var ident FooBar ← false
-	v := p.currentPkg.TypesInfo.Defs[ident]
+	v := p.typesInfo.ObjectOf(ident)
 	if v == nil {
 		return false
 	}
@@ -496,7 +565,7 @@ func (p *metaProcessor) checkUnimportedPackage(cursor *astutil.Cursor, node *ast
 	}
 
 	// 今見てるIdentがパッケージを指してなかったら気にしない
-	obj := p.currentPkg.TypesInfo.ObjectOf(base.(*ast.Ident))
+	obj := p.typesInfo.ObjectOf(base.(*ast.Ident))
 	pkgName, ok := obj.(*types.PkgName)
 	if !ok {
 		return false
@@ -697,7 +766,7 @@ func (p *metaProcessor) checkMetagoFieldRange(cursor *astutil.Cursor, node *ast.
 		return true
 	}
 
-	structTypeTypes := p.currentPkg.TypesInfo.TypeOf(structType)
+	structTypeTypes := p.typesInfo.TypeOf(structType)
 	if structTypeTypes == nil {
 		return false
 	}
@@ -840,7 +909,7 @@ func (p *metaProcessor) checkIfStmtInInitWithTypeAssert(cursor *astutil.Cursor, 
 	}
 
 	// fi が存在している == 常にコピーされたコンテキストの中
-	targetType := p.currentPkg.TypesInfo.TypeOf(p.copyNodeMap[typeAssertExpr.Type].(ast.Expr))
+	targetType := p.typesInfo.TypeOf(p.copyNodeMap[typeAssertExpr.Type].(ast.Expr))
 
 	if condBoolValue == types.AssignableTo(fi.Field().Type(), targetType) {
 		// Bodyが評価される & if全体を置き換え
@@ -895,7 +964,7 @@ func (p *metaProcessor) checkIfStmtInCondWithTypeAssert(cursor *astutil.Cursor, 
 	}
 
 	// fi が存在している == 常にコピーされたコンテキストの中
-	targetType := p.currentPkg.TypesInfo.TypeOf(p.copyNodeMap[typeAssertExpr.Type].(ast.Expr))
+	targetType := p.typesInfo.TypeOf(p.copyNodeMap[typeAssertExpr.Type].(ast.Expr))
 
 	if !types.AssignableTo(fi.Field().Type(), targetType) {
 		cursor.Delete()
@@ -994,7 +1063,7 @@ func (p *metaProcessor) checkTypeSwitchStmt(cursor *astutil.Cursor, node *ast.Ty
 			} else {
 				for _, typeExpr := range stmt.List {
 					// fi が存在している == 常にコピーされたコンテキストの中
-					targetType := p.currentPkg.TypesInfo.TypeOf(p.copyNodeMap[typeExpr].(ast.Expr))
+					targetType := p.typesInfo.TypeOf(p.copyNodeMap[typeExpr].(ast.Expr))
 
 					if types.AssignableTo(fi.Field().Type(), targetType) {
 						targetBody = stmt.Body
@@ -1050,37 +1119,66 @@ func (p *metaProcessor) checkInlineTemplateCallExpr(cursor *astutil.Cursor, node
 	// 第一引数が metago.Value だったら対象
 
 	// foo(mv) 形式のみ対応 メソッド類は対応が大変
-	funcName, ok := node.Fun.(*ast.Ident)
-	if !ok {
+	var funcName *ast.Ident
+	switch funcExpr := node.Fun.(type) {
+	case *ast.Ident:
+		funcName = funcExpr
+	case *ast.SelectorExpr:
+		funcName = funcExpr.Sel
+	case *ast.ArrayType:
+		// []byte(foo) とか
+		return false
+	case *ast.ParenExpr:
+		// (*[]byte) とか
+		return false
+	case *ast.FuncLit:
+		if funcExpr.Pos() == token.NoPos {
+			// checkInlineTemplateCallExpr で置き換えたヤツ
+			return false
+		}
+		p.Debugf(node, "ignore %T in checkInlineTemplateCallExpr", funcExpr)
+		return false
+	default:
+		p.Debugf(node, "ignore %T in checkInlineTemplateCallExpr", funcExpr)
 		return false
 	}
 
-	obj := p.currentPkg.TypesInfo.ObjectOf(funcName)
+	obj := p.typesInfo.ObjectOf(funcName)
 	if obj == nil {
 		return false
 	}
 
-	var funcDecl *ast.FuncDecl
-	for _, file := range p.currentPkg.Syntax {
-		path, exact := astutil.PathEnclosingInterval(file, obj.Pos(), obj.Pos())
-		if !exact {
-			continue
+	var findFuncDef func(pkg *packages.Package) (*ast.FuncType, *ast.BlockStmt)
+	findFuncDef = func(pkg *packages.Package) (*ast.FuncType, *ast.BlockStmt) {
+		for _, file := range pkg.Syntax {
+			path, exact := astutil.PathEnclosingInterval(file, obj.Pos(), obj.Pos())
+			if exact {
+				funcDecl := path[1].(*ast.FuncDecl)
+				return funcDecl.Type, funcDecl.Body
+			}
 		}
 
-		funcDecl = path[1].(*ast.FuncDecl)
-		break
+		for _, nextPkg := range pkg.Imports {
+			funcType, funcBody := findFuncDef(nextPkg)
+			if funcType != nil {
+				return funcType, funcBody
+			}
+		}
+
+		return nil, nil
 	}
 
-	if funcDecl == nil {
+	funcType, funcBody := findFuncDef(p.currentPkg)
+	if funcType == nil {
 		return false
 	}
 
 	// 引数無しは対象外
-	if len(funcDecl.Type.Params.List) == 0 {
+	if len(funcType.Params.List) == 0 {
 		return false
 	}
 	// 引数の最初が metago.Value じゃないものは対象外
-	metaValueArg := funcDecl.Type.Params.List[0].Names[0]
+	metaValueArg := funcType.Params.List[0].Names[0]
 	if !p.isMetagoValue(metaValueArg) {
 		return false
 	}
@@ -1094,7 +1192,7 @@ func (p *metaProcessor) checkInlineTemplateCallExpr(cursor *astutil.Cursor, node
 		return false
 	}
 
-	funcDecl = astcopy.FuncDecl(funcDecl, p.copyNodeMap)
+	funcBody = astcopy.BlockStmt(funcBody, p.copyNodeMap)
 
 	// 実引数側の mv がマッピングされる先を 仮引数側の mv にも継承させる
 	// *ast.Ident#Obj はコピーされないので metaValueArg 取り直さなくても大丈夫
@@ -1106,13 +1204,13 @@ func (p *metaProcessor) checkInlineTemplateCallExpr(cursor *astutil.Cursor, node
 		Fun: &ast.FuncLit{
 			Type: &ast.FuncType{
 				Params: &ast.FieldList{
-					List: funcDecl.Type.Params.List[1:], // 先頭は metago.Valueなので
+					List: funcType.Params.List[1:], // 先頭は metago.Valueなので
 				},
 				Results: &ast.FieldList{
-					List: funcDecl.Type.Results.List,
+					List: funcType.Results.List,
 				},
 			},
-			Body: funcDecl.Body,
+			Body: funcBody,
 		},
 		Args: node.Args[1:], // 先頭は metago.Valueなので
 	}
