@@ -21,6 +21,21 @@ const (
 	ErrorLevelDebug
 )
 
+func (lvl ErrorLevel) String() string {
+	switch lvl {
+	case ErrorLevelError:
+		return "ERR"
+	case ErrorLevelWarning:
+		return "WARN"
+	case ErrorLevelNotice:
+		return "NOTICE"
+	case ErrorLevelDebug:
+		return "DEBUG"
+	default:
+		return fmt.Sprintf("UNKNOWN(%d)", lvl)
+	}
+}
+
 var _ error = (NodeErrors)(nil)
 var _ json.Marshaler = (NodeErrors)(nil)
 
@@ -73,7 +88,7 @@ func (nErr *NodeError) Error() string {
 	if err != nil {
 		panic(err)
 	}
-	return fmt.Sprintf("%s:%d:%d: %s", errPath, pos.Line, pos.Column, nErr.Message)
+	return fmt.Sprintf("%s:%d:%d: %s %s", errPath, pos.Line, pos.Column, nErr.ErrorLevel, nErr.Message)
 }
 
 func (nErr *NodeError) MarshalJSON() ([]byte, error) {

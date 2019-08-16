@@ -58,7 +58,7 @@ func TestProcessor(t *testing.T) {
 
 			for _, fileResult := range result.Results {
 				fileResult := fileResult
-				baseFileName := strings.TrimSuffix(filepath.Base(fileResult.FilePath), ".go")
+				baseFileName := strings.TrimSuffix(filepath.Base(fileResult.BaseFilePath), ".go")
 
 				t.Run(baseFileName, func(t *testing.T) {
 					t.Run("code", func(t *testing.T) {

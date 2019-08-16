@@ -30,11 +30,12 @@ type Result struct {
 }
 
 type FileResult struct {
-	Package       *packages.Package
-	File          *ast.File
-	FilePath      string
-	GeneratedCode string
-	Errors        NodeErrors
+	Package           *packages.Package
+	File              *ast.File
+	BaseFilePath      string
+	GeneratedFilePath string
+	GeneratedCode     string
+	Errors            NodeErrors
 }
 
 type Processor interface {

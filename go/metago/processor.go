@@ -9,8 +9,10 @@ import (
 	"go/format"
 	"go/token"
 	"go/types"
+	"path/filepath"
 	"reflect"
 	"strconv"
+	"strings"
 
 	"github.com/vvakame/astcopy"
 	"golang.org/x/tools/go/ast/astutil"
@@ -75,8 +77,6 @@ func (p *metaProcessor) Process(cfg *Config) (*Result, error) {
 	p.replaceNodes = make(map[ast.Node]ast.Node)
 	p.valueMapping = make(map[*ast.Object]ast.Expr)
 	p.fieldMapping = make(map[*ast.Object]*fieldInfo)
-	p.requiredBreakLabel = nil
-	p.requiredContinueLabel = nil
 
 	pkgCfg := &packages.Config{
 		Mode: packages.NeedName |
@@ -172,6 +172,8 @@ func (p *metaProcessor) Process(cfg *Config) (*Result, error) {
 	for _, pkg := range pkgs {
 	file:
 		for idx, file := range pkg.Syntax {
+			p.requiredBreakLabel = nil
+			p.requiredContinueLabel = nil
 			p.hasMetagoBuildTag = false
 			p.currentPkg = pkg
 			p.currentFile = file
@@ -182,14 +184,26 @@ func (p *metaProcessor) Process(cfg *Config) (*Result, error) {
 				panic("unknown state about requiredBreakLabel")
 			}
 
+			useMetagoPackage := astutil.UsesImport(file, metagoPackagePath)
+
+			if !useMetagoPackage {
+				continue
+			}
+
+			baseFilePath := pkg.GoFiles[idx] // TODO これほんとうに安全？
+			var generatedFilePath string
+			{
+				baseDir := filepath.Dir(baseFilePath)
+				fileName := filepath.Base(baseFilePath)
+				generatedFilePath = filepath.Join(baseDir, strings.TrimSuffix(fileName, ".go")+"_gen.go")
+			}
 			fileResult := &FileResult{
-				Package:  pkg,
-				File:     file,
-				FilePath: pkg.GoFiles[idx], // TODO これほんとうに安全？
+				Package:           pkg,
+				File:              file,
+				BaseFilePath:      baseFilePath,
+				GeneratedFilePath: generatedFilePath,
 			}
 			result.Results = append(result.Results, fileResult)
-
-			useMetagoPackage := astutil.UsesImport(file, metagoPackagePath)
 
 			// . import してたら殺す
 			for _, importSpec := range file.Imports {

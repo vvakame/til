@@ -1,6 +1,6 @@
 [
   {
     "level": "error",
-    "message": "internal/testbed/metagoDotImport/model.go:14:2: don't use '.' import"
+    "message": "internal/testbed/metagoDotImport/model.go:14:2: ERR don't use '.' import"
   }
 ]
