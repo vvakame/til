@@ -1,5 +1,7 @@
 # metago
 
+:construction: [引っ越しました](https://github.com/vvakame/metago) :construction:
+
 metagoはGo言語向けのメタプログラミングライブラリです。
 考え方のベースとして[wire](https://github.com/google/wire)のシグニチャを定義し実装は機械的に生成する考え方と、[VのReflection via codegen](https://vlang.io/docs#codegen)のホスト言語の構文でメタ構造を書く、というのを使っています。
 
@@ -39,7 +41,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/vvakame/til/go/metago"
+	"github.com/vvakame/metago"
 )
 
 type Foo struct {
@@ -106,6 +108,6 @@ func main() {
 ## metago のインストールと実行
 
 ```
-$ go get -u github.com/vvakame/til/go/metago/cmd/metago
+$ go get -u github.com/vvakame/metago/cmd/metago
 $ metago -v .
 ```
