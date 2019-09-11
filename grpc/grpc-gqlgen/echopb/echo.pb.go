@@ -11,6 +11,8 @@ import (
 	_ "github.com/vvakame/til/grpc/grpc-gqlgen/gqlgen-proto"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	grpc "google.golang.org/grpc"
+	codes "google.golang.org/grpc/codes"
+	status "google.golang.org/grpc/status"
 	math "math"
 )
 
@@ -380,6 +382,17 @@ type EchoServer interface {
 	Say(context.Context, *SayRequest) (*SayResponse, error)
 	// TODO Say2nd とかにするとGo向けコード生成と命名規則が合わなくて死ぬ
 	SaySecond(context.Context, *SayRequest) (*SayResponse, error)
+}
+
+// UnimplementedEchoServer can be embedded to have forward compatible implementations.
+type UnimplementedEchoServer struct {
+}
+
+func (*UnimplementedEchoServer) Say(ctx context.Context, req *SayRequest) (*SayResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Say not implemented")
+}
+func (*UnimplementedEchoServer) SaySecond(ctx context.Context, req *SayRequest) (*SayResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SaySecond not implemented")
 }
 
 func RegisterEchoServer(s *grpc.Server, srv EchoServer) {

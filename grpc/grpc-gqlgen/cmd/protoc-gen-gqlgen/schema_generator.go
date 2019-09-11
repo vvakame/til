@@ -143,13 +143,9 @@ func (g *schemaGenerator) Generate(ctx context.Context, fileInfos []*FileInfo) (
 		}
 
 		var buf bytes.Buffer
-		err := formatter.NewFormatter(&buf).FormatSchemaDocument(doc)
-		if err != nil {
-			return nil, err
-		}
+		formatter.NewFormatter(&buf).FormatSchemaDocument(doc)
 
 		var file *plugin.CodeGeneratorResponse_File
-
 		fileName := fmt.Sprintf("%s.graphql", fileInfo.PackageName)
 		for _, f := range files {
 			if f.GetName() == fileName {

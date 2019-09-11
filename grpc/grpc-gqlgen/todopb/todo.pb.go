@@ -11,6 +11,8 @@ import (
 	_ "github.com/vvakame/til/grpc/grpc-gqlgen/gqlgen-proto"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	grpc "google.golang.org/grpc"
+	codes "google.golang.org/grpc/codes"
+	status "google.golang.org/grpc/status"
 	math "math"
 )
 
@@ -662,6 +664,23 @@ type TodoServiceServer interface {
 	ListA(context.Context, *ListARequest) (*ListAResponse, error)
 	ListB(context.Context, *ListBRequest) (*ListBResponse, error)
 	Update(context.Context, *UpdateRequest) (*UpdateResponse, error)
+}
+
+// UnimplementedTodoServiceServer can be embedded to have forward compatible implementations.
+type UnimplementedTodoServiceServer struct {
+}
+
+func (*UnimplementedTodoServiceServer) Create(ctx context.Context, req *CreateRequest) (*CreateResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Create not implemented")
+}
+func (*UnimplementedTodoServiceServer) ListA(ctx context.Context, req *ListARequest) (*ListAResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListA not implemented")
+}
+func (*UnimplementedTodoServiceServer) ListB(ctx context.Context, req *ListBRequest) (*ListBResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListB not implemented")
+}
+func (*UnimplementedTodoServiceServer) Update(ctx context.Context, req *UpdateRequest) (*UpdateResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Update not implemented")
 }
 
 func RegisterTodoServiceServer(s *grpc.Server, srv TodoServiceServer) {
