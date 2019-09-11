@@ -8,8 +8,8 @@ const ignoreOrgs = [
     "techbookfest",
     "TechBooster",
 ];
-const start = new Date("2019-08-17T09:00:00Z");
-const end = new Date("2019-08-24T09:00:00Z");
+const start = new Date("2019-08-31T09:00:00Z");
+const end = new Date("2019-09-07T09:00:00Z");
 
 // https://developer.github.com/v4/explorer/
 const query = `
