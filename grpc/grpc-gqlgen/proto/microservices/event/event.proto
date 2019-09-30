@@ -1,0 +1,66 @@
+syntax = "proto3";
+
+package microservices.event;
+
+option go_package = "github.com/vvakame/til/grpc/grpc-gqlgen/microservices/event";
+
+import "google/protobuf/timestamp.proto";
+
+// コンセプト（設計者の性格）
+//   * 拡張の余地は考えず可能な限りシンプルな（≒message数の少ない）スキーマ設計
+//   * 返り値は可能な限りシンプル 別のメソッドを使って値が取れるならidだけ返す
+//   * フィールド名は可能な限り短くする（UpdateEvent じゃなくて Update）
+//   * 共通化とかはあまりやらない
+//   * 他の microservices 系パッケージを参照しない
+
+service EventService {
+  rpc Create(CreateRequest) returns (Event);
+  rpc Update(UpdateRequest) returns (Event);
+  rpc TransferOwner(TransferOwnerRequest) returns (Event);
+  rpc GetById(GetByIdRequest) returns (Event);
+  rpc List(ListRequest) returns (ListResponse);
+}
+
+message Event {
+  uint64 id = 1;
+  string name = 2;
+  string place = 3;
+  uint64 owner_user_id = 4;
+  google.protobuf.Timestamp start_at = 5;
+  google.protobuf.Timestamp end_at = 6;
+  google.protobuf.Timestamp updated_at = 7;
+  google.protobuf.Timestamp created_at = 8;
+}
+
+message CreateRequest {
+  string name = 1;
+  string place = 2;
+  google.protobuf.Timestamp start_at = 3;
+  google.protobuf.Timestamp end_at = 4;
+}
+
+message UpdateRequest {
+  uint64 id = 1;
+  string name = 2;
+  string place = 3;
+  google.protobuf.Timestamp start_at = 4;
+  google.protobuf.Timestamp end_at = 5;
+}
+
+message TransferOwnerRequest {
+  uint64 id = 1;
+  uint64 new_owner_user_id = 2;
+}
+
+message GetByIdRequest {
+  uint64 id = 1;
+}
+
+message ListRequest {
+  uint64 owner_user_id = 1;
+  google.protobuf.Timestamp start_after = 2;
+}
+
+message ListResponse {
+  repeated Event events = 1;
+}
