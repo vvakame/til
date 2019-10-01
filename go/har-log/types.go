@@ -1,8 +1,34 @@
 package harlog
 
+import (
+	"encoding/json"
+	"time"
+)
+
 // copied from https://github.com/CyrusBiotechnology/go-har
 
 // from https://w3c.github.io/web-performance/specs/HAR/Overview.html
+
+var _ json.Marshaler = Time{}
+var _ json.Marshaler = Duration(0)
+
+// Time provides ISO 8601 format JSON data.
+type Time time.Time
+
+// MarshalJSON to ISO 8601 format from time.Time.
+func (t Time) MarshalJSON() ([]byte, error) {
+	v := time.Time(t).Format(time.RFC3339)
+	return json.Marshal(v)
+}
+
+// Duration provides milliseconds order JSON format.
+type Duration time.Duration
+
+// MarshalJSON to milliseconds order number format from time.Duration.
+func (d Duration) MarshalJSON() ([]byte, error) {
+	v := float64(d) / float64(time.Millisecond)
+	return json.Marshal(v)
+}
 
 // HARContainer is ...
 // The HAR format is based on JSON, as described in RFC 4627.
@@ -53,7 +79,7 @@ type Browser struct {
 // This object represents list of exported pages.
 type Page struct {
 	// Date and time stamp for the beginning of the page load (ISO 8601 - YYYY-MM-DDThh:mm:ss.sTZD, e.g. 2009-07-24T19:20:30.45+01:00).
-	StartedDateTime string `json:"startedDateTime"`
+	StartedDateTime Time `json:"startedDateTime"`
 	// Unique identifier of a page within the . Entries use it to refer the parent page.
 	ID string `json:"id"`
 	// Page title.
@@ -68,9 +94,9 @@ type Page struct {
 // This object describes timings for various events (states) fired during the page load. All times are specified in milliseconds. If a time info is not available appropriate field is set to -1.
 type PageTiming struct {
 	// Content of the page loaded. Number of milliseconds since page load started (page.startedDateTime). Use -1 if the timing does not apply to the current request.
-	OnContentLoad float64 `json:"onContentLoad,omitempty"`
+	OnContentLoad Duration `json:"onContentLoad,omitempty"`
 	// Page is loaded (onLoad event fired). Number of milliseconds since page load started (page.startedDateTime). Use -1 if the timing does not apply to the current request.
-	OnLoad float64 `json:"onLoad,omitempty"`
+	OnLoad Duration `json:"onLoad,omitempty"`
 	// A comment provided by the user or the application.
 	Comment string `json:"comment,omitempty"`
 }
@@ -81,9 +107,9 @@ type Entry struct {
 	// Reference to the parent page. Leave out this field if the application does not support grouping by pages.
 	Pageref string `json:"pageref,omitempty"`
 	// Date and time stamp of the request start (ISO 8601 - YYYY-MM-DDThh:mm:ss.sTZD).
-	StartedDateTime string `json:"startedDateTime"`
+	StartedDateTime Time `json:"startedDateTime"`
 	// Total elapsed time of the request in milliseconds. This is the sum of all timings available in the timings object (i.e. not including -1 values) .
-	Time float64 `json:"time"`
+	Time Duration `json:"time"`
 	// Detailed info about the request.
 	Request *Request `json:"request"`
 	// Detailed info about the response.
@@ -162,7 +188,7 @@ type Cookie struct {
 	// The host of the cookie.
 	Domain string `json:"domain,omitempty"`
 	// Cookie expiration time. (ISO 8601 - YYYY-MM-DDThh:mm:ss.sTZD, e.g. 2009-07-24T19:20:30.123+02:00).
-	Expires string `json:"expires,omitempty"`
+	Expires Time `json:"expires,omitempty"`
 	// Set to true if the cookie is HTTP only, false otherwise.
 	HTTPOnly bool `json:"httpOnly,omitempty"`
 	// True if the cookie was transmitted over ssl, false otherwise.
@@ -253,19 +279,19 @@ type CacheInfo struct {
 // This object describes various phases within request-response round trip. All times are specified in milliseconds.
 type Timings struct {
 	// Time spent in a queue waiting for a network connection. Use -1 if the timing does not apply to the current request.
-	Blocked float64 `json:"blocked,omitempty"`
+	Blocked Duration `json:"blocked,omitempty"`
 	// DNS resolution time. The time required to resolve a host name. Use -1 if the timing does not apply to the current request.
-	DNS float64 `json:"dns,omitempty"`
+	DNS Duration `json:"dns,omitempty"`
 	// Time required to create TCP connection. Use -1 if the timing does not apply to the current request.
-	Connect float64 `json:"connect,omitempty"`
+	Connect Duration `json:"connect,omitempty"`
 	// Time required to send HTTP request to the server.
-	Send float64 `json:"send"`
+	Send Duration `json:"send"`
 	// Waiting for a response from the server.
-	Wait float64 `json:"wait"`
+	Wait Duration `json:"wait"`
 	// Time required to read entire response from the server (or cache).
-	Receive float64 `json:"receive"`
+	Receive Duration `json:"receive"`
 	// Time required for SSL/TLS negotiation. If this field is defined then the time is also included in the connect field (to ensure backward compatibility with HAR 1.1). Use -1 if the timing does not apply to the current request.
-	SSL float64 `json:"ssl,omitempty"`
+	SSL Duration `json:"ssl,omitempty"`
 	// A comment provided by the user or the application.
 	Comment string `json:"comment,omitempty"`
 }

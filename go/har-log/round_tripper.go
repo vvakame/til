@@ -7,9 +7,9 @@ import (
 	"log"
 	"mime"
 	"net/http"
+	"net/http/httptrace"
 	"strings"
 	"sync"
-	"time"
 )
 
 var _ http.RoundTripper = (*Transport)(nil)
@@ -84,15 +84,34 @@ func (h *Transport) RoundTrip(r *http.Request) (*http.Response, error) {
 		}
 	}
 
-	startAt := time.Now()
-	entry.StartedDateTime = startAt.Format(time.RFC3339)
+	trace, ct, finish := newClientTracer()
+	r = r.WithContext(httptrace.WithClientTrace(r.Context(), ct))
+	defer func() {
+		entry.StartedDateTime = Time(trace.startAt)
+		entry.Time = Duration(trace.endAt.Sub(trace.startAt))
+		entry.Timings = &Timings{
+			Blocked: Duration(trace.startAt.Sub(trace.connStart)),
+			DNS:     -1,
+			Connect: -1,
+			Send:    Duration(trace.writeRequest.Sub(trace.connObtained)),
+			Wait:    Duration(trace.firstResponseByte.Sub(trace.writeRequest)),
+			Receive: Duration(trace.endAt.Sub(trace.firstResponseByte)),
+			SSL:     -1,
+		}
+		if !trace.dnsStart.IsZero() {
+			entry.Timings.DNS = Duration(trace.dnsEnd.Sub(trace.dnsStart))
+		}
+		if !trace.connStart.IsZero() {
+			entry.Timings.Connect = Duration(trace.connObtained.Sub(trace.connStart))
+		}
+		if !trace.tlsHandshakeStart.IsZero() {
+			entry.Timings.SSL = Duration(trace.tlsHandshakeEnd.Sub(trace.tlsHandshakeStart))
+		}
+	}()
 
 	resp, realErr := baseRoundTripper.RoundTrip(r)
 
-	endAt := time.Now()
-	entry.Time = float64(endAt.UnixNano()-startAt.UnixNano()) / float64(time.Millisecond)
-
-	err = h.postRoundTrip(r, resp, entry)
+	err = h.postRoundTrip(r, resp, entry, finish)
 	if err != nil {
 		if h.UnusualError != nil {
 			err = h.UnusualError(err)
@@ -106,15 +125,6 @@ func (h *Transport) RoundTrip(r *http.Request) (*http.Response, error) {
 	}
 
 	entry.Cache = &Cache{}
-	entry.Timings = &Timings{
-		Blocked: -1,
-		DNS:     -1,
-		Connect: -1,
-		Send:    0,
-		Wait:    0,
-		Receive: entry.Time,
-		SSL:     -1,
-	}
 
 	return resp, realErr
 }
@@ -137,6 +147,7 @@ func (h *Transport) preRoundTrip(r *http.Request, entry *Entry) error {
 		mimeType := r.Header.Get("Content-Type")
 		postData = &PostData{
 			MimeType: mimeType,
+			Params:   []*Param{},
 			Text:     string(reqBodyBytes),
 		}
 
@@ -204,8 +215,9 @@ func (h *Transport) preRoundTrip(r *http.Request, entry *Entry) error {
 	return nil
 }
 
-func (h *Transport) postRoundTrip(r *http.Request, resp *http.Response, entry *Entry) error {
+func (h *Transport) postRoundTrip(r *http.Request, resp *http.Response, entry *Entry, finish func()) error {
 	if resp == nil {
+		finish()
 		return nil
 	}
 	respBody := resp.Body
@@ -213,6 +225,7 @@ func (h *Transport) postRoundTrip(r *http.Request, resp *http.Response, entry *E
 	defer func() {
 		_ = respBody.Close()
 	}()
+	finish() // データ読み終わった瞬間が終わり
 	if err != nil {
 		return err
 	}
@@ -263,7 +276,7 @@ func (h *Transport) toHARCookies(cookies []*http.Cookie) []*Cookie {
 			Value:    cookie.Value,
 			Path:     cookie.Path,
 			Domain:   cookie.Domain,
-			Expires:  cookie.Expires.Format(time.RFC3339),
+			Expires:  Time(cookie.Expires),
 			HTTPOnly: cookie.HttpOnly,
 			Secure:   cookie.Secure,
 		})

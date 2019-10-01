@@ -21,5 +21,4 @@ fmt.Println(string(b))
 ## Limitations
 
 * compressed response is not supported yet.
-* several `timings` information is not logged.
 * `headersSize` is not calculated.
