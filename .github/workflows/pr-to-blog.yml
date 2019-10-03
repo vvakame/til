@@ -7,7 +7,8 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - name: filter PR merged
-      if: github.action == 'closed' && github.pull_request.merged == 'true'
+      if: github.action != 'closed' || github.pull_request.merged != 'true'
+      run: exit 0
     - name: pr2md
       uses: vvakame/github-actions/pr-to-md@master
       env:
