@@ -1,5 +1,7 @@
 name: make blog post
-on: [pull_request]
+on:
+  pull_request:
+    types: [closed]
 jobs:
   build:
     name: PR to Blog post
