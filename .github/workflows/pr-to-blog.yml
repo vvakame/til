@@ -6,9 +6,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
-    - name: filter PR merged
-      if: github.action != 'closed' || github.pull_request.merged != 'true'
-      run: exit 0
+    - name: Dump GitHub context
+      env:
+        GITHUB_CONTEXT: ${{ toJson(github) }}
+      run: echo "$GITHUB_CONTEXT"
     - name: pr2md
       uses: vvakame/github-actions/pr-to-md@master
       env:
@@ -16,18 +17,16 @@ jobs:
       with:
         args: --timezone Asia/Tokyo
     - name: md2blog
+      if: github.action == 'closed' && github.pull_request.merged == 'true'
       uses: vvakame/github-actions/md-to-blogpost@master
       env:
         BLOG_REPO_GITHUB_TOKEN: ${{ secrets.BLOG_REPO_GITHUB_TOKEN }}
       with:
         args: --owner vvakame --name vvakame-blog --timezone Asia/Tokyo result.md
     - name: blog to slack
+      if: github.action == 'closed' && github.pull_request.merged == 'true'
       uses: Ilshidur/action-slack@master
       env:
         SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
       with:
         args: 'PR merged!: {{ EVENT_PAYLOAD.pull_request.html_url }}'
-    - name: cat GITHUB_EVENT_PATH
-      uses: actions/bin/sh@master
-      with:
-        args: '"cat ${{ github.event_path }}"'
