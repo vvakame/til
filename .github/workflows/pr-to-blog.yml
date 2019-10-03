@@ -1,0 +1,34 @@
+name: make blog post
+on:
+  pull_request:
+    types: [closed]
+jobs:
+  build:
+    name: PR to Blog post
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - name: Dump GitHub context
+      env:
+        GITHUB_CONTEXT: ${{ toJson(github) }}
+      run: echo "$GITHUB_CONTEXT"
+    - name: pr2md
+      uses: vvakame/github-actions/pr-to-md@master
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        args: --timezone Asia/Tokyo
+    - name: md2blog
+      if: github.event.action == 'closed' && github.event.pull_request.merged == 'true'
+      uses: vvakame/github-actions/md-to-blogpost@master
+      env:
+        BLOG_REPO_GITHUB_TOKEN: ${{ secrets.BLOG_REPO_GITHUB_TOKEN }}
+      with:
+        args: --owner vvakame --name vvakame-blog --timezone Asia/Tokyo result.md
+    - name: blog to slack
+      if: github.event.action == 'closed' && github.event.pull_request.merged == 'true'
+      uses: Ilshidur/action-slack@master
+      env:
+        SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+      with:
+        args: 'PR merged!: {{ EVENT_PAYLOAD.pull_request.html_url }}'
