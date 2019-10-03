@@ -1,11 +1,11 @@
-on: pull_request
 name: make blog post
+on: [pull_request]
 jobs:
-  filterPRMerged:
-    name: filter PR merged
+  build:
+    name: PR to Blog post
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@master
+    - uses: actions/checkout@v1
     - name: filter PR merged
       uses: actions/bin/filter@master
       with:
