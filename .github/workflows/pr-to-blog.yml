@@ -1,5 +1,5 @@
 name: make blog post
-on: [pull_request]
+on: [push, pull_request]
 jobs:
   build:
     name: PR to Blog post
@@ -17,14 +17,14 @@ jobs:
       with:
         args: --timezone Asia/Tokyo
     - name: md2blog
-      if: github.action == 'closed' && github.pull_request.merged == 'true'
+      if: github.event.action == 'closed' && github.event.pull_request.merged == 'true'
       uses: vvakame/github-actions/md-to-blogpost@master
       env:
         BLOG_REPO_GITHUB_TOKEN: ${{ secrets.BLOG_REPO_GITHUB_TOKEN }}
       with:
         args: --owner vvakame --name vvakame-blog --timezone Asia/Tokyo result.md
     - name: blog to slack
-      if: github.action == 'closed' && github.pull_request.merged == 'true'
+      if: github.event.action == 'closed' && github.event.pull_request.merged == 'true'
       uses: Ilshidur/action-slack@master
       env:
         SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
