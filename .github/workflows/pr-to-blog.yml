@@ -7,9 +7,7 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - name: filter PR merged
-      uses: actions/bin/filter@master
-      with:
-        args: merged true
+      if: github.action == 'closed' && github.pull_request.merged == 'true'
     - name: pr2md
       uses: vvakame/github-actions/pr-to-md@master
       env:
