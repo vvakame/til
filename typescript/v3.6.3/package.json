@@ -1,5 +1,5 @@
 {
-  "name": "v3.6.0-rc",
+  "name": "v3.6.3",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -9,6 +9,11 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "typescript": "^3.6.0-beta"
+    "@types/moment": "^2.13.0",
+    "@types/node": "^12.7.11",
+    "typescript": "^3.6.3"
+  },
+  "dependencies": {
+    "tslib": "^1.10.0"
   }
 }
