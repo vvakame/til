@@ -1,0 +1,19 @@
+{
+  "name": "v3.6.3",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/moment": "^2.13.0",
+    "@types/node": "^12.7.11",
+    "typescript": "^3.6.3"
+  },
+  "dependencies": {
+    "tslib": "^1.10.0"
+  }
+}
