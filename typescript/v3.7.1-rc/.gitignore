@@ -1,0 +1,7 @@
+node_modules/
+
+dist/
+src/**/*.d.ts
+src/**/*.js
+
+project-refs/**/*.tsbuildinfo
