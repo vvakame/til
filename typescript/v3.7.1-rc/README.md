@@ -1,5 +1,7 @@
 # TypeScript v3.7.1 RC 変更点
 
+更新 2019/11/01 Call Hierarchy について更新
+
 こんにちは[メルペイ社](https://www.merpay.com/)な[@vvakame](https://twitter.com/vvakame)です。
 
 [TypeScript 3.7 RC](https://devblogs.microsoft.com/typescript/announcing-typescript-3-7-rc/)がアナウンスされました。
@@ -38,14 +40,15 @@ Roadmapは[こちら](https://github.com/Microsoft/TypeScript/wiki/Roadmap#37-no
     * コンパイル待ちのラグがなしに即時他のプロジェクトのコード変更が参照できて便利らしい
     * `disableSourceOfProjectReferenceRedirect` が tsconfig.json に追加
 * 関数の存在チェックした後に呼んでなかったら怒ってくれる [Uncalled Function Checks](https://github.com/microsoft/TypeScript/pull/33178)
-    * `if (obj.func)` とかした後に `obj.junc()` してなかったら怒ってくれる
+    * `if (obj.func)` とかした後に `obj.func()` してなかったら怒ってくれる
     * マジで確認だけして呼ばなくてよい場合は `if (!!obj.func)` とする
 * `// @ts-nocheck` 導入 [`// @ts-nocheck` in TypeScript Files](https://github.com/microsoft/TypeScript/pull/33383)
     * JSからのマイグレーションの時に一時的に使うと便利〜〜みたいなやつ
 * セミコロンをフォーマッタが 付ける/削除する を設定できるようになった [Semicolon Formatter Option](https://github.com/microsoft/TypeScript/pull/33402)
-* コールヒエラルキーのサポート [Call Hierarchy support](https://github.com/microsoft/TypeScript/issues/31863)
+* ~~コールヒエラルキーのサポート [Call Hierarchy support](https://github.com/microsoft/TypeScript/issues/31863)~~
     * 主にVSCode側の機能っぽいけど…？
     * Find All References はすでにあるけどそれのことではないのか…？
+    * Issueで聞いたらできてなくて大変なやつやで… という話になってた
 * async内でawaitがいるような候補を選んだら自動的にawaitを挿入する [Auto-insert `await` for property accesses on Promise](https://github.com/microsoft/TypeScript/issues/31450)
     * 便利ですね
 
@@ -463,12 +466,14 @@ JSDocをちゃんと書いてから移行するのが面倒な人はこっちの
 VSCode - Insiders 上に設定項目は存在していて、 `"typescript.format.semicolons": "insert"` みたいになるんですがフォーマッタ適用してもセミコロンが自動でついたりはしませんでした…。
 
 
-## コールヒエラルキーのサポート
+## ~~コールヒエラルキーのサポート~~
 
 これも謎です。
 Find All References とは違うものなのか…？
 [Issue](https://github.com/microsoft/TypeScript/issues/31863)にもほぼ情報がありません。
 
+…と思ったんですがなんかまだできてなかったっぽいです。
+詳細はIssueを見てみてください。
 
 ## async内でawaitがいるような候補を選んだら自動的にawaitを挿入する
 
