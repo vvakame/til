@@ -10,7 +10,7 @@ jobs:
     steps:
       - uses: actions/checkout@master
       - name: test
-        uses: vvakame/actions/welcome-comment@feat-welcome
+        uses: vvakame/github-actions/welcome-comment@feat-welcome
         with:
           message: ":tada:"
           github-token: ${{secrets.GITHUB_TOKEN}}
