@@ -1,0 +1,18 @@
+name: Feature Request - vote
+on:
+  issue_comment:
+    types:
+      - created
+jobs:
+  welcome:
+    name: add vote labels
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - name: test
+        uses: vvakame/github-actions/vote-checker@feat-vote
+        with:
+          filter-labels: enhancement
+          voted-labels: help wanted
+          label-threshold: "3"
+          github-token: ${{secrets.GITHUB_TOKEN}}
