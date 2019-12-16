@@ -12,5 +12,7 @@ jobs:
       - name: test
         uses: vvakame/github-actions/welcome-comment@feat-welcome
         with:
-          message: ":tada:"
+          message: |
+            ミステリー！！
+          labels: enhancement
           github-token: ${{secrets.GITHUB_TOKEN}}
