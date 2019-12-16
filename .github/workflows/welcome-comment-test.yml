@@ -1,0 +1,16 @@
+name: Feature Request - welcome
+on:
+  issues:
+    types:
+      - opened
+jobs:
+  welcome:
+    name: comment Welcome message
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - name: test
+        uses: vvakame/actions/welcome-comment@1cacd92a
+        with:
+          message: ":tada:"
+          github-token: ${{secrets.GITHUB_TOKEN}}
