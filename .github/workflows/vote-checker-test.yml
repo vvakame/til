@@ -15,4 +15,6 @@ jobs:
           filter-labels: enhancement
           voted-labels: help wanted
           label-threshold: "1"
+          assignees: vvakame
+          message: rampage!
           github-token: ${{secrets.GITHUB_TOKEN}}
