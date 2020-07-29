@@ -2,10 +2,11 @@ package domains
 
 import (
 	"context"
-	"github.com/google/uuid"
 	"sort"
 	"sync"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type TodoID string
@@ -47,7 +48,9 @@ func (repo *todoRepository) Get(ctx context.Context, id TodoID) (*Todo, error) {
 		return nil, ErrNoSuchEntity
 	}
 
-	return todo, nil
+	copyTodo := *todo
+
+	return &copyTodo, nil
 }
 
 func (repo *todoRepository) GetAll(ctx context.Context) ([]*Todo, error) {
@@ -56,14 +59,12 @@ func (repo *todoRepository) GetAll(ctx context.Context) ([]*Todo, error) {
 
 	list := make([]*Todo, 0, len(repo.db))
 	for _, todo := range repo.db {
-		list = append(list, todo)
+		copyTodo := *todo
+		list = append(list, &copyTodo)
 	}
 
 	sort.Slice(list, func(i, j int) bool {
-		a := list[i]
-		b := list[j]
-
-		return a.CreatedAt.UnixNano() > b.CreatedAt.UnixNano()
+		return list[i].CreatedAt.After(list[j].CreatedAt)
 	})
 
 	return list, nil
@@ -106,7 +107,5 @@ func (repo *todoRepository) Update(ctx context.Context, todo *Todo) (*Todo, erro
 
 	repo.db[todo.ID] = todo
 
-	copyTodo := *todo
-
-	return &copyTodo, nil
+	return todo, nil
 }

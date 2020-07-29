@@ -2,13 +2,14 @@
 package main
 
 import (
-	"github.com/vvakame/til/go/graphql-todos/domains"
 	"log"
 	"net/http"
 	"os"
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
+
+	"github.com/vvakame/til/go/graphql-todos/domains"
 	"github.com/vvakame/til/go/graphql-todos/graph"
 	"github.com/vvakame/til/go/graphql-todos/graph/generated"
 )
