@@ -1,0 +1,3 @@
+$schema: https://json.schemastore.org/coffeelint
+line_endings:
+  value: macos
