@@ -1,0 +1,33 @@
+{"Time":"2020-12-07T20:51:52.144415+09:00","Action":"run","Package":"github.com/vvakame/til/go/testjson","Test":"TestA"}
+{"Time":"2020-12-07T20:51:52.144695+09:00","Action":"output","Package":"github.com/vvakame/til/go/testjson","Test":"TestA","Output":"=== RUN   TestA\n"}
+{"Time":"2020-12-07T20:51:52.144708+09:00","Action":"output","Package":"github.com/vvakame/til/go/testjson","Test":"TestA","Output":"    main_test.go:10: Hello, test!\n"}
+{"Time":"2020-12-07T20:51:52.144714+09:00","Action":"output","Package":"github.com/vvakame/til/go/testjson","Test":"TestA","Output":"Hello, stdout!\n"}
+{"Time":"2020-12-07T20:51:52.144718+09:00","Action":"run","Package":"github.com/vvakame/til/go/testjson","Test":"TestA/1st"}
+{"Time":"2020-12-07T20:51:52.144721+09:00","Action":"output","Package":"github.com/vvakame/til/go/testjson","Test":"TestA/1st","Output":"=== RUN   TestA/1st\n"}
+{"Time":"2020-12-07T20:51:52.144724+09:00","Action":"output","Package":"github.com/vvakame/til/go/testjson","Test":"TestA/1st","Output":"    main_test.go:14: in 1st\n"}
+{"Time":"2020-12-07T20:51:52.144726+09:00","Action":"output","Package":"github.com/vvakame/til/go/testjson","Test":"TestA/1st","Output":"Hi, 1st\n"}
+{"Time":"2020-12-07T20:51:52.144729+09:00","Action":"run","Package":"github.com/vvakame/til/go/testjson","Test":"TestA/2nd"}
+{"Time":"2020-12-07T20:51:52.144732+09:00","Action":"output","Package":"github.com/vvakame/til/go/testjson","Test":"TestA/2nd","Output":"=== RUN   TestA/2nd\n"}
+{"Time":"2020-12-07T20:51:52.144734+09:00","Action":"output","Package":"github.com/vvakame/til/go/testjson","Test":"TestA/2nd","Output":"Hi, 2nd\n"}
+{"Time":"2020-12-07T20:51:52.144737+09:00","Action":"run","Package":"github.com/vvakame/til/go/testjson","Test":"TestA/3rd"}
+{"Time":"2020-12-07T20:51:52.144739+09:00","Action":"output","Package":"github.com/vvakame/til/go/testjson","Test":"TestA/3rd","Output":"=== RUN   TestA/3rd\n"}
+{"Time":"2020-12-07T20:51:52.144742+09:00","Action":"output","Package":"github.com/vvakame/til/go/testjson","Test":"TestA/3rd","Output":"=== PAUSE TestA/3rd\n"}
+{"Time":"2020-12-07T20:51:52.144744+09:00","Action":"pause","Package":"github.com/vvakame/til/go/testjson","Test":"TestA/3rd"}
+{"Time":"2020-12-07T20:51:52.144747+09:00","Action":"output","Package":"github.com/vvakame/til/go/testjson","Test":"TestA/3rd","Output":"Bye, stdout!\n"}
+{"Time":"2020-12-07T20:51:52.144749+09:00","Action":"cont","Package":"github.com/vvakame/til/go/testjson","Test":"TestA/3rd"}
+{"Time":"2020-12-07T20:51:52.144752+09:00","Action":"output","Package":"github.com/vvakame/til/go/testjson","Test":"TestA/3rd","Output":"=== CONT  TestA/3rd\n"}
+{"Time":"2020-12-07T20:51:52.144754+09:00","Action":"output","Package":"github.com/vvakame/til/go/testjson","Test":"TestA/3rd","Output":"    main_test.go:23: in 3rd\n"}
+{"Time":"2020-12-07T20:51:53.147829+09:00","Action":"output","Package":"github.com/vvakame/til/go/testjson","Test":"TestA/3rd","Output":"Hi, 3rd\n"}
+{"Time":"2020-12-07T20:51:53.147977+09:00","Action":"output","Package":"github.com/vvakame/til/go/testjson","Test":"TestA","Output":"--- FAIL: TestA (0.00s)\n"}
+{"Time":"2020-12-07T20:51:53.148023+09:00","Action":"output","Package":"github.com/vvakame/til/go/testjson","Test":"TestA/1st","Output":"    --- PASS: TestA/1st (0.00s)\n"}
+{"Time":"2020-12-07T20:51:53.148044+09:00","Action":"pass","Package":"github.com/vvakame/til/go/testjson","Test":"TestA/1st","Elapsed":0}
+{"Time":"2020-12-07T20:51:53.148073+09:00","Action":"output","Package":"github.com/vvakame/til/go/testjson","Test":"TestA/2nd","Output":"    --- FAIL: TestA/2nd (0.00s)\n"}
+{"Time":"2020-12-07T20:51:53.148083+09:00","Action":"fail","Package":"github.com/vvakame/til/go/testjson","Test":"TestA/2nd","Elapsed":0}
+{"Time":"2020-12-07T20:51:53.148091+09:00","Action":"output","Package":"github.com/vvakame/til/go/testjson","Test":"TestA/3rd","Output":"    --- PASS: TestA/3rd (1.00s)\n"}
+{"Time":"2020-12-07T20:51:53.148098+09:00","Action":"pass","Package":"github.com/vvakame/til/go/testjson","Test":"TestA/3rd","Elapsed":1}
+{"Time":"2020-12-07T20:51:53.148105+09:00","Action":"fail","Package":"github.com/vvakame/til/go/testjson","Test":"TestA","Elapsed":0}
+{"Time":"2020-12-07T20:51:53.148113+09:00","Action":"output","Package":"github.com/vvakame/til/go/testjson","Output":"FAIL\n"}
+{"Time":"2020-12-07T20:51:53.149148+09:00","Action":"output","Package":"github.com/vvakame/til/go/testjson","Output":"FAIL\tgithub.com/vvakame/til/go/testjson\t1.116s\n"}
+{"Time":"2020-12-07T20:51:53.14917+09:00","Action":"fail","Package":"github.com/vvakame/til/go/testjson","Elapsed":1.117}
+{"Time":"2020-12-07T20:51:53.150329+09:00","Action":"output","Package":"github.com/vvakame/til/go/testjson/cmd/json2result","Output":"?   \tgithub.com/vvakame/til/go/testjson/cmd/json2result\t[no test files]\n"}
+{"Time":"2020-12-07T20:51:53.151248+09:00","Action":"skip","Package":"github.com/vvakame/til/go/testjson/cmd/json2result","Elapsed":0.001}
