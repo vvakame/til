@@ -2,7 +2,7 @@ name: try environment protection rules
 on:
   push:
     paths:
-      - 'github/github-actions-envprotection/'
+      - 'github/github-actions-envprotection/**'
 jobs:
   build:
     name: try environment protection rules
