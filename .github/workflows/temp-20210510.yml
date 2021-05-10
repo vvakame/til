@@ -11,4 +11,4 @@ jobs:
       url:  https://github.com/vvakame/til/pull/58
     runs-on: ubuntu-latest
     steps:
-    - run: echo "echo ${{ env.TEMP_20210510 }}."
+    - run: echo "echo ${{ secrets.TEMP_20210510 }}."
