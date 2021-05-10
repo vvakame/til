@@ -2,4 +2,5 @@
 
 https://github.blog/changelog/2020-12-15-github-actions-environments-environment-protection-rules-and-environment-secrets-beta/
 
-touch 1
+https://github.com/vvakame/til/pull/58
+https://github.com/vvakame/til/pull/59
