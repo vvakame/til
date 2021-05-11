@@ -1,0 +1,64 @@
+
+
+
+type Todo {
+	id: String!
+	text: String!
+	done: Boolean!
+	doneAt: Timestamp
+	updatedAt: Timestamp!
+	createdAt: Timestamp!
+}
+input CreateTodoInput {
+	text: String!
+}
+type CreateTodoPayload {
+	todo: Todo!
+}
+input ListATodoInput {
+	first: Int
+	after: String
+	done: ListATodoInputDoneFilter
+}
+type ListATodoPayload {
+	cursor: String
+	todos: [Todo!]!
+}
+input ListBTodoInput {
+	offset: Int
+	limit: Int
+	done: ListBDone
+}
+type ListBTodoPayload {
+	todos: [Todo!]!
+}
+input UpdateTodoInput {
+	id: String!
+	text: String
+	done: Boolean
+}
+type UpdateTodoPayload {
+	todo: Todo!
+}
+enum ListATodoInputDoneFilter {
+	NONE
+	DONE
+	NOT_DONE
+}
+enum ListBDone {
+	NONE
+	DONE
+	NOT_DONE
+}
+extend type Mutation {
+	createTodo(input: CreateTodoInput!): CreateTodoPayload!
+}
+extend type Query {
+	todosA(input: ListATodoInput!): ListATodoPayload!
+}
+extend type Query {
+	todosB(input: ListBTodoInput!): ListBTodoPayload!
+}
+extend type Mutation {
+	updateTodo(input: UpdateTodoInput!): UpdateTodoPayload!
+}

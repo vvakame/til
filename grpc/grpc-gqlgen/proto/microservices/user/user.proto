@@ -1,0 +1,78 @@
+syntax = "proto3";
+
+package microservices.user;
+
+option go_package = "github.com/vvakame/til/grpc/grpc-gqlgen/microservices/user";
+
+import "google/protobuf/timestamp.proto";
+
+// コンセプト（設計者の性格）
+//   * なるべく拡張の余地を残すスキーマ設計
+//   * フィールドが User しかなくても独自の型を作る
+//   * 返り値は可能な限り具体的なmessage（uint64 user_id じゃなくて User user）
+//   * フィールド名は可能な限り明示的にする（Update じゃなくて UpdateUser）
+
+service UserService {
+  rpc SignUp(SignUpRequest) returns (SignUpResponse);
+  rpc SignIn(SignInRequest) returns (SignInResponse);
+  rpc SignOut(SignOutRequest) returns (SignOutResponse);
+  rpc Viewer(ViewerRequest) returns (ViewerResponse);
+  rpc GetUserById(GetUserByIdRequest) returns (GetUserByIdResponse);
+  rpc UpdateUser(UpdateUserRequest) returns (UpdateUserResponse);
+}
+
+message Noop {}
+
+message User {
+  uint64 user_id = 1;
+  string user_name = 2;
+  string email = 3;
+  google.protobuf.Timestamp updated_at = 4;
+  google.protobuf.Timestamp created_at = 5;
+}
+
+message SignUpRequest {
+  string user_name = 1;
+  string email = 2;
+  string password = 3;
+}
+
+message SignUpResponse {
+  User user = 1;
+}
+
+message SignInRequest {
+  string email = 1;
+  string password = 2;
+}
+
+message SignInResponse {
+  User user = 1;
+}
+
+message SignOutRequest {}
+
+message SignOutResponse {}
+
+message ViewerRequest {}
+
+message ViewerResponse {
+  User user = 1;
+}
+
+message GetUserByIdRequest {
+  uint64 user_id = 1;
+}
+
+message GetUserByIdResponse {
+  User user = 1;
+}
+
+message UpdateUserRequest {
+  string user_name = 1;
+  string email = 2;
+}
+
+message UpdateUserResponse {
+  User user = 1;
+}

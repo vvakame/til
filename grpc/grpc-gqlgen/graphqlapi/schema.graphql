@@ -1,0 +1,23 @@
+type Query {
+    tmp: String
+}
+
+type Mutation {
+    tmp: String
+}
+
+type PageInfo {
+  startCursor: String
+  endCursor: String
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+}
+
+type Noop {
+  clientMutationId: String
+}
+
+scalar Timestamp
+scalar Date
+scalar UInt64
+scalar Int64

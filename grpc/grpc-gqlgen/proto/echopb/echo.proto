@@ -1,0 +1,88 @@
+syntax = "proto3";
+
+package echo;
+
+option (gqlgen.api.resolver) = {
+  method_rule: {
+    src: "^Create(.*)$"
+    type: OPERATION_MUTATION
+  }
+  method_rule: {
+    src: ".*"
+    type: OPERATION_QUERY
+  }
+  message_rule: {
+    src: "^(.*)Request$"
+    dest: "$1Input"
+    type: TYPE_INPUT
+  }
+  message_rule: {
+    src: "^(.*)Response$"
+    dest: "$1Payload"
+    type: TYPE_TYPE
+  }
+};
+option go_package = "github.com/vvakame/til/grpc/grpc-gqlgen/echopb";
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "gqlgen-proto/options.proto";
+
+service Echo {
+  rpc Say(SayRequest) returns (SayResponse) {
+    option (google.api.http) = {
+      post: "/v1/echo/say"
+      body: "*"
+    };
+    option (gqlgen.api.schema) = {
+      mutation: "say"
+    };
+  }
+  // TODO Say2nd とかにするとGo向けコード生成と命名規則が合わなくて死ぬ
+  rpc SaySecond(SayRequest) returns (SayResponse);
+}
+
+message SayRequest {
+  option (gqlgen.api.type) = {
+    alias: "SayInput"
+    type: TYPE_INPUT
+  };
+  string message_id = 1 [
+    (gqlgen.api.field) = {
+      alias: "clientMutationId"
+      optional: true
+    }
+  ];
+  string message_body = 2;
+}
+
+message SayResponse {
+  option (gqlgen.api.type) = {
+    alias: "SayPayload"
+  };
+  string message_id = 1 [
+    (gqlgen.api.field) = {
+      alias: "clientMutationId"
+      optional: true
+    }
+  ];
+  string message_body = 2;
+  google.protobuf.Timestamp received = 3;
+}
+
+message Example1 {
+  InMessage foo = 1;
+  message InMessage {
+    string bar = 1;
+  }
+}
+
+message Example2 {
+  InMessage hoge = 1;
+  message InMessage {
+    option (gqlgen.api.type) = {
+      alias: "Example2WithMessage"
+    };
+    string fuga = 1;
+  }
+}

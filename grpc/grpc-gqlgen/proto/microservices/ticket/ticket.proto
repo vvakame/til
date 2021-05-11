@@ -1,0 +1,66 @@
+syntax = "proto3";
+
+package microservices.ticket;
+
+option go_package = "github.com/vvakame/til/grpc/grpc-gqlgen/microservices/ticket";
+
+import "google/protobuf/timestamp.proto";
+import "microservices/event/event.proto";
+import "microservices/user/user.proto";
+
+// コンセプト（設計者の性格）
+//   * 他の microservices 系パッケージを無遠慮に参照して勝手にデータを返す
+
+service TicketService {
+  rpc SetTicketLimit(SetTicketLimitRequest) returns (SetTicketLimitResponse);
+  rpc BuyTicket(BuyTicketRequest) returns (BuyTicketResponse);
+  rpc ResignTicket(ResignTicketRequest) returns (ResignTicketResponse);
+  rpc Tickets(TicketsRequest) returns (TicketsResponse);
+}
+
+message Ticket {
+  microservices.event.Event event = 1;
+  microservices.user.User user = 2;
+  google.protobuf.Timestamp updated_at = 3;
+  google.protobuf.Timestamp created_at = 4;
+}
+
+message SetTicketLimitRequest {
+  uint64 event_id = 1;
+  uint32 limit = 2;
+}
+
+message SetTicketLimitResponse {
+  microservices.event.Event event = 1;
+  uint64 limit = 2;
+}
+
+message BuyTicketRequest {
+  uint64 event_id = 1;
+}
+
+enum BuyTicketStatus {
+  UNKNOWN = 0;
+  SUCCEED = 1;
+  FAIL = 2;
+}
+
+message BuyTicketResponse {
+  BuyTicketStatus result = 1;
+  Ticket ticket = 2;
+}
+
+message ResignTicketRequest {
+  uint64 ticket_id = 1;
+}
+
+message ResignTicketResponse {}
+
+message TicketsRequest {
+  uint64 event_id = 1;
+  uint64 user_id = 2;
+}
+
+message TicketsResponse {
+  repeated microservices.event.Event event_list = 1;
+}

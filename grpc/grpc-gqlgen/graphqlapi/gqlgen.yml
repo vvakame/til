@@ -1,0 +1,68 @@
+# .gqlgen.yml example
+#
+# Refer to https://gqlgen.com/config/
+# for detailed .gqlgen.yml documentation.
+
+schema:
+  - schema.graphql
+  - ../echopb/echo.graphql
+  - ../todopb/todo.graphql
+exec:
+  filename: generated.go
+model:
+  filename: models_gen.go
+resolver:
+  filename: resolver.go
+  type: Resolver
+
+models:
+  Timestamp:
+    model: github.com/vvakame/til/grpc/grpc-gqlgen/graphqlapi.GraphQLTimestampScalar
+  Date:
+    model: github.com/vvakame/til/grpc/grpc-gqlgen/graphqlapi.GraphQLDateScalar
+  UInt64:
+    model: github.com/vvakame/til/grpc/grpc-gqlgen/graphqlapi.GraphQLUInt64Scalar
+  Int64:
+    model: github.com/vvakame/til/grpc/grpc-gqlgen/graphqlapi.GraphQLInt64Scalar
+
+  Todo:
+    model: github.com/vvakame/til/grpc/grpc-gqlgen/todopb.Todo
+  CreateTodoInput:
+    model: github.com/vvakame/til/grpc/grpc-gqlgen/todopb.CreateRequest
+  CreateTodoPayload:
+    model: github.com/vvakame/til/grpc/grpc-gqlgen/todopb.CreateResponse
+  ListATodoInput:
+    model: github.com/vvakame/til/grpc/grpc-gqlgen/todopb.ListARequest
+  ListATodoPayload:
+    model: github.com/vvakame/til/grpc/grpc-gqlgen/todopb.ListAResponse
+  ListBTodoInput:
+    model: github.com/vvakame/til/grpc/grpc-gqlgen/todopb.ListBRequest
+  ListBTodoPayload:
+    model: github.com/vvakame/til/grpc/grpc-gqlgen/todopb.ListBResponse
+  UpdateTodoInput:
+    model: github.com/vvakame/til/grpc/grpc-gqlgen/todopb.UpdateRequest
+  UpdateTodoPayload:
+    model: github.com/vvakame/til/grpc/grpc-gqlgen/todopb.UpdateResponse
+  ListATodoInputDoneFilter:
+    model: github.com/vvakame/til/grpc/grpc-gqlgen/todopb.ListATodoInputDoneFilter
+  ListBDone:
+    model: github.com/vvakame/til/grpc/grpc-gqlgen/todopb.ListBDone
+
+  Example1:
+    model: github.com/vvakame/til/grpc/grpc-gqlgen/echopb.Example1
+  Example1InMessage:
+    model: github.com/vvakame/til/grpc/grpc-gqlgen/echopb.Example1_InMessage
+  Example2:
+    model: github.com/vvakame/til/grpc/grpc-gqlgen/echopb.Example2
+  Example2WithMessage:
+    model: github.com/vvakame/til/grpc/grpc-gqlgen/echopb.Example2_InMessage
+  SayInput:
+    model: github.com/vvakame/til/grpc/grpc-gqlgen/echopb.SayRequest
+    fields:
+      clientMutationId:
+          fieldName: MessageId
+  SayPayload:
+    model: github.com/vvakame/til/grpc/grpc-gqlgen/echopb.SayResponse
+    fields:
+      clientMutationId:
+        fieldName: MessageId

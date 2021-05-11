@@ -1,0 +1,156 @@
+syntax = "proto3";
+
+package todo;
+
+option (gqlgen.api.resolver) = {
+  message_rule: {
+    src: "^(.*)Request$"
+    dest: "$1TodoInput"
+    type: TYPE_INPUT
+  }
+  message_rule: {
+    src: "^(.*)Response$"
+    dest: "$1TodoPayload"
+    type: TYPE_TYPE
+  }
+};
+option go_package = "github.com/vvakame/til/grpc/grpc-gqlgen/todopb";
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "gqlgen-proto/options.proto";
+
+service TodoService {
+  rpc Create(CreateRequest) returns (CreateResponse) {
+    option (gqlgen.api.schema) = {
+      mutation: "createTodo"
+    };
+  }
+  rpc ListA(ListARequest) returns (ListAResponse) {
+    option (gqlgen.api.schema) = {
+      query: "todosA"
+    };
+  }
+  rpc ListB(ListBRequest) returns (ListBResponse) {
+    option (gqlgen.api.schema) = {
+      query: "todosB"
+    };
+  }
+  rpc Update(UpdateRequest) returns (UpdateResponse) {
+    option (gqlgen.api.schema) = {
+      mutation: "updateTodo"
+    };
+  }
+}
+
+message Todo {
+  string id = 1 [
+    (gqlgen.api.field) = {
+      id: true
+    }
+  ];
+  string text = 2;
+  bool done = 3;
+  google.protobuf.Timestamp done_at = 4 [
+    (gqlgen.api.field) = {
+      optional: true
+    }
+  ];
+  google.protobuf.Timestamp updated_at = 5;
+  google.protobuf.Timestamp created_at = 6;
+}
+
+message CreateRequest {
+  string text = 1;
+}
+
+message CreateResponse {
+  Todo todo = 1;
+}
+
+message ListARequest {
+  // TODO uint32 first = 1 [(gqlgen.api.field) = {optional: true}];
+  int32 first = 1 [
+    (gqlgen.api.field) = {
+      optional: true
+    }
+  ];
+  string after = 2 [
+    (gqlgen.api.field) = {
+      optional: true
+    }
+  ];
+  DoneFilter done = 3 [
+    (gqlgen.api.field) = {
+      optional: true
+    }
+  ];
+  enum DoneFilter {
+    NONE = 0;
+    DONE = 1;
+    NOT_DONE = 2;
+  }
+}
+
+message ListAResponse {
+  string cursor = 1 [
+    (gqlgen.api.field) = {
+      optional: true
+    }
+  ];
+  repeated Todo todos = 2;
+}
+
+message ListBRequest {
+  // TODO uint32 offset = 1 [(gqlgen.api.field) = {optional: true}];
+  int32 offset = 1 [
+    (gqlgen.api.field) = {
+      optional: true
+    }
+  ];
+  // TODO uint32 limit = 2 [(gqlgen.api.field) = {optional: true}];
+  int32 limit = 2 [
+    (gqlgen.api.field) = {
+      optional: true
+    }
+  ];
+  DoneFilter done = 3 [
+    (gqlgen.api.field) = {
+      optional: true
+    }
+  ];
+  enum DoneFilter {
+    option (gqlgen.api.enum) = {
+      alias: "ListBDone"
+    };
+    NONE = 0;
+    DONE = 1;
+    NOT_DONE = 2;
+  }
+}
+
+message ListBResponse {
+  repeated Todo todos = 2;
+}
+
+message UpdateRequest {
+  string id = 1 [
+    (gqlgen.api.field) = {
+      id: true
+    }
+  ];
+  string text = 2 [
+    (gqlgen.api.field) = {
+      optional: true
+    }
+  ];
+  bool done = 3 [
+    (gqlgen.api.field) = {
+      optional: true
+    }
+  ];
+}
+
+message UpdateResponse {
+  Todo todo = 1;
+}
