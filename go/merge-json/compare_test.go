@@ -30,7 +30,7 @@ func Test_eachFuncs(t *testing.T) {
 		args []interface{}
 	}{
 		{
-			"merge 2 struct",
+			"merge 2 structs",
 			[]interface{}{
 				&A{
 					Name:    "vv",
@@ -41,6 +41,49 @@ func Test_eachFuncs(t *testing.T) {
 					B1: "b1",
 					B2: 2,
 				},
+			},
+		},
+		{
+			"merge 3 structs",
+			[]interface{}{
+				&A{
+					Name:    "vv",
+					Age:     37,
+					private: true,
+				},
+				&B{
+					B1: "b1",
+					B2: 2,
+				},
+				&C{
+					C1: "c1",
+					C2: "c2",
+				},
+			},
+		},
+		{
+			"merge 6 structs",
+			[]interface{}{
+				&A{
+					Name:    "vv",
+					Age:     37,
+					private: true,
+				},
+				&B{
+					B1: "b1",
+					B2: 2,
+				},
+				&C{
+					C1: "c1",
+					C2: "c2",
+				},
+				&D{D: "d"},
+				&E{E: "e"},
+				&F{F: "f"},
+				&G{G: "g"},
+				&H{H: "h"},
+				&I{I: "i"},
+				&J{J: "j"},
 			},
 		},
 	}
@@ -72,3 +115,39 @@ type B struct {
 }
 
 func (b *B) Bye() {}
+
+type C struct {
+	C1 string
+	// Name string // can't duplicate field
+	C2 string `json:"c2super"`
+}
+
+func (c *C) Wow() {}
+
+type D struct {
+	D string
+}
+
+type E struct {
+	E string
+}
+
+type F struct {
+	F string
+}
+
+type G struct {
+	G string
+}
+
+type H struct {
+	H string
+}
+
+type I struct {
+	I string
+}
+
+type J struct {
+	J string
+}
