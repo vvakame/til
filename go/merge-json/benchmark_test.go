@@ -42,10 +42,11 @@ func BenchmarkMarshallers(b *testing.B) {
 		m := m
 		b.Run(m.name, func(b *testing.B) {
 			for n := 0; n < b.N; n++ {
-				_, err := m.f(obj...)
+				ret, err := m.f(obj...)
 				if err != nil {
 					b.Fatal(err)
 				}
+				_ = ret
 			}
 		})
 	}

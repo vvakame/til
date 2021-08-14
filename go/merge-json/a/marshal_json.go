@@ -3,7 +3,14 @@ package a
 import (
 	"bytes"
 	"encoding/json"
+	"sync"
 )
+
+var pool = sync.Pool{
+	New: func() interface{} {
+		return &bytes.Buffer{}
+	},
+}
 
 func MarshalFlatten(objs ...interface{}) ([]byte, error) {
 	if len(objs) == 0 {
@@ -14,7 +21,12 @@ func MarshalFlatten(objs ...interface{}) ([]byte, error) {
 
 	// めんどくさいので要素がarrayの場合の考慮は一旦しない…
 
-	var buf bytes.Buffer
+	buf := pool.Get().(*bytes.Buffer)
+	defer func() {
+		buf.Reset()
+		pool.Put(buf)
+	}()
+
 	for idx, obj := range objs {
 		b, err := json.Marshal(obj)
 		if err != nil {
