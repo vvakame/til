@@ -1,11 +1,18 @@
 package c
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"reflect"
 	"sync"
 )
+
+var pool = sync.Pool{
+	New: func() interface{} {
+		return &bytes.Buffer{}
+	},
+}
 
 var m = &merger{
 	cacheValue: &cacheValue{
@@ -16,8 +23,17 @@ var m = &merger{
 func MarshalFlatten(objs ...interface{}) ([]byte, error) {
 	if len(objs) == 0 {
 		return []byte("{}"), nil
-	} else if len(objs) == 1 {
-		return json.Marshal(objs[0])
+	}
+
+	buf := pool.Get().(*bytes.Buffer)
+	defer func() {
+		buf.Reset()
+		pool.Put(buf)
+	}()
+
+	if len(objs) == 1 {
+		err := json.NewEncoder(buf).Encode(objs[0])
+		return buf.Bytes(), err
 	}
 
 	merged, err := m.mergeObjects(objs...)
@@ -25,7 +41,8 @@ func MarshalFlatten(objs ...interface{}) ([]byte, error) {
 		return nil, err
 	}
 
-	return json.Marshal(merged)
+	err = json.NewEncoder(buf).Encode(merged)
+	return buf.Bytes(), err
 }
 
 type merger struct {

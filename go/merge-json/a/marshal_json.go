@@ -15,8 +15,6 @@ var pool = sync.Pool{
 func MarshalFlatten(objs ...interface{}) ([]byte, error) {
 	if len(objs) == 0 {
 		return []byte("{}"), nil
-	} else if len(objs) == 1 {
-		return json.Marshal(objs[0])
 	}
 
 	// めんどくさいので要素がarrayの場合の考慮は一旦しない…
@@ -26,6 +24,11 @@ func MarshalFlatten(objs ...interface{}) ([]byte, error) {
 		buf.Reset()
 		pool.Put(buf)
 	}()
+
+	if len(objs) == 1 {
+		err := json.NewEncoder(buf).Encode(objs[0])
+		return buf.Bytes(), err
+	}
 
 	for idx, obj := range objs {
 		b, err := json.Marshal(obj)

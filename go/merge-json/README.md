@@ -84,3 +84,25 @@ Benchmark_10objectsWithLongText/c-8 	     126	   9461746 ns/op	11622189 B/op	   
 PASS
 ok  	github.com/vvakame/til/go/merge-json	14.668s
 ```
+
+json.NewEncoder使ったら早くない？という指摘を反映
+構造上 a は文字列操作で先頭や末尾を切り落とす都合上適用が簡単にはできなさそうなので諦め。
+c がやっぱり一番よさそう。
+
+```shell
+go test -bench . -benchmem                                                                                                                                                                             130 ↵
+goos: darwin
+goarch: arm64
+pkg: github.com/vvakame/til/go/merge-json
+Benchmark_2objects/a-8              	 3384633	       344.1 ns/op	      48 B/op	       2 allocs/op
+Benchmark_2objects/b-8              	  597603	      1961 ns/op	    1192 B/op	      34 allocs/op
+Benchmark_2objects/c-8              	 2425002	       490.8 ns/op	      96 B/op	       2 allocs/op
+Benchmark_10objects/a-8             	  721414	      1611 ns/op	     192 B/op	      10 allocs/op
+Benchmark_10objects/b-8             	  167528	      7092 ns/op	    3573 B/op	      96 allocs/op
+Benchmark_10objects/c-8             	  816115	      1435 ns/op	     384 B/op	       2 allocs/op
+Benchmark_10objectsWithLongText/a-8 	     122	   9734517 ns/op	11438749 B/op	      12 allocs/op
+Benchmark_10objectsWithLongText/b-8 	     128	   9283150 ns/op	  292878 B/op	      96 allocs/op
+Benchmark_10objectsWithLongText/c-8 	     128	   9292385 ns/op	  289698 B/op	       2 allocs/op
+PASS
+ok  	github.com/vvakame/til/go/merge-json	14.561s
+```
